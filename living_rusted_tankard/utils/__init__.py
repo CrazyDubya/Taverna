@@ -23,3 +23,4 @@ __all__ = [
     'GameSnapshot',
     'snapshot_taker'
 ]
+

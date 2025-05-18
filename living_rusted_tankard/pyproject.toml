@@ -4,11 +4,28 @@ version = "0.1.0"
 description = "A text-based RPG set in a mysterious tavern"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
+packages = [
+    { include = "core" },
+    { include = "api" },
+    { include = "game" }
+]
+include = [
+    "*.py",
+    "pyproject.toml",
+    "README.md"
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pydantic = "^2.0.0"
+pydantic = "^1.10.13"  # Downgrade to be compatible with SQLModel
 typing-extensions = "^4.7.1"
+httpx = "^0.25.0"
+python-dotenv = "^1.0.0"
+python-multipart = "^0.0.6"
+sqlmodel = "^0.0.8"
+sqlalchemy = ">=1.4.17,<=1.4.41"  # Version range compatible with SQLModel
+uvicorn = "^0.34.2"
+fastapi = "^0.115.12"
 
 [tool.poetry.scripts]
 tavern = "cli:main"

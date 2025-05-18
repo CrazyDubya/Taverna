@@ -46,8 +46,15 @@ class GameState:
     
     def _add_event(self, message: str, event_type: str = "info", data: Optional[Dict] = None) -> None:
         """Add a new game event."""
+        # Get the current time in hours as a float
+        current_time = getattr(self.clock, 'current_time', None)
+        if hasattr(current_time, 'hours'):
+            timestamp = float(current_time.hours)
+        else:
+            timestamp = float(current_time) if current_time is not None else 0.0
+            
         self.events.append(GameEvent(
-            timestamp=self.clock.current_time,
+            timestamp=timestamp,
             message=message,
             event_type=event_type,
             data=data or {}
@@ -97,8 +104,14 @@ class GameState:
                         "warning"
                     )
     
-    def update(self) -> None:
-        """Update game state."""
+    def update(self, delta: float = 1.0) -> None:
+        """Update game state.
+        
+        Args:
+            delta: Time in hours since last update.
+        """
+        # Update the game clock
+        self.clock.advance_time(delta)
         current_time = self.clock.current_time
         delta = current_time - self._last_update_time
         self._last_update_time = current_time

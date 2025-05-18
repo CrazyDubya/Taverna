@@ -10,6 +10,25 @@ A text-based RPG where time moves forward and choices matter. You find yourself 
 - **Economy**: Gamble and work to earn gold
 - **Room System**: Rent a room to rest, but at what cost?
 - **Meta Quest**: Discover the secret of why you can't leave... if you dare
+- **Natural Language Parser**: Uses Ollama's LLM to understand natural language commands
+
+## Prerequisites
+
+- Python 3.8+
+- [Poetry](https://python-poetry.org/) for dependency management
+- [Ollama](https://ollama.ai/) for the LLM integration
+
+### Setting up Ollama
+
+1. Install Ollama: [https://ollama.ai/](https://ollama.ai/)
+2. Pull the model:
+   ```bash
+   ollama pull long-gemma
+   ```
+3. Start the Ollama server (if not running):
+   ```bash
+   ollama serve
+   ```
 
 ## Quick Start
 

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Living Rusted Tankard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+    <style>
+        .medieval-font {
+            font-family: 'MedievalSharp', cursive;
+        }
+        .narrative-feed {
+            height: calc(100vh - 200px);
+        }
+        .sidebar {
+            height: calc(100vh - 1rem);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+    <div class="flex h-screen p-4 gap-4">
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <header class="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
+                <h1 class="text-3xl font-bold text-amber-500 medieval-font">The Living Rusted Tankard</h1>
+            </header>
+            
+            <!-- Narrative Feed -->
+            <div class="narrative-feed bg-gray-800 p-4 rounded-lg shadow-lg overflow-y-auto mb-4">
+                <div id="narrative-content" class="space-y-4">
+                    <!-- Narrative messages will be inserted here -->
+                    <div class="text-amber-100">Welcome to The Living Rusted Tankard! What would you like to do?</div>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
+                <div class="flex gap-2">
+                    <input 
+                        type="text" 
+                        id="command-input" 
+                        class="flex-1 bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="What would you like to do?"
+                        autofocus
+                    >
+                    <button 
+                        id="submit-btn"
+                        class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                    >
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="w-80 bg-gray-800 rounded-lg shadow-lg p-4 sidebar overflow-y-auto">
+            <!-- Time -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold text-amber-400 mb-2 border-b border-gray-700 pb-2">Time</h2>
+                <div id="game-time" class="text-center text-xl">Morning, Day 1</div>
+            </div>
+            
+            <!-- Gold -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold text-amber-400 mb-2 border-b border-gray-700 pb-2">Gold</h2>
+                <div id="gold-amount" class="flex items-center justify-center">
+                    <span class="text-yellow-400 text-2xl">10</span>
+                    <span class="ml-1">gp</span>
+                </div>
+            </div>
+            
+            <!-- Inventory -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold text-amber-400 mb-2 border-b border-gray-700 pb-2">Inventory</h2>
+                <ul id="inventory-list" class="space-y-1">
+                    <li>• Rusty Dagger</li>
+                    <li>• Leather Armor</li>
+                    <li>• Health Potion (2)</li>
+                    <li>• Torch</li>
+                </ul>
+            </div>
+            
+            <!-- Active Quests -->
+            <div>
+                <h2 class="text-lg font-bold text-amber-400 mb-2 border-b border-gray-700 pb-2">Active Quests</h2>
+                <ul id="quest-list" class="space-y-2">
+                    <li class="bg-gray-700 p-2 rounded">
+                        <div class="font-bold">The Missing Ale</div>
+                        <div class="text-sm text-gray-300">Find the tavern's stolen ale recipe</div>
+                    </li>
+                    <li class="bg-gray-700 p-2 rounded">
+                        <div class="font-bold">Rat Infestation</div>
+                        <div class="text-sm text-gray-300">Clear the cellar of rats (3/5)</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            time: 'Morning, Day 1',
+            gold: 10,
+            inventory: [],
+            quests: [],
+            narrative: []
+        };
+
+        // DOM Elements
+        const commandInput = document.getElementById('command-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const narrativeContent = document.getElementById('narrative-content');
+        const gameTimeElement = document.getElementById('game-time');
+        const goldAmountElement = document.getElementById('gold-amount');
+        const inventoryListElement = document.getElementById('inventory-list');
+        const questListElement = document.getElementById('quest-list');
+
+        // Add a message to the narrative feed
+        function addNarrative(text, isPlayer = false) {
+            const message = document.createElement('div');
+            message.className = isPlayer 
+                ? 'text-amber-300 font-bold' 
+                : 'text-gray-200';
+            message.textContent = isPlayer ? `> ${text}` : text;
+            narrativeContent.appendChild(message);
+            narrativeContent.scrollTop = narrativeContent.scrollHeight;
+        }
+
+        // Update the UI with the current game state
+        function updateUI() {
+            // Update time
+            gameTimeElement.textContent = gameState.time;
+            
+            // Update gold
+            goldAmountElement.innerHTML = `
+                <span class="text-yellow-400 text-2xl">${gameState.gold}</span>
+                <span class="ml-1">gp</span>
+            `;
+            
+            // Update inventory
+            inventoryListElement.innerHTML = gameState.inventory
+                .map(item => `<li>• ${item}</li>`)
+                .join('');
+            
+            // Update quests
+            questListElement.innerHTML = gameState.quests
+                .map(quest => `
+                    <li class="bg-gray-700 p-2 rounded">
+                        <div class="font-bold">${quest.title}</div>
+                        <div class="text-sm text-gray-300">${quest.description}</div>
+                    </li>
+                `)
+                .join('');
+        }
+
+        // Fetch the current game state from the server
+        async function fetchGameState() {
+            try {
+                const response = await fetch('/api/state');
+                const data = await response.json();
+                gameState = data;
+                updateUI();
+            } catch (error) {
+                console.error('Error fetching game state:', error);
+                addNarrative('Error connecting to the game server.');
+            }
+        }
+
+        // Send a command to the server
+        async function sendCommand(command) {
+            try {
+                const response = await fetch('/api/command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ command }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update game state
+                    gameState = data.state;
+                    updateUI();
+                    
+                    // Add response to narrative
+                    if (data.message) {
+                        addNarrative(data.message);
+                    }
+                } else {
+                    addNarrative(data.error || 'An error occurred.');
+                }
+            } catch (error) {
+                console.error('Error sending command:', error);
+                addNarrative('Error sending command to the server.');
+            }
+        }
+
+        // Handle command input
+        function handleCommand() {
+            const command = commandInput.value.trim();
+            if (!command) return;
+
+            // Add player command to narrative
+            addNarrative(command, true);
+            commandInput.value = '';
+
+            // Send command to server
+            sendCommand(command);
+        }
+
+        // Initialize the game
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set up event listeners
+            commandInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleCommand();
+                }
+            });
+            
+            submitBtn.addEventListener('click', handleCommand);
+            
+            // Load initial game state
+            fetchGameState();
+            
+            // Focus the input field
+            commandInput.focus();
+            
+            // Add welcome message
+            addNarrative('Welcome to The Living Rusted Tankard! What would you like to do?');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+"""NPC system for The Living Rusted Tankard."""
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import List, Tuple, Optional, Dict, Any, Callable
+import random
+from enum import Enum, auto
+from pydantic import BaseModel, Field
+
+from .items import Item, TAVERN_ITEMS
+
+class NPCType(Enum):
+    BARKEEP = auto()
+    PATRON = auto()
+    MERCHANT = auto()
+    GUARD = auto()
+    BARD = auto()
+    THIEF = auto()
+    ADVENTURER = auto()
+    NOBLE = auto()
+    SERVANT = auto()
+    COOK = auto()
+
+class NPCDisposition(Enum):
+    FRIENDLY = auto()
+    NEUTRAL = auto()
+    UNFRIENDLY = auto()
+    HOSTILE = auto()
+
+class NPCSkill(BaseModel):
+    name: str
+    level: float  # 0.0 to 1.0
+
+class NPCInteraction(BaseModel):
+    """Represents a possible interaction with an NPC."""
+    id: str
+    name: str
+    description: str
+    condition: Optional[Callable[['NPC', 'PlayerState'], bool]] = None
+    action: Callable[['NPC', 'PlayerState', 'Economy'], Dict[str, Any]]
+    cooldown: float = 0  # Hours before this interaction can be used again
+    last_used: float = -1  # Game time when this was last used
+
+class NPC(BaseModel):
+    """Represents a non-player character in the game."""
+    id: str
+    name: str
+    description: str
+    npc_type: NPCType
+    disposition: NPCDisposition = NPCDisposition.NEUTRAL
+    schedule: List[Tuple[float, float]] = Field(default_factory=list)  # (start_hour, end_hour)
+    departure_chance: float = 0.1  # 0.0 to 1.0
+    visit_frequency: float = 0.8  # 0.0 to 1.0, chance to visit when scheduled
+    gold: int = 0
+    inventory: List[Item] = Field(default_factory=list)
+    relationships: Dict[str, float] = Field(default_factory=dict)  # NPC/player ID -> relationship score (-1.0 to 1.0)
+    conversation_topics: List[str] = Field(default_factory=list)  # Available conversation topics
+    current_topic: Optional[str] = None  # Current conversation topic
+    last_visit_day: int = -1  # Last day this NPC visited
+    skills: Dict[str, NPCSkill] = Field(default_factory=dict)
+    interactions: Dict[str, NPCInteraction] = Field(default_factory=dict)
+    
+    # Internal state
+    present: bool = False
+    last_seen_day: int = -1
+    current_mood: str = "neutral"
+    
+    class Config:
+        arbitrary_types_allowed = True
+    
+    def update_presence(self, game_time: float) -> None:
+        """Update NPC's presence based on current game time and other factors."""
+        current_day = int(game_time // 24)
+        current_hour = game_time % 24
+        
+        # Only update once per game day
+        if current_day == self.last_seen_day:
+            return
+            
+        self.last_seen_day = current_day
+        
+        # Check if NPC should be present based on schedule and visit frequency
+        should_be_present = (
+            any(start <= current_hour < end for start, end in self.schedule) and
+            random.random() <= self.visit_frequency
+        )
+        
+        if should_be_present:
+            # If NPC is scheduled to be present, check if they decide to leave
+            if random.random() < self.departure_chance:
+                self.present = False
+            else:
+                self.present = True
+                
+                # Update mood based on various factors
+                self._update_mood()
+        else:
+            self.present = False
+    
+    def _update_mood(self) -> None:
+        """Update the NPC's current mood based on various factors."""
+        # Simple mood system - could be expanded with more complex logic
+        mood_roll = random.random()
+        
+        if mood_roll < 0.1:
+            self.current_mood = "happy"
+        elif mood_roll < 0.2:
+            self.current_mood = "angry"
+        elif mood_roll < 0.4:
+            self.current_mood = "talkative"
+        else:
+            self.current_mood = "neutral"
+    
+    def add_relationship(self, npc_id: str, amount: float) -> None:
+        """Modify relationship with another NPC."""
+        self.relationships[npc_id] = self.relationships.get(npc_id, 0) + amount
+        # Keep relationships in a reasonable range
+        self.relationships[npc_id] = max(-1.0, min(1.0, self.relationships[npc_id]))
+    
+    def get_available_interactions(self, player_state) -> List[Dict[str, Any]]:
+        """Get all available interactions for this NPC that the player can perform."""
+        available = []
+        current_time = player_state.get("game_time", 0)
+        
+        for interaction in self.interactions.values():
+            # Check cooldown
+            if interaction.last_used > 0 and (current_time - interaction.last_used) < interaction.cooldown:
+                continue
+                
+            # Check condition if any
+            if interaction.condition and not interaction.condition(self, player_state):
+                continue
+                
+            available.append({
+                "id": interaction.id,
+                "name": interaction.name,
+                "description": interaction.description
+            })
+            
+        return available
+    
+    def interact(self, interaction_id: str, player_state, economy) -> Dict[str, Any]:
+        """Perform an interaction with this NPC."""
+        interaction = self.interactions.get(interaction_id)
+        if not interaction:
+            return {"success": False, "message": "No such interaction available."}
+            
+        # Check cooldown
+        current_time = player_state.get("game_time", 0)
+        if interaction.last_used > 0 and (current_time - interaction.last_used) < interaction.cooldown:
+            return {"success": False, "message": "This interaction is on cooldown."}
+        
+        # Check condition if any
+        if interaction.condition and not interaction.condition(self, player_state):
+            return {"success": False, "message": "You can't do that right now."}
+        
+        # Perform the interaction
+        result = interaction.action(self, player_state, economy)
+        interaction.last_used = current_time
+        
+        return {"success": True, **result}
+
+class NPCManager:
+    """Manages all NPCs in the game."""
+    def __init__(self):
+        self.npcs: Dict[str, NPC] = {}
+        self._initialize_npcs()
+    
+    def _initialize_npcs(self) -> None:
+        """Initialize the NPCs with their default states and interactions."""
+        # Barkeep
+        barkeep = NPC(
+            id="barkeep",
+            name="Old Tom",
+            description="The grizzled barkeep with a mysterious past.",
+            npc_type=NPCType.BARKEEP,
+            disposition=NPCDisposition.FRIENDLY,
+            schedule=[(8, 24)],  # Works from 8:00 to midnight
+            departure_chance=0.0,  # Never leaves
+            gold=100,
+            skills={
+                "bartending": NPCSkill(name="Bartending", level=0.9),
+                "storytelling": NPCSkill(name="Storytelling", level=0.7),
+                "brawling": NPCSkill(name="Brawling", level=0.8)
+            }
+        )
+        
+        # Add interactions
+        barkeep.interactions["chat"] = NPCInteraction(
+            id="chat",
+            name="Chat",
+            description="Strike up a conversation with the barkeep.",
+            action=lambda npc, player, economy: {
+                "message": "'Aye, what can I get for ya? The ale's good today.'",
+                "effects": {"tiredness": -0.1}
+            },
+            cooldown=1.0
+        )
+        
+        self.add_npc(barkeep)
+        
+        # Regular Patron
+        patron = NPC(
+    
+    def add_npc(self, npc: 'NPC') -> None:
+        """Add an NPC to the manager."""
+        self.npcs[npc.id] = npc
+    
+    def get_npc(self, npc_id: str) -> Optional['NPC']:
+        """Get an NPC by ID, if present."""
+        return self.npcs.get(npc_id)
+    
+    def update_all_npcs(self, game_time: float) -> None:
+        """Update presence for all NPCs based on current game time.
+        
+        Args:
+            game_time: Current game time in hours
+        """
+        current_hour = game_time % 24
+        current_day = int(game_time // 24)
+        
+        for npc in self.npcs.values():
+            # Skip if NPC is not scheduled to be here today
+            if not self._is_npc_scheduled(npc, current_hour):
+                npc.is_present = False
+                continue
+                
+            # Check if NPC has already visited today
+            if npc.last_visit_day < current_day:
+                # New day, roll for visit
+                if random.random() <= npc.visit_frequency:
+                    npc.is_present = True
+                    npc.last_visit_day = current_day
+                else:
+                    npc.is_present = False
+            
+            # Check for random departure if present
+            if npc.is_present and random.random() < npc.departure_chance:
+                npc.is_present = False
+    
+    def _is_npc_scheduled(self, npc: 'NPC', current_hour: float) -> bool:
+        """Check if an NPC is scheduled to be present at the current hour."""
+        for start, end in npc.schedule:
+            if start <= current_hour < end:
+                return True
+        return False
+    
+    def get_present_npcs(self) -> List['NPC']:
+        """Get a list of all currently present NPCs."""
+        return [npc for npc in self.npcs.values() if npc.is_present]
+    
+    def find_npc_by_name(self, name: str) -> Optional['NPC']:
+        """Find an NPC by name (case-insensitive)."""
+        name_lower = name.lower()
+        for npc in self.npcs.values():
+            if npc.name.lower() == name_lower:
+                return npc
+        return None
+    
+    def get_npcs_by_type(self, npc_type: 'NPCType') -> List['NPC']:
+        """Get all NPCs of a specific type."""
+        return [npc for npc in self.npcs.values() if npc.npc_type == npc_type]
+    
+    def get_interactive_npcs(self, player_state: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """Get a list of present NPCs with their available interactions."""
+        interactive = []
+        for npc in self.get_present_npcs():
+            # Basic interaction is always available
+            interactions = [{
+                'id': 'talk',
+                'name': 'Talk',
+                'description': f'Strike up a conversation with {npc.name}'
+            }]
+            
+            # Add any additional interactions based on relationship, etc.
+            if hasattr(npc, 'interactions') and npc.interactions:
+                for interaction in npc.interactions.values():
+                    if (interaction.condition is None or 
+                        interaction.condition(npc, player_state)):
+                        interactions.append({
+                            'id': interaction.id,
+                            'name': interaction.name,
+                            'description': interaction.description
+                        })
+            
+            interactive.append({
+                'id': npc.id,
+                'name': npc.name,
+                'description': npc.description,
+                'interactions': interactions
+            })
+                
+        return interactive

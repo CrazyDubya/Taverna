@@ -1,0 +1,97 @@
+{
+  "npc_definitions": [
+    {
+      "id": "gene_bartender",
+      "name": "Gene",
+      "description": "The grizzled bartender of The Rusted Tankard. His missing eye and scarred hands tell stories of a more adventurous past.",
+      "npc_type": "BARKEEP",
+      "disposition": "NEUTRAL",
+      "schedule": [
+        [16, 24],
+        [0, 4]
+      ],
+      "departure_chance": 0.1,
+      "visit_frequency": 0.95,
+      "gold": 500,
+      "inventory": [
+        {
+          "id": "ale",
+          "quantity": 10
+        },
+        {
+          "id": "meat_stew",
+          "quantity": 5
+        }
+      ],
+      "relationships": {
+        "player": 0.5
+      },
+      "conversation_topics": [
+        "The old days",
+        "Rumors in town",
+        "The mysterious locked door"
+      ]
+    },
+    {
+      "id": "serena_waitress",
+      "name": "Serena",
+      "description": "A quick-witted and observant waitress who seems to know everyone's business.",
+      "npc_type": "SERVANT",
+      "disposition": "FRIENDLY",
+      "schedule": [
+        [10, 16],
+        [18, 22]
+      ],
+      "departure_chance": 0.15,
+      "visit_frequency": 0.9,
+      "gold": 50,
+      "inventory": [
+        {
+          "id": "bread",
+          "quantity": 5
+        },
+        {
+          "id": "cheese",
+          "quantity": 5
+        }
+      ],
+      "relationships": {
+        "player": 0.3,
+        "gene_bartender": 0.7
+      },
+      "conversation_topics": [
+        "Local gossip",
+        "The strange noises at night",
+        "The missing merchant"
+      ]
+    },
+    {
+      "id": "old_man_jenkins",
+      "name": "Old Man Jenkins",
+      "description": "A regular patron who always sits in the same corner, muttering to himself.",
+      "npc_type": "PATRON",
+      "disposition": "UNFRIENDLY",
+      "schedule": [
+        [12, 22]
+      ],
+      "departure_chance": 0.3,
+      "visit_frequency": 0.7,
+      "gold": 10,
+      "inventory": [
+        {
+          "id": "whiskey",
+          "quantity": 1
+        }
+      ],
+      "relationships": {
+        "player": -0.2,
+        "gene_bartender": 0.8
+      },
+      "conversation_topics": [
+        "The good old days",
+        "Them city folk",
+        "The strange lights in the forest"
+      ]
+    }
+  ]
+}

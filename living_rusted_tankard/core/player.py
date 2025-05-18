@@ -5,38 +5,163 @@ from .items import Item, TAVERN_ITEMS, Inventory
 
 class PlayerState(BaseModel):
     """Represents the player's current state in the game."""
+    player_id: str = "default_player"
+    name: str = "Player"
     gold: int = 40
     has_room: bool = False
+    room_number: Optional[int] = None
     tiredness: float = 0.0
     energy: float = 1.0  # 0.0 to 1.0, affects what jobs can be done
     rest_immune: bool = False
-    no_sleep_quest_unlocked: bool = False
+    _no_sleep_quest_unlocked: bool = False
+    _no_sleep_quest_locked: bool = False
     inventory: Inventory = Field(default_factory=Inventory)
     flags: Dict[str, Any] = Field(default_factory=dict)  # For tracking quest states and other flags
     last_ate: float = 0.0  # Game time when player last ate
     last_drank: float = 0.0  # Game time when player last drank
     
+    @property
+    def id(self) -> str:
+        """Alias for player_id for backward compatibility."""
+        return self.player_id
+        
+    @property
+    def no_sleep_quest_unlocked(self) -> bool:
+        """Get whether the no-sleep quest is unlocked.
+        
+        Returns:
+            bool: True if the quest is unlocked and not locked, False otherwise
+        """
+        return self._no_sleep_quest_unlocked and not self._no_sleep_quest_locked
+        
+    @no_sleep_quest_unlocked.setter
+    def no_sleep_quest_unlocked(self, value: bool) -> None:
+        """Set whether the no-sleep quest is unlocked.
+        
+        Args:
+            value: Whether the quest should be unlocked
+            
+        Note:
+            Has no effect if the quest has been locked
+        """
+        if not self._no_sleep_quest_locked:
+            self._no_sleep_quest_unlocked = bool(value)
+            
+    def lock_no_sleep_quest(self) -> None:
+        """Lock the no-sleep quest, preventing further changes to its state."""
+        self._no_sleep_quest_locked = True
+        self._no_sleep_quest_unlocked = False
+    
     class Config:
         arbitrary_types_allowed = True
     
     def can_afford(self, amount: int) -> bool:
-        """Check if player has enough gold."""
+        """Check if player has enough gold.
+        
+        Args:
+            amount: Amount of gold to check
+            
+        Returns:
+            bool: True if player can afford the amount, False otherwise
+            
+        Note:
+            Returns False for zero or negative amounts as they are not valid transactions
+        """
+        if not isinstance(amount, (int, float)) or amount <= 0:
+            return False
         return self.gold >= amount
     
-    def add_gold(self, amount: int) -> bool:
-        """Add gold to player's inventory. Returns True if successful."""
-        if amount < 0:
-            return False
-        self.gold += amount
-        return True
-    
-    def spend_gold(self, amount: int) -> bool:
-        """Attempt to spend gold. Returns True if successful."""
-        if amount < 0 or not self.can_afford(amount):
-            return False
-        self.gold -= amount
-        return True
-    
+    def add_gold(self, amount: int) -> tuple[bool, str]:
+        """Add gold to player's inventory.
+        
+        Args:
+            amount: Amount of gold to add (must be positive)
+            
+        Returns:
+            tuple: (success: bool, message: str)
+        """
+        if not isinstance(amount, (int, float)) or amount <= 0:
+            return False, "Amount must be a positive number"
+            
+        try:
+            self.gold += amount
+            return True, f"Added {amount} gold. New total: {self.gold}"
+        except Exception as e:
+            return False, f"Failed to add gold: {str(e)}"
+            
+    def spend_gold(self, amount: int) -> tuple[bool, str]:
+        """Spend gold from player's inventory.
+        
+        Args:
+            amount: Amount of gold to spend (must be positive)
+            
+        Returns:
+            tuple: (success: bool, message: str)
+        """
+        if not isinstance(amount, (int, float)) or amount <= 0:
+            return False, "Amount must be a positive number"
+            
+        if self.gold < amount:
+            return False, f"Not enough gold. Needed: {amount}, Have: {self.gold}"
+            
+        remaining = self.gold - amount
+        self.gold = remaining
+        return True, f"Spent {amount} gold. Remaining: {remaining}"
+        
+    def update_tiredness(self, amount: float, clock) -> None:
+        """Update the player's tiredness level.
+        
+        Args:
+            amount: Amount to add to tiredness (can be negative)
+            clock: The game clock to track time
+        """
+        self.tiredness = max(0, min(1.0, self.tiredness + amount))
+        self.energy = 1.0 - self.tiredness
+        
+    def sleep(self, hours: float = 8.0) -> str:
+        """Player sleeps to reduce tiredness.
+        
+        Args:
+            hours: Number of hours to sleep
+            
+        Returns:
+            str: Message describing the sleep action
+        """
+        if not self.has_room:
+            return "You need to rent a room to sleep!"
+            
+        # Reduce tiredness based on sleep duration
+        recovery = min(0.1 * hours, 1.0 - self.tiredness)
+        self.tiredness = max(0, self.tiredness - recovery)
+        self.energy = 1.0 - self.tiredness
+        
+        return f"You sleep for {hours} hours and feel more rested."
+        
+    def check_no_sleep_quest(self) -> bool:
+        """Check if the no-sleep quest is unlocked.
+        
+        Returns:
+            bool: True if the no-sleep quest is unlocked, False otherwise
+        """
+        return self.no_sleep_quest_unlocked
+        
+    def ask_about_sleep(self) -> str:
+        """Handle player asking about sleep.
+        
+        Returns:
+            str: Response to the player's question about sleep
+        """
+        if self.no_sleep_quest_unlocked:
+            return "You've already unlocked the no-sleep quest!"
+            
+        # Check if player qualifies for the no-sleep quest
+        if self.tiredness >= 0.8:  # Very tired
+            self.no_sleep_quest_unlocked = True
+            return ("You feel an unusual energy despite your exhaustion. "
+                   "You've unlocked the No-Sleep Challenge quest!")
+        else:
+            return "You're feeling a bit tired, but nothing unusual."
+        
     def update_tiredness(self, hours: float) -> None:
         """Update tiredness based on time passed and other factors."""
         if self.rest_immune:

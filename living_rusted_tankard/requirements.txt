@@ -1,8 +1,17 @@
 # Core dependencies
 python-dateutil>=2.8.2  # For advanced date/time handling
+pydantic>=1.8.0  # For data validation
+
+# Web framework
+fastapi>=0.68.0
+uvicorn>=0.15.0
+python-multipart>=0.0.5  # For form data parsing
+
+# Development
 pytest>=7.0.0  # For testing
-pytest-cov>=3.0.0  # For test coverage reporting
+pytest-cov>=3.0.0  # For test coverage
+pytest-asyncio>=0.15.0  # For async test support
+httpx>=0.23.0  # For testing HTTP clients
 mypy>=0.910  # For static type checking
 black>=22.0.0  # For code formatting
 isort>=5.0.0  # For import sorting
-pydantic>=1.8.0  # For data validation (we'll use this later)
