@@ -4,7 +4,7 @@ import cmd
 import sys
 import time
 from typing import Dict, Any, List, Optional
-from core.game import GameState
+from core.game_state import GameState
 from core.npc import NPC, NPCType, NPCDisposition, NPCSkill, NPCInteraction
 from core.items import TAVERN_ITEMS
 

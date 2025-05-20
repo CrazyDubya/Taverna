@@ -92,6 +92,32 @@
         "Them city folk",
         "The strange lights in the forest"
       ]
+    },
+    {
+      "id": "travelling_merchant_elara",
+      "definition_id": "travelling_merchant_elara_def",
+      "name": "Elara, the Wandering Trader",
+      "description": "Elara is a shrewd trader with a keen eye for rare and unusual items. Her cart is laden with goods from distant lands. She doesn't stay in one place for long.",
+      "npc_type": "MERCHANT",
+      "disposition": "NEUTRAL",
+      "schedule": [], 
+      "is_present": false, 
+      "departure_chance": 1.0, 
+      "visit_frequency": 0.0, 
+      "gold": 200,
+      "inventory": [
+        {"id": "elixir_luck", "quantity": 2},
+        {"id": "map_fragment_grove", "quantity": 1},
+        {"id": "exotic_spices", "quantity": 5},
+        {"id": "bread", "quantity": 3}
+      ],
+      "relationships": {},
+      "conversation_topics": [
+        "rare_goods",
+        "distant_lands",
+        "trade_secrets"
+      ],
+      "interactions": {}
     }
   ]
 }

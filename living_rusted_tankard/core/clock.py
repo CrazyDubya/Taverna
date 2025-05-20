@@ -1,15 +1,17 @@
-from dataclasses import dataclass, field
-from typing import Callable, Optional, Dict, List, Any, Union
+from typing import Callable, Optional, Dict, List, Any, Union, Tuple
 import time
+import heapq
 from datetime import datetime, timedelta
+from pydantic import BaseModel, Field, PrivateAttr
 
 from .event_bus import EventBus, Event, EventType
+from .callable_registry import register_callback, get_callback
 
-@dataclass
-class GameTime:
+
+class GameTime(BaseModel):
     """Represents game time in hours since game start."""
     hours: float = 0.0
-    
+
     @property
     def hour_of_day(self) -> float:
         """Current hour of the day (0-24)."""
@@ -30,15 +32,14 @@ class GameTime:
         """Total days since game start."""
         return self.hours / 24.0
     
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to a dictionary representation."""
-        return {
-            'hours': self.hours,
-            'hour_of_day': self.hour_of_day,
-            'day': self.day,
-            'formatted': self.format_time()
-        }
-    
+    def model_dump(self, **kwargs) -> Dict[str, Any]:
+        """Convert to a dictionary representation, including properties."""
+        dump = super().model_dump(**kwargs)
+        dump['hour_of_day'] = self.hour_of_day
+        dump['day'] = self.day
+        dump['formatted_time'] = self.format_time()
+        return dump
+
     def format_time(self, format_str: str = None) -> str:
         """Format current time as a readable string.
         
@@ -71,7 +72,7 @@ class GameTime:
         return now + timedelta(days=days, hours=hours)
     
     @classmethod
-    def from_real_time(cls, dt: datetime, start_time: datetime = None) -> 'GameTime':
+    def from_real_time(cls, dt: datetime, start_time: Optional[datetime] = None) -> 'GameTime':
         """Create a GameTime from a datetime.
         
         Args:
@@ -87,47 +88,125 @@ class GameTime:
         delta = dt - start_time
         return cls(hours=delta.total_seconds() / 3600)
 
-class GameClock:
+# Helper type for scheduled events to make Pydantic validation work with Callables
+# We won't directly use this in the list if we're serializing callback names,
+# but it's good for type hinting if we were to pass actual callables around.
+class ScheduledEvent(BaseModel):
+    id: str
+    name: str
+    time: float
+    callback_name: str # Store the registered name of the callback
+    repeat: bool
+    interval: float
+    kwargs: Dict[str, Any]
+
+    class Config:
+        arbitrary_types_allowed = True # For Callable if we were to store it
+
+class GameClock(BaseModel):
     """Manages the game's passage of time and scheduled events."""
-    def __init__(self, start_time: float = 0.0, time_scale: float = 1.0):
-        """Initialize the game clock.
-        
-        Args:
-            start_time: Initial game time in hours
-            time_scale: Scale factor for time passage (1.0 = realtime)
-        """
-        self.event_bus = EventBus()
-        self.time = GameTime(start_time)
-        self.paused = False
-        self.time_scale = time_scale
-        self._last_tick = time.monotonic()
-        self._scheduled_events: List[Dict] = []
-        self._day_callbacks = {}
-        self._hour_callbacks = {}
-        self._minute_callbacks = {}
+    time: GameTime = Field(default_factory=GameTime)
+    paused: bool = False
+    time_scale: float = 1.0
+    
+    _scheduled_events_data: List[Dict[str, Any]] = PrivateAttr(default_factory=list) # For serialized form
+    
+    # Runtime attributes, not directly part of serialized state but initialized
+    _event_bus: EventBus = PrivateAttr(default_factory=EventBus)
+    _last_tick: float = PrivateAttr(default_factory=time.monotonic)
+    _day_callbacks: Dict[str, Callable[[int], None]] = PrivateAttr(default_factory=dict)
+    _hour_callbacks: Dict[str, Callable[[int], None]] = PrivateAttr(default_factory=dict)
+    _minute_callbacks: Dict[str, Callable[[int], None]] = PrivateAttr(default_factory=dict)
+    
+    _last_day: int = PrivateAttr(0) # Initialized in __init__ or model_post_init
+    _last_hour: int = PrivateAttr(0)
+    _last_minute: int = PrivateAttr(0)
+
+    # For GameState to hook into, not serialized with clock's own state
+    on_time_advanced_handler: Optional[Callable[[float, float, float], None]] = Field(None, exclude=True)
+
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
         self._last_day = self.time.day
         self._last_hour = int(self.time.hour_of_day)
         self._last_minute = int((self.time.hour_of_day % 1) * 60)
-        self.event_queue = self.event_bus  # Alias for backward compatibility
-    
+        
+        # Rebuild runtime _scheduled_events from _scheduled_events_data if loading
+        self._rebuild_runtime_scheduled_events()
+
+    def _rebuild_runtime_scheduled_events(self):
+        """
+        Rebuilds the runtime _scheduled_events list (which would use actual callbacks)
+        from _scheduled_events_data (which stores callback names).
+        This method is conceptual for now if _scheduled_events_data is directly manipulated
+        by Pydantic's dict/model_dump.
+        For now, _scheduled_events_data will BE the source of truth for serialization.
+        The actual runtime execution will use get_callback.
+        """
+        # No actual runtime list of callables is stored persistently in this design.
+        # Callbacks are retrieved from registry on-the-fly in _process_scheduled_events.
+        pass
+
+
+    @property
+    def event_bus(self) -> EventBus: # Provide access to the private attribute
+        return self._event_bus
+
+    def model_dump(self, **kwargs) -> Dict[str, Any]:
+        """Serialize GameClock state."""
+        # Exclude runtime-only or complex objects that are handled separately
+        kwargs.setdefault('exclude', {'on_time_advanced_handler'}) # Already excluded by Field option
+        
+        data = super().model_dump(**kwargs)
+        # _scheduled_events_data is already handled by Pydantic if it's a regular field.
+        # If it's PrivateAttr, we need to explicitly add it.
+        data['_scheduled_events_data'] = self._scheduled_events_data 
+        return data
+
+    @classmethod
+    def model_validate(cls, obj: Any, **kwargs) -> 'GameClock':
+        """Deserialize GameClock state."""
+        # If _scheduled_events_data is a PrivateAttr, Pydantic won't populate it automatically from obj
+        # We need to handle it manually or ensure it's part of the main model fields.
+        # For now, assume _scheduled_events_data is a regular field that Pydantic handles.
+        instance = super().model_validate(obj, **kwargs)
+        
+        # If _scheduled_events_data was a PrivateAttr and not directly in obj for Pydantic:
+        if isinstance(obj, dict) and '_scheduled_events_data' in obj:
+             instance._scheduled_events_data = obj['_scheduled_events_data']
+        
+        instance._last_tick = time.monotonic() # Reset runtime timer
+        instance._event_bus = EventBus() # New event bus
+        instance._day_callbacks = {} # Reset callbacks, to be re-registered by systems
+        instance._hour_callbacks = {}
+        instance._minute_callbacks = {}
+        
+        # Re-initialize last known time details based on loaded time
+        instance._last_day = instance.time.day
+        instance._last_hour = int(instance.time.hour_of_day)
+        instance._last_minute = int((instance.time.hour_of_day % 1) * 60)
+        
+        return instance
+
+
     def update(self) -> None:
         """Advance time based on real time passed."""
         if self.paused:
+            self._last_tick = time.monotonic() # Prevent large delta when unpausing
             return
             
-        current_time = time.monotonic()
-        delta = (current_time - self._last_tick) * self.time_scale
-        self._last_tick = current_time
+        current_real_time = time.monotonic()
+        delta_real_time = (current_real_time - self._last_tick)
+        self._last_tick = current_real_time
         
-        # Convert seconds to game hours and advance time
-        self.advance_time(delta / 3600)
+        # Convert real seconds to game hours and advance time
+        game_hours_delta = (delta_real_time * self.time_scale) / 3600.0
         
-        # Process scheduled events
-        self._process_scheduled_events()
-        
-        # Process time-based callbacks
-        self._process_time_callbacks()
-    
+        if game_hours_delta > 0:
+            self.advance_time(game_hours_delta)
+            # _process_scheduled_events and _process_time_callbacks are called by advance_time
+
     @property
     def current_time(self) -> 'GameTime':
         """Get current game time."""
@@ -149,7 +228,7 @@ class GameClock:
     def resume(self) -> None:
         """Resume the game clock."""
         self.paused = False
-        self._last_tick = time.monotonic()
+        self._last_tick = time.monotonic() # Reset tick to prevent jump
         
     def set_time_scale(self, scale: float) -> None:
         """Set the time scale factor.
@@ -157,12 +236,13 @@ class GameClock:
         Args:
             scale: Time scale factor (1.0 = realtime, 2.0 = 2x speed, etc.)
         """
-        self.time_scale = max(0, scale)
+        self.time_scale = max(0.0, scale) # Ensure non-negative
         
     def schedule_event(
         self, 
         delay: float, 
-        handler: Callable[[], None], 
+        # handler: Callable[[], None], # Original handler
+        callback_name: str, # Registered name of the callback
         name: str = "",
         repeats: bool = False,
         interval: float = 0.0,
@@ -172,7 +252,7 @@ class GameClock:
         
         Args:
             delay: Hours from now when the event should trigger
-            handler: Function to call when the event triggers
+            callback_name: Registered name of the function to call
             name: Optional name for the event
             repeats: Whether the event should repeat
             interval: If repeating, time between occurrences in hours
@@ -184,22 +264,26 @@ class GameClock:
         from uuid import uuid4
         event_id = str(uuid4())
         
-        # If this is a repeating event, ensure we have a valid interval
+        # Ensure the callback is registered before scheduling
+        get_callback(callback_name) # Will raise ValueError if not found
+
         if repeats and interval <= 0:
-            interval = delay
+            interval = delay # If repeating and no interval, use delay as interval
             
-        self._scheduled_events.append({
+        event_data = {
             'id': event_id,
             'name': name,
             'time': self.time.hours + delay,
-            'callback': handler,
+            'callback_name': callback_name, # Store the name
             'repeat': repeats,
             'interval': interval,
             'kwargs': kwargs or {}
-        })
+        }
+        self._scheduled_events_data.append(event_data)
         
         # Sort events by time to ensure they're processed in order
-        self._scheduled_events.sort(key=lambda e: e['time'])
+        # This is important if _process_scheduled_events iterates and pops
+        self._scheduled_events_data.sort(key=lambda e: e['time'])
         
         return event_id
         
@@ -212,13 +296,12 @@ class GameClock:
         Returns:
             True if the event was found and cancelled, False otherwise
         """
-        for i, event in enumerate(self._scheduled_events):
-            if event['id'] == event_id:
-                self._scheduled_events.pop(i)
-                return True
-                
-        return False
-    
+        original_len = len(self._scheduled_events_data)
+        self._scheduled_events_data = [
+            event for event in self._scheduled_events_data if event['id'] != event_id
+        ]
+        return len(self._scheduled_events_data) < original_len
+
     def on_day_change(self, callback: Callable[[int], None]) -> Callable:
         """Register a callback for when the day changes.
         
@@ -229,7 +312,7 @@ class GameClock:
         Returns:
             Function to unregister the callback
         """
-        from uuid import uuid4
+        from uuid import uuid4 # Keep local import for utility
         callback_id = str(uuid4())
         self._day_callbacks[callback_id] = callback
         
@@ -248,7 +331,7 @@ class GameClock:
         Returns:
             Function to unregister the callback
         """
-        from uuid import uuid4
+        from uuid import uuid4 # Keep local import
         callback_id = str(uuid4())
         self._hour_callbacks[callback_id] = callback
         
@@ -267,7 +350,7 @@ class GameClock:
         Returns:
             Function to unregister the callback
         """
-        from uuid import uuid4
+        from uuid import uuid4 # Keep local import
         callback_id = str(uuid4())
         self._minute_callbacks[callback_id] = callback
         
@@ -278,67 +361,86 @@ class GameClock:
     
     def _process_scheduled_events(self) -> None:
         """Process any scheduled events that are due."""
-        current_time = self.time.hours
-        events_to_remove = []
+        current_clock_time = self.time.hours
         
-        for i, event in enumerate(self._scheduled_events):
-            if current_time >= event['time']:
+        # Iterate safely for modification
+        new_scheduled_events_data = []
+        processed_any = False
+
+        for event_data in self._scheduled_events_data:
+            if current_clock_time >= event_data['time']:
+                processed_any = True
                 try:
-                    # Call the callback with the event data
-                    event['callback'](**event['kwargs'])
+                    callback_func = get_callback(event_data['callback_name'])
+                    callback_func(**event_data['kwargs'])
                     
-                    # Reschedule if repeating
-                    if event['repeat']:
-                        event['time'] += event['interval']
-                    else:
-                        events_to_remove.append(i)
+                    if event_data['repeat']:
+                        event_data['time'] += event_data['interval']
+                        new_scheduled_events_data.append(event_data) # Re-add if repeating
+                    # else: it's removed by not re-adding
                 except Exception as e:
-                    print(f"Error in scheduled event: {e}")
-                    events_to_remove.append(i)
+                    print(f"Error processing event '{event_data.get('name', 'Unnamed')}': {e}")
+                    # Decide if a failing repeating event should be rescheduled or not
+                    # For now, if it fails, it's not rescheduled.
+            else:
+                new_scheduled_events_data.append(event_data) # Keep if not yet due
         
-        # Remove processed events in reverse order to avoid index issues
-        for i in sorted(events_to_remove, reverse=True):
-            if i < len(self._scheduled_events):
-                self._scheduled_events.pop(i)
-    
+        if processed_any:
+             # Re-sort if any repeating events were re-added
+            self._scheduled_events_data = sorted(new_scheduled_events_data, key=lambda e: e['time'])
+        else:
+            self._scheduled_events_data = new_scheduled_events_data
+
+
     def _process_time_callbacks(self) -> None:
         """Process time-based callbacks (day, hour, minute changes)."""
-        current_hour = int(self.time.hour_of_day)
-        current_minute = int((self.time.hour_of_day % 1) * 60)
+        current_hour_val = int(self.time.hour_of_day)
+        current_minute_val = int((self.time.hour_of_day % 1) * 60)
         
-        # Check for day change
+        day_changed = False
         if self.time.day != self._last_day:
             self._last_day = self.time.day
-            for callback in list(self._day_callbacks.values()):
+            day_changed = True
+            for callback_id, callback_func in list(self._day_callbacks.items()):
                 try:
-                    callback(self.time.day)
+                    callback_func(self.time.day)
                 except Exception as e:
-                    print(f"Error in day change callback: {e}")
+                    print(f"Error in day change callback (id: {callback_id}): {e}")
         
-        # Check for hour change
-        if current_hour != self._last_hour:
-            self._last_hour = current_hour
-            for callback in list(self._hour_callbacks.values()):
+        hour_changed = False
+        if current_hour_val != self._last_hour:
+            self._last_hour = current_hour_val
+            hour_changed = True
+            for callback_id, callback_func in list(self._hour_callbacks.items()):
                 try:
-                    callback(current_hour)
+                    callback_func(current_hour_val)
                 except Exception as e:
-                    print(f"Error in hour change callback: {e}")
+                    print(f"Error in hour change callback (id: {callback_id}): {e}")
         
-        # Check for minute change
-        if current_minute != self._last_minute:
-            self._last_minute = current_minute
-            for callback in list(self._minute_callbacks.values()):
+        minute_changed = False
+        if current_minute_val != self._last_minute:
+            self._last_minute = current_minute_val
+            minute_changed = True
+            for callback_id, callback_func in list(self._minute_callbacks.items()):
                 try:
-                    callback(current_minute)
+                    callback_func(current_minute_val)
                 except Exception as e:
-                    print(f"Error in minute change callback: {e}")
+                    print(f"Error in minute change callback (id: {callback_id}): {e}")
             
-            # Dispatch time update event every minute
-            self.event_bus.dispatch(Event(
+            # Dispatch general time update event (e.g. every minute)
+            self._event_bus.dispatch(Event(
                 EventType.TIME_ADVANCED,
-                {'time': self.time.to_dict()}
+                {'time': self.time.model_dump()} # Use Pydantic model_dump for GameTime
             ))
         
+        # If GameState has an on_time_advanced_handler, call it
+        # This is where the GameState._setup_event_handlers logic for on_time_advanced connects
+        # We need to calculate the actual delta for this call based on the change that just occurred.
+        # This part is tricky as advance_time itself is what causes these.
+        # The TIME_ADVANCED event dispatched above is more generic.
+        # The specific on_time_advanced_handler is usually for the main GameState update loop.
+        # Let's assume advance_time handles calling this directly.
+
     def advance(self, hours: float) -> None:
         """Advance time by the specified number of hours.
         
@@ -356,69 +458,36 @@ class GameClock:
         Args:
             hours: Number of hours to advance. Must be positive.
         """
-        if hours <= 0:
+        if hours <= 0: # Do not advance if hours is zero or negative
             return
             
-        old_time = self.time.hours
+        old_time_hours = self.time.hours
         self.time.hours += hours
         
-        # Process scheduled events
-        self._process_scheduled_events()
+        # Process scheduled events before time callbacks, as events might trigger further state changes
+        self._process_scheduled_events() 
         
-        # Process time-based callbacks
-        self._process_time_callbacks()
+        # Process general time-based callbacks (day/hour/minute changes)
+        self._process_time_callbacks() 
         
-        # Fire time-based events
-        self._fire_time_based_events(old_time, self.time.hours)
-        
-        # Notify any listeners of the time advancement
-        self.event_bus.dispatch(Event(
+        # Explicitly call the GameState's on_time_advanced handler if it's set
+        if self.on_time_advanced_handler:
+            try:
+                self.on_time_advanced_handler(old_time_hours, self.time.hours, hours)
+            except Exception as e:
+                print(f"Error in GameState on_time_advanced_handler: {e}")
+
+        # A more generic TIME_ADVANCED event for other systems, if needed.
+        # This might be redundant if GameState's handler covers the main logic.
+        self._event_bus.dispatch(Event(
             EventType.TIME_ADVANCED,
-            {'old_time': old_time, 'new_time': self.time.hours, 'delta': hours}
+            {'old_time': old_time_hours, 'new_time': self.time.hours, 'delta': hours}
         ))
     
-    def _fire_time_based_events(self, old_time: float, new_time: float) -> None:
-        """Fire events based on time advancement.
-        
-        Args:
-            old_time: Previous game time in hours
-            new_time: Current game time in hours
-        """
-        old_day = int(old_time // 24)
-        new_day = int(new_time // 24)
-        
-        # Check for day change
-        if new_day > old_day:
-            for callback in list(self._day_callbacks.values()):
-                try:
-                    callback(new_day)
-                except Exception as e:
-                    print(f"Error in day change callback: {e}")
-        
-        # Check for hour change
-        old_hour = int(old_time) % 24
-        current_hour = int(new_time) % 24
-        if current_hour != old_hour:
-            for callback in list(self._hour_callbacks.values()):
-                try:
-                    callback(current_hour)
-                except Exception as e:
-                    print(f"Error in hour change callback: {e}")
-    
-    def cancel_event(self, event_id: str) -> bool:
-        """Cancel a scheduled event.
-        
-        Args:
-            event_id: The ID of the event to cancel
-            
-        Returns:
-            bool: True if the event was found and cancelled, False otherwise
-        """
-        for i, event in enumerate(self._scheduled_events):
-            if event['id'] == event_id:
-                self._scheduled_events.pop(i)
-                return True
-        return False
+    # _fire_time_based_events seems to be duplicative of _process_time_callbacks
+    # and the direct call to on_time_advanced_handler. It is removed to simplify.
+
+    # cancel_event was defined twice. Keeping the one that works with _scheduled_events_data
     
     def get_time_of_day(self) -> str:
         """Get the current time of day as a string.

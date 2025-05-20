@@ -65,12 +65,15 @@ class OllamaClient:
                         logger.error(f"Failed to parse Ollama response: {line}")
                         raise ValueError(f"Invalid JSON response from Ollama: {line}") from e
             
-            # Try to parse the final response as JSON
-            try:
-                return json.loads(full_response)
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse final response as JSON: {full_response}")
-                raise ValueError(f"Response is not valid JSON: {full_response}") from e
+            # Process the final response based on the requested format
+            if format == "json":
+                try:
+                    return json.loads(full_response)
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse final response as JSON: {full_response}")
+                    raise ValueError(f"Response is not valid JSON: {full_response}") from e
+            else: # Includes "text" or any other format specified that isn't explicitly "json"
+                return full_response # Return the raw accumulated string
                 
         except httpx.HTTPStatusError as e:
             logger.error(f"Ollama API request failed with status {e.response.status_code}: {e.response.text}")

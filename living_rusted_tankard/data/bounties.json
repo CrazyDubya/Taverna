@@ -1,0 +1,73 @@
+{
+  "bounties": [
+    {
+      "id": "bounty_rats_001",
+      "title": "Cellar Cleanup",
+      "description": "The tavern cellar is overrun with giant rats! They're getting into the supplies. Please clear them out.",
+      "issuer": "Old Tom (Barkeep)",
+      "status": "available",
+      "objectives": [
+        {
+          "description": "Clear 3 Giant Rats from the Cellar",
+          "target_id": "giant_rat",
+          "current_progress": 0,
+          "required_progress": 3,
+          "is_completed": false
+        }
+      ],
+      "rewards": {
+        "gold": 25,
+        "xp": 10
+      },
+      "prerequisites": []
+    },
+    {
+      "id": "bounty_locket_001",
+      "title": "Lost Locket",
+      "description": "Mirabelle, a tavern regular, has lost her mother's precious silver locket. She believes she may have dropped it near the main tavern fireplace.",
+      "issuer": "Mirabelle",
+      "status": "available",
+      "objectives": [
+        {
+          "description": "Find Mirabelle's Locket",
+          "target_id": "mirabelle_locket", 
+          "current_progress": 0,
+          "required_progress": 1,
+          "is_completed": false
+        }
+      ],
+      "rewards": {
+        "gold": 15,
+        "reputation": {
+          "mirabelle": 5
+        },
+        "items": ["ale_token_001"] 
+      },
+      "prerequisites": []
+    },
+    {
+      "id": "bounty_delivery_001",
+      "title": "Urgent Delivery",
+      "description": "I need this package delivered to Elara, the herbalist, by nightfall. She lives just outside the village, by the old willow tree. It's important, so no dawdling!",
+      "issuer": "Anonymous Patron",
+      "status": "available",
+      "objectives": [
+        {
+          "description": "Deliver package to Elara the herbalist",
+          "target_id": "elara_npc", 
+          "current_progress": 0,
+          "required_progress": 1,
+          "is_completed": false
+        }
+      ],
+      "rewards": {
+        "gold": 35,
+        "xp": 15,
+        "reputation": {
+          "village_elders": 2
+        }
+      },
+      "prerequisites": []
+    }
+  ]
+}

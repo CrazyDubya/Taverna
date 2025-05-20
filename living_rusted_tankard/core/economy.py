@@ -15,20 +15,57 @@ class TransactionResult(BaseModel):
     items_gained: List[Item] = Field(default_factory=list)
 
 
-class Economy:
+class Economy(BaseModel):
     """Handles all economic activities in the game."""
     
-    def __init__(self, base_gold: int = 100):
-        """Initialize the economy system."""
-        self.base_gold = base_gold
-        self.gambling_odds = 0.4  # Base chance to win a gamble
-        self.side_jobs = self._initialize_side_jobs()
-        self.economic_events = self._initialize_economic_events()
-        self.current_event: Optional[Dict[str, Any]] = None
-        self.event_duration = 0
-        
+    base_gold: int = 100 # Can be part of initial config, but also saveable if it can change
+    gambling_odds: float = 0.4  # Base chance to win a gamble, saveable
+
+    # State to be serialized
+    current_event_id: Optional[str] = None
+    event_duration: float = 0.0
+
+    # Runtime/static data, initialized but not directly part of the serialized dict from GameState
+    _side_jobs: Dict[str, dict] = PrivateAttr(default_factory=dict)
+    _economic_events: Dict[str, dict] = PrivateAttr(default_factory=dict)
+    _current_event_data: Optional[Dict[str, Any]] = PrivateAttr(default=None) # Runtime cache of current_event dict
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        self._side_jobs = self._initialize_side_jobs()
+        self._economic_events = self._initialize_economic_events()
+        self._reconstruct_current_event()
+
+    @model_validator(mode='after')
+    def _reconstruct_current_event_validator(self):
+        # This ensures that if current_event_id is loaded, _current_event_data is populated.
+        self._reconstruct_current_event()
+        return self
+
+    def _reconstruct_current_event(self):
+        if self.current_event_id and self.current_event_id in self._economic_events:
+            self._current_event_data = self._economic_events[self.current_event_id]
+        else:
+            self._current_event_data = None
+
+    # Make side_jobs and economic_events accessible if needed by other parts of the code
+    # These are read-only properties for the definitions.
+    @property
+    def side_jobs(self) -> Dict[str, dict]:
+        return self._side_jobs
+
+    @property
+    def economic_events(self) -> Dict[str, dict]:
+        return self._economic_events
+
+    @property
+    def current_event(self) -> Optional[Dict[str, Any]]: # Keep the original property for easy access
+        return self._current_event_data
+
+
     def _initialize_side_jobs(self) -> Dict[str, dict]:
         """Initialize all available side jobs."""
+        # These definitions are static
         return {
             "clean_tables": {
                 "name": "Clean Tables",
@@ -119,27 +156,32 @@ class Economy:
             }
         }
     
-    def update_economic_events(self, hours_passed: int = 1) -> Optional[Dict[str, Any]]:
+    def update_economic_events(self, hours_passed: float = 1.0) -> Optional[Dict[str, Any]]: # hours_passed can be float
         """Update economic events and potentially trigger new ones."""
-        if self.current_event:
+        if self._current_event_data:
             self.event_duration -= hours_passed
             if self.event_duration <= 0:
-                self.current_event = None
-                return {"message": f"The {self.current_event['name']} event has ended."}
+                event_name = self._current_event_data.get("name", "Unknown")
+                self._current_event_data = None
+                self.current_event_id = None
+                self.event_duration = 0
+                return {"message": f"The {event_name} event has ended."}
         elif random.random() < 0.1:  # 10% chance to trigger an event
-            event_id = random.choice(list(self.economic_events.keys()))
-            self.current_event = self.economic_events[event_id]
-            self.event_duration = self.current_event["modifiers"].get("duration", 6)
+            if not self._economic_events: # Ensure definitions are loaded
+                return None
+            self.current_event_id = random.choice(list(self._economic_events.keys()))
+            self._current_event_data = self._economic_events[self.current_event_id]
+            self.event_duration = self._current_event_data["modifiers"].get("duration", 6)
             return {
-                "message": f"Event: {self.current_event['name']} - {self.current_event['description']}"
+                "message": f"Event: {self._current_event_data['name']} - {self._current_event_data['description']}"
             }
         return None
     
     def get_current_event_modifiers(self) -> Dict[str, float]:
         """Get modifiers from the current economic event."""
-        if not self.current_event:
+        if not self._current_event_data:
             return {}
-        return self.current_event["modifiers"]
+        return self._current_event_data.get("modifiers", {})
     
     def can_afford(self, player_gold: int, amount: int) -> bool:
         """Check if player can afford an amount."""
@@ -249,25 +291,26 @@ class Economy:
     
     def get_available_jobs(self, player_energy: float = 1.0) -> List[dict]:
         """Get list of jobs player can perform based on their energy."""
+        # Use the property self.side_jobs to access _side_jobs
         return [
-            job for job_id, job in self.side_jobs.items()
-            if job.get("required_energy", 0) <= player_energy
+            job_data for job_id, job_data in self.side_jobs.items()
+            if job_data.get("required_energy", 0) <= player_energy
         ]
     
     def _get_random_item_reward(self, job_id: str) -> Optional[Item]:
         """Get a random item reward for completing a job."""
-        job = self.side_jobs.get(job_id, {})
-        possible_items = job.get("possible_items", [])
+        job_details = self.side_jobs.get(job_id, {}) # Use property
+        possible_items_list = job_details.get("possible_items", [])
         
-        if not possible_items or random.random() > 0.3:  # 30% chance for item drop
+        if not possible_items_list or random.random() > 0.3:  # 30% chance for item drop
             return None
             
-        item_id = random.choice(possible_items)
-        return TAVERN_ITEMS.get(item_id)
+        item_id_reward = random.choice(possible_items_list) # Renamed variable
+        return TAVERN_ITEMS.get(item_id_reward)
     
     def perform_job(self, job_id: str, player_energy: float) -> dict:
         """Perform a side job and return results."""
-        if job_id not in self.side_jobs:
+        if job_id not in self.side_jobs: # Use property
             return {
                 "success": False,
                 "message": "No such job exists.",
@@ -276,9 +319,9 @@ class Economy:
                 "items": []
             }
             
-        job = self.side_jobs[job_id]
+        job_details = self.side_jobs[job_id] # Use property, renamed variable
         
-        if job.get("required_energy", 0) > player_energy:
+        if job_details.get("required_energy", 0) > player_energy:
             return {
                 "success": False,
                 "message": "Not enough energy for this job.",
@@ -288,27 +331,27 @@ class Economy:
             }
         
         # Calculate reward with some randomness and event modifiers
-        event_modifiers = self.get_current_event_modifiers()
-        reward_multiplier = event_modifiers.get("job_rewards", 1.0)
-        base_reward = job["base_reward"]
+        current_event_modifiers = self.get_current_event_modifiers() # Renamed variable
+        reward_multiplier = current_event_modifiers.get("job_rewards", 1.0)
+        base_reward = job_details["base_reward"]
         
         # More experienced players might get better rewards
         reward = max(1, int(base_reward * random.uniform(0.8, 1.2) * reward_multiplier))
-        tiredness = job["tiredness_cost"]
+        tiredness = job_details["tiredness_cost"]
         
         # Get potential item reward
-        item_reward = self._get_random_item_reward(job_id)
-        items_gained = [item_reward] if item_reward else []
+        item_reward_obj = self._get_random_item_reward(job_id) # Renamed variable
+        items_gained = [item_reward_obj] if item_reward_obj else []
         
         # Handle job-specific outcomes (e.g., risk of injury)
-        if job_id == "bouncer" and random.random() < job.get("risk", 0):
+        if job_id == "bouncer" and random.random() < job_details.get("risk", 0):
             reward = max(1, reward // 2)
             tiredness *= 1.5
             message = f"Got injured while working as a bouncer! Earned {reward} gold but feel exhausted."
         else:
-            message = f"Earned {reward} gold from {job['name'].lower()}."
-            if item_reward:
-                message += f" Also received: {item_reward.name}!"
+            message = f"Earned {reward} gold from {job_details['name'].lower()}."
+            if item_reward_obj:
+                message += f" Also received: {item_reward_obj.name}!"
         
         return {
             "success": True,
@@ -318,13 +361,34 @@ class Economy:
             "items": items_gained
         }
     
-    def get_item_price(self, item_id: str) -> Optional[int]:
-        """Get the current price of an item, considering any active events."""
-        item = TAVERN_ITEMS.get(item_id)
-        if not item:
+    def get_item_price(self, item_id: str, game_state: Optional[Any] = None) -> Optional[int]: # Keep Any for game_state to avoid circular import if type hint is GameState
+        """Get the current price of an item, considering any active events and temporary merchant stock.
+        
+        Args:
+            item_id: The ID of the item.
+            game_state: Optional GameState instance to check for travelling merchant items.
+        """
+        item_def: Optional[Item] = TAVERN_ITEMS.get(item_id) # All item definitions should be in TAVERN_ITEMS
+
+        # Check availability if game_state and merchant are relevant
+        is_available_normally = item_id in TAVERN_ITEMS # Standard availability check might be more complex in a full system
+
+        is_available_via_merchant = False
+        if game_state and game_state.travelling_merchant_active:
+            if item_id in game_state.travelling_merchant_temporary_items:
+                is_available_via_merchant = True
+        
+        if not item_def: # If the item definition itself doesn't exist
             return None
             
+        # If the item is neither normally available (e.g. if TAVERN_ITEMS were for a specific shop)
+        # NOR available via merchant, then it can't be priced/bought.
+        # However, TAVERN_ITEMS is global, so this check is more about if it's *currently offered*.
+        # For now, if it has a definition in TAVERN_ITEMS, and is either normally sold or via merchant, it's priceable.
+        # The main check for "is it sold right now" should be in _handle_buy.
+        # get_item_price just needs to find its base definition if it *could* be sold.
+
         event_modifiers = self.get_current_event_modifiers()
         price_multiplier = event_modifiers.get("item_prices", 1.0)
         
-        return max(1, int(item.base_price * price_multiplier))
+        return max(1, int(item_def.base_price * price_multiplier))

@@ -4,7 +4,7 @@ import pytest
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
-from core.game import GameState
+from core.game_state import GameState
 from core.clock import GameClock
 from core.room import RoomManager
 from core.player import PlayerState, Inventory

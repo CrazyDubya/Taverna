@@ -4,7 +4,7 @@ import pytest
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
 
-from core.game import GameState, GameEvent
+from core.game_state import GameState, GameEvent
 from core.clock import GameClock, GameTime
 from core.player import PlayerState
 

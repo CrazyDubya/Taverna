@@ -10,7 +10,7 @@ def main():
     print("Starting The Living Rusted Tankard...")
     
     try:
-        from core.game import GameState
+        from core.game_state import GameState
         from cli import GameCLI
         
         # Initialize game state
