@@ -16,21 +16,53 @@
       "inventory": [
         {
           "id": "ale",
-          "quantity": 10
+          "quantity": 20
         },
         {
           "id": "meat_stew",
+          "quantity": 10 
+        },
+        {
+          "id": "spiced_potatoes",
+          "quantity": 10
+        },
+        {
+          "id": "travelers_ration",
+          "quantity": 7
+        },
+        {
+          "id": "mystery_brew",
           "quantity": 5
+        },
+        {
+          "id": "whiskey",
+          "quantity": 10
         }
       ],
       "relationships": {
-        "player": 0.5
+        "player": 0.5 
       },
       "conversation_topics": [
         "The old days",
         "Rumors in town",
         "The mysterious locked door"
-      ]
+      ],
+      "interactions": {
+        "share_secret_past": {
+          "id": "share_secret_past",
+          "name": "Ask about his adventurous past",
+          "description": "Gene looks like he might be willing to share a story or two, if you're on good terms.",
+          "action_name": "action_gene_shares_secret", 
+          "reputation_requirement": {"min_tier": "TRUSTED"}
+        },
+        "offer_rare_drink": {
+            "id": "offer_rare_drink",
+            "name": "Ask for something special (Drink)",
+            "description": "Ask Gene if he has any rare or special drinks stashed away.",
+            "action_name": "action_gene_offers_rare_drink",
+            "reputation_requirement": {"min_tier": "LIKED"}
+        }
+      }
     },
     {
       "id": "serena_waitress",
@@ -100,16 +132,22 @@
       "description": "Elara is a shrewd trader with a keen eye for rare and unusual items. Her cart is laden with goods from distant lands. She doesn't stay in one place for long.",
       "npc_type": "MERCHANT",
       "disposition": "NEUTRAL",
-      "schedule": [], 
+      "schedule": [[10,18]], 
       "is_present": false, 
       "departure_chance": 1.0, 
-      "visit_frequency": 0.0, 
+      "visit_frequency": 0.25, 
       "gold": 200,
-      "inventory": [
-        {"id": "elixir_luck", "quantity": 2},
-        {"id": "map_fragment_grove", "quantity": 1},
-        {"id": "exotic_spices", "quantity": 5},
-        {"id": "bread", "quantity": 3}
+      "inventory": [],
+      "base_inventory_ids": [
+        "elixir_luck",
+        "map_fragment_grove",
+        "exotic_spices",
+        "bread",
+        "dagger",
+        "healing_potion_minor",
+        "spiced_potatoes",
+        "travelers_ration",
+        "mystery_brew"
       ],
       "relationships": {},
       "conversation_topics": [

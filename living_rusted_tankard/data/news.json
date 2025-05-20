@@ -1,0 +1,40 @@
+{
+  "news_items": [
+    {
+      "id": "news_harvest_good_01",
+      "text": "They say the harvest in the southern valleys was plentiful this year. Might mean cheaper grain soon.",
+      "source_types": ["MERCHANT", "PATRON", "BARKEEP"],
+      "conditions": {"min_day": 5}
+    },
+    {
+      "id": "news_king_illness_01",
+      "text": "Whispers from the capital suggest the King's health is failing. Dark times could be ahead.",
+      "source_types": ["NOBLE", "MERCHANT", "GUARD"],
+      "conditions": {"min_day": 15}
+    },
+    {
+      "id": "news_bandit_increase_01",
+      "text": "The roads are getting more dangerous, I hear. More bandits about, especially on the old King's Road.",
+      "source_types": ["MERCHANT", "ADVENTURER", "GUARD", "PATRON"],
+      "conditions": {"min_day": 3, "requires_event": "bandit_activity_high"}
+    },
+    {
+      "id": "news_new_mine_vein_01",
+      "text": "Heard tell the miners up near Dragon's Peak struck a new vein of silver. Good for trade, if it lasts.",
+      "source_types": ["MERCHANT", "ADVENTURER"],
+      "conditions": {"min_day": 7}
+    },
+    {
+      "id": "news_mage_guild_edict_01",
+      "text": "The Mages' Guild issued some new edict about unlicensed spellcasting. Typical pointy-hatted nonsense, if you ask me.",
+      "source_types": ["PATRON", "ADVENTURER", "GUARD"],
+      "conditions": {"min_day": 10}
+    },
+    {
+      "id": "news_shipwreck_coast_01",
+      "text": "A merchant cog supposedly went down off the Stormy Coast. Salvagers might be making a fortune, or finding a watery grave.",
+      "source_types": ["MERCHANT", "ADVENTURER", "PATRON"],
+      "conditions": {"min_day": 2}
+    }
+  ]
+}
