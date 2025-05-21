@@ -169,7 +169,21 @@ class GameState:
         # Give player some starting gold
         self.player.gold = 20
             
-        self._add_event("Welcome to The Rusted Tankard!", "info")
+        # Add a more descriptive welcome message
+        welcome_message = """
+Welcome to The Living Rusted Tankard, a cozy tavern nestled in a small village.
+The tavern is dimly lit, with a warm fire crackling in the hearth. The air is filled
+with the smell of ale, food, and the murmur of patrons. 
+
+You stand near the entrance, taking in the atmosphere. A sturdy bar runs along one wall,
+where a mustached barkeeper wipes glasses. Several tables are occupied by patrons of
+various backgrounds.
+
+Type 'help' to see available commands, 'look' to examine your surroundings, or 'status'
+to check your current condition.
+"""
+        self._add_event("Welcome to The Living Rusted Tankard!", "info")
+        self._add_event(welcome_message, "description")
 
 
     def _add_event(self, message: str, event_type: str = "info", data: Optional[Dict] = None) -> None:
@@ -391,8 +405,17 @@ class GameState:
     
     def process_command(self, command: str) -> Dict[str, Any]:
         command = command.lower().strip()
+        
+        # Default result for unknown commands
         result = {'success': False, 'message': "I don't understand that command.", 'recent_events': []}
+        
+        # Clear any previous events
         self.event_formatter.clear_events()
+        
+        # Handle empty command specially at the beginning
+        if not command:
+            help_text = self._generate_help_text()
+            return {'success': True, 'message': "What would you like to do? Type 'help' for a list of commands.", 'recent_events': []}
         
         parts = command.split()
         main_command = parts[0] if parts else ""
@@ -498,6 +521,8 @@ class GameState:
             elif main_command in ('quit', 'exit'): result = {'success': True, 'message': "Goodbye!", 'should_quit': True}
             elif command == 'ask about sleep': result = {'success': True, 'message': self.player.ask_about_sleep()}
             # Removed old 'rent room' command from here as it's now handled by _handle_rent_room_command
+            elif main_command == 'help':
+                result = {'success': True, 'message': self._generate_help_text()}
             elif main_command == 'games':
                 games = self.get_available_games()
                 if games:
@@ -701,8 +726,27 @@ class GameState:
 
     def _handle_look(self) -> Dict[str, Any]:
         time_desc = self.clock.time.format_time()
-        room_desc = "a small, dimly lit room" if self.player.has_room else "the common area of the tavern"
-        return {'success': True, 'message': f"It is {time_desc}. You are in {room_desc}.\nGold: {self.player.gold} | Tiredness: {int(self.player.tiredness*100)}%"}
+        
+        if self.player.has_room:
+            room_desc = "You are in your rented room upstairs. It's small but comfortable, with a bed, a small table, and a window overlooking the street."
+        else:
+            room_desc = """
+You are in the common area of the Rusted Tankard tavern. 
+The room is dimly lit by lanterns and a fire crackling in a stone hearth. 
+Wooden tables and chairs are scattered around, some occupied by patrons.
+A long bar runs along one wall, where the barkeeper serves drinks.
+A staircase leads up to the rooms for rent.
+            """
+            
+        # Get information about present NPCs
+        npc_descriptions = []
+        for npc in self.npc_manager.get_present_npcs():
+            npc_descriptions.append(f"{npc.name} is here. {npc.description}")
+            
+        npc_text = "\n".join(npc_descriptions) if npc_descriptions else "There's no one of interest here at the moment."
+        
+        full_description = f"It is {time_desc}.\n\n{room_desc.strip()}\n\n{npc_text}\n\nYou have {self.player.gold} gold. Tiredness: {int(self.player.tiredness*100)}%"
+        return {'success': True, 'message': full_description}
     
     def _handle_wait(self, hours: float = 1.0) -> Dict[str, Any]:
         if hours <= 0: return {'success': False, 'message': "Time only moves forward."}
@@ -858,3 +902,30 @@ class GameState:
             return False
 
     def get_snapshot(self) -> Dict[str, Any]: return self.snapshot_manager.create_snapshot()
+    
+    def _generate_help_text(self) -> str:
+        """Generate help text showing available commands."""
+        help_text = """
+Available Commands:
+------------------
+status    - Check your current status (health, gold, etc.)
+inventory - View your inventory and gold
+look      - Look around and examine your surroundings
+talk [person] - Talk to someone nearby (or list available people)
+buy [item] - Buy an item (or list items for sale)
+use [item] - Use an item from your inventory
+time      - Check the current time
+rest      - Rest to recover energy
+work      - List available jobs
+rent room - Rent a room at the tavern
+help      - Display this help message
+
+Advanced Commands:
+----------------
+gamble [amount] - Try your luck with gambling
+store/retrieve - Store or retrieve items (if you have a room with storage)
+bounty/quests  - Check available bounties and quests
+
+Type 'quit' to exit the game.
+"""
+        return help_text

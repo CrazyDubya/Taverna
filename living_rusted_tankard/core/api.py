@@ -138,8 +138,23 @@ async def process_command(command: CommandRequest):
     try:
         logger.info(f"Processing command: '{command.input}' for session: {command.session_id}")
         
+        # Check if this is a new session being created
+        is_new_session = command.session_id is None or command.session_id not in sessions
+        
         # Get or create game session
         game_state, session_id = get_or_create_session(command.session_id)
+        
+        # If it's a new session, we want to include the welcome message in the response
+        # even if the command doesn't produce a response
+        initial_events = []
+        if is_new_session:
+            if hasattr(game_state, 'events') and game_state.events:
+                # Convert GameEvent objects to dictionaries
+                initial_events = [
+                    {"message": event.message, "event_type": event.event_type}
+                    for event in game_state.events
+                ]
+                logger.info(f"New session created with {len(initial_events)} initial events")
         
         # Process the command
         result = game_state.process_command(command.input)
@@ -149,6 +164,10 @@ async def process_command(command: CommandRequest):
         events = []
         if hasattr(game_state, 'event_formatter') and hasattr(game_state.event_formatter, 'get_recent_events'):
             events = game_state.event_formatter.get_recent_events()
+        
+        # Include initial events for new sessions
+        if is_new_session and initial_events:
+            events = initial_events + (events or [])
         
         # Update session last activity time
         sessions[session_id]['last_activity'] = time.time()
