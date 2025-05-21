@@ -77,6 +77,11 @@
                     <!-- Narrative messages will be inserted here -->
                     <div class="text-amber-100">Welcome to The Living Rusted Tankard! What would you like to do?</div>
                 </div>
+                
+                <!-- Memory indicator -->
+                <div id="memory-indicator" class="hidden fixed bottom-4 right-4 bg-purple-600 text-white px-3 py-2 rounded-lg shadow-lg z-50">
+                    <span class="text-sm">📝 Memory recorded</span>
+                </div>
             </div>
             
             <!-- Input Area -->
@@ -167,6 +172,7 @@
         const goldAmountElement = document.getElementById('gold-amount');
         const inventoryListElement = document.getElementById('inventory-list');
         const questListElement = document.getElementById('quest-list');
+        const memoryIndicator = document.getElementById('memory-indicator');
 
         // Add a message to the narrative feed
         function addNarrative(text, isPlayer = false) {
@@ -213,7 +219,11 @@
                     optionButton.addEventListener('click', () => {
                         const optionText = line.trim().replace(/^\d+\.\s*/, '');
                         commandInput.value = optionText;
-                        handleCommand();
+                        
+                        // Add a small delay to show the selection, then execute
+                        setTimeout(() => {
+                            handleCommand();
+                        }, 200);
                     });
                     
                     optionsContainer.appendChild(optionButton);
@@ -402,9 +412,17 @@
                 // Process any events
                 if (data.events && data.events.length > 0) {
                     data.events.forEach(event => {
-                        addNarrative(event.message || event.text || 'Event occurred');
+                        if (event.type === 'memory') {
+                            // Show memory indicator for memory events
+                            showMemoryIndicator(event.count || 1);
+                        } else {
+                            addNarrative(event.message || event.text || 'Event occurred');
+                        }
                     });
                 }
+                
+                // Scroll to show the new response after a brief delay
+                setTimeout(scrollToBottom, 300);
             } catch (error) {
                 console.error('Error sending command:', error);
                 addNarrative('Error sending command to the server. Please try again.');
@@ -429,6 +447,33 @@
             }
         }
 
+        // Scroll to bottom of narrative feed smoothly
+        function scrollToBottom() {
+            narrativeContent.scrollTo({
+                top: narrativeContent.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+        
+        // Show memory indicator
+        function showMemoryIndicator(count = 1) {
+            const indicator = memoryIndicator;
+            const span = indicator.querySelector('span');
+            
+            if (count === 1) {
+                span.textContent = '📝 Memory recorded';
+            } else {
+                span.textContent = `📝 ${count} memories recorded`;
+            }
+            
+            indicator.classList.remove('hidden');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                indicator.classList.add('hidden');
+            }, 3000);
+        }
+
         // Handle command input
         function handleCommand() {
             const command = commandInput.value.trim();
@@ -437,6 +482,9 @@
             // Add player command to narrative
             addNarrative(command, true);
             commandInput.value = '';
+
+            // Scroll to show the player's command
+            setTimeout(scrollToBottom, 100);
 
             // Send command to server
             sendCommand(command);

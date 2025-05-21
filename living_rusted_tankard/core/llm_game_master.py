@@ -51,6 +51,7 @@ class LLMGameMaster:
         self.model = model
         self.conversation_histories: Dict[str, List[LLMChatMessage]] = {}
         self.current_conversations: Dict[str, Dict[str, Any]] = {}  # Track active conversations by session
+        self.session_memories: Dict[str, List[Dict[str, Any]]] = {}  # Track important information by session
         
         # Default system prompt
         self.system_prompt = self._get_default_system_prompt()
@@ -153,6 +154,22 @@ IMPORTANT: Your goal is to make the game fun and accessible even when the player
 Help guide them toward the right commands without breaking immersion.
 
 If the player's input appears to be selecting one of the conversation options you previously offered (they might use the number or repeat part of the option text), respond as if they chose that option.
+
+MEMORY SYSTEM:
+You have access to a memory system that tracks important information about the player's interactions and discoveries.
+When something significant happens (new information about NPCs, quests accepted, items discovered, relationships formed), 
+automatically create memory entries by including [MEMORY: description] tags in your response.
+
+Examples of what to remember:
+- NPCs sharing personal information or secrets
+- Quest details or objectives
+- Important story revelations
+- Player relationships or reputation changes
+- Discoveries about the world or locations
+
+Format: [MEMORY: Learned that Old Tom used to be an adventurer and has connections to mysterious happenings]
+
+These memories will be included in future conversations to maintain consistency.
 """
 
     def _build_game_context(self, game_state) -> Dict[str, Any]:
@@ -304,6 +321,70 @@ If the player's input appears to be selecting one of the conversation options yo
                 
         if talking_to:
             self.current_conversations[session_id]["talking_to"] = talking_to
+    
+    def add_memory(self, session_id: str, memory_text: str) -> None:
+        """Add a memory entry for a session.
+        
+        Args:
+            session_id: The session ID
+            memory_text: The memory to store
+        """
+        if session_id not in self.session_memories:
+            self.session_memories[session_id] = []
+        
+        memory_entry = {
+            "text": memory_text,
+            "timestamp": time.time(),
+            "importance": "normal"  # Could be extended to have different importance levels
+        }
+        
+        self.session_memories[session_id].append(memory_entry)
+        
+        # Keep only the most recent 20 memories to avoid context bloat
+        if len(self.session_memories[session_id]) > 20:
+            self.session_memories[session_id] = self.session_memories[session_id][-20:]
+        
+        logger.info(f"Added memory for session {session_id}: {memory_text}")
+    
+    def get_memories(self, session_id: str) -> List[str]:
+        """Get all memories for a session.
+        
+        Args:
+            session_id: The session ID
+            
+        Returns:
+            List of memory texts
+        """
+        if session_id not in self.session_memories:
+            return []
+        
+        return [memory["text"] for memory in self.session_memories[session_id]]
+    
+    def _extract_memories_from_response(self, response: str, session_id: str) -> str:
+        """Extract memory tags from LLM response and store them.
+        
+        Args:
+            response: The LLM response text
+            session_id: The session ID
+            
+        Returns:
+            The response text with memory tags removed
+        """
+        # Look for [MEMORY: ...] tags
+        import re
+        memory_pattern = r'\[MEMORY:\s*([^\]]+)\]'
+        memories = re.findall(memory_pattern, response, re.IGNORECASE)
+        
+        for memory in memories:
+            self.add_memory(session_id, memory.strip())
+        
+        # Remove memory tags from the response
+        cleaned_response = re.sub(memory_pattern, '', response, flags=re.IGNORECASE)
+        
+        # Clean up any double spaces or newlines left by removing tags
+        cleaned_response = re.sub(r'\s+', ' ', cleaned_response).strip()
+        
+        return cleaned_response
 
     def process_input(self, user_input: str, game_state, session_id: str) -> Tuple[str, Optional[str]]:
         """Process a user input using the Ollama LLM.
@@ -469,13 +550,20 @@ If the player's input appears to be selecting one of the conversation options yo
                 del session_context['examining_object']
                 del session_context['object_facts']
         
+        # Add memories to the context
+        memories_info = ""
+        memories = self.get_memories(session_id)
+        if memories:
+            memories_str = "\n".join([f"- {memory}" for memory in memories])
+            memories_info = f"\n\nIMPORTANT MEMORIES FROM PREVIOUS INTERACTIONS:\n{memories_str}\n"
+        
         # Create the full prompt with system instructions, context, and history
         messages = []
         
-        # Add system prompt as the first message with context and examining info
+        # Add system prompt as the first message with context, examining info, and memories
         messages.append({
             "role": "system", 
-            "content": f"{self.system_prompt}\n\nCURRENT GAME STATE:\n{context_str}{examining_info}"
+            "content": f"{self.system_prompt}\n\nCURRENT GAME STATE:\n{context_str}{examining_info}{memories_info}"
         })
         
         # Add conversation history
@@ -510,6 +598,9 @@ If the player's input appears to be selecting one of the conversation options yo
                 llm_response = response_data["message"]["content"]
             else:
                 raise ValueError("Unexpected response format from Ollama")
+            
+            # Extract memories from the response first
+            llm_response = self._extract_memories_from_response(llm_response, session_id)
             
             # Extract command if present
             command_to_execute = None

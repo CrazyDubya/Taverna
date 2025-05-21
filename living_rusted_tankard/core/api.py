@@ -220,11 +220,19 @@ async def process_command(command: CommandRequest):
         # Update session last activity time
         sessions[session_id]['last_activity'] = time.time()
         
+        # Check if any memories were created during this interaction
+        memories_created = 0
+        if hasattr(llm_gm, 'session_memories') and session_id in llm_gm.session_memories:
+            # Count memories created in the last few seconds (indicating new memories from this interaction)
+            current_time = time.time()
+            memories_created = sum(1 for memory in llm_gm.session_memories[session_id] 
+                                 if current_time - memory.get('timestamp', 0) < 5)
+        
         return CommandResponse(
             output=result.get('message', ''),
             session_id=session_id,
             game_state=game_state.get_snapshot(),
-            events=events
+            events=events + ([{"type": "memory", "count": memories_created}] if memories_created > 0 else [])
         )
     except Exception as e:
         logger.error(f"Error processing command: {str(e)}", exc_info=True)
