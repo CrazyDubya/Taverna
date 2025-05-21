@@ -22,9 +22,44 @@
     <div class="flex h-screen p-4 gap-4">
         <!-- Main Content -->
         <div class="flex-1 flex flex-col">
-            <header class="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
+            <header class="bg-gray-800 p-4 rounded-lg shadow-lg mb-4 flex justify-between items-center">
                 <h1 class="text-3xl font-bold text-amber-500 medieval-font">The Living Rusted Tankard</h1>
+                <button id="settings-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1 rounded">
+                    ⚙️ Settings
+                </button>
             </header>
+            
+            <!-- Settings Modal -->
+            <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
+                    <h2 class="text-xl font-bold text-amber-500 mb-4">Game Settings</h2>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-300 mb-2">Claude API Key</label>
+                        <input type="password" id="api-key-input" class="w-full bg-gray-700 text-white p-2 rounded-lg" 
+                               placeholder="sk-ant-api...">
+                        <p class="text-xs text-gray-400 mt-1">Required for advanced AI interactions</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-300 mb-2">AI Model</label>
+                        <select id="model-select" class="w-full bg-gray-700 text-white p-2 rounded-lg">
+                            <option value="claude-3-haiku-20240307">Claude 3 Haiku (Fast)</option>
+                            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet (Balanced)</option>
+                            <option value="claude-3-opus-20240229">Claude 3 Opus (Powerful)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button id="close-settings-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-4 py-2 rounded">
+                            Cancel
+                        </button>
+                        <button id="save-settings-btn" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded">
+                            Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
             
             <!-- Narrative Feed -->
             <div class="narrative-feed bg-gray-800 p-4 rounded-lg shadow-lg overflow-y-auto mb-4">
@@ -347,6 +382,64 @@
             sendCommand(command);
         }
 
+        // LLM API configuration functions
+        async function saveLLMSettings() {
+            const apiKey = document.getElementById('api-key-input').value.trim();
+            const model = document.getElementById('model-select').value;
+            
+            if (!apiKey) {
+                alert('API Key is required for AI-powered interactions');
+                return;
+            }
+            
+            try {
+                setLoading(true);
+                const response = await fetch('/llm-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        model: model
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+                
+                const result = await response.json();
+                if (result.success) {
+                    // Save API key to localStorage (note: in a real app, consider security implications)
+                    localStorage.setItem('llm_api_key', apiKey);
+                    localStorage.setItem('llm_model', model);
+                    
+                    // Close the modal
+                    toggleSettingsModal(false);
+                    
+                    // Show success message
+                    addNarrative(`AI Game Master activated using ${model}! You can now interact in natural language.`, false);
+                } else {
+                    alert('Failed to update LLM settings: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error saving LLM settings:', error);
+                alert('Error saving settings: ' + error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        function toggleSettingsModal(show) {
+            const modal = document.getElementById('settings-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+        
         // Initialize the game
         document.addEventListener('DOMContentLoaded', () => {
             // Set up command input event listeners
@@ -364,6 +457,24 @@
             
             submitBtn.addEventListener('click', handleCommand);
             
+            // Set up settings modal handlers
+            document.getElementById('settings-btn').addEventListener('click', () => {
+                // Load saved values if available
+                const savedApiKey = localStorage.getItem('llm_api_key') || '';
+                const savedModel = localStorage.getItem('llm_model') || 'claude-3-haiku-20240307';
+                
+                document.getElementById('api-key-input').value = savedApiKey;
+                document.getElementById('model-select').value = savedModel;
+                
+                toggleSettingsModal(true);
+            });
+            
+            document.getElementById('close-settings-btn').addEventListener('click', () => {
+                toggleSettingsModal(false);
+            });
+            
+            document.getElementById('save-settings-btn').addEventListener('click', saveLLMSettings);
+            
             // Load initial game state
             fetchGameState();
             
@@ -372,6 +483,31 @@
             
             // Add welcome message
             addNarrative('Welcome to The Living Rusted Tankard! Type "help" to see available commands.');
+            
+            // Check if LLM API key is saved, and if so, apply it automatically
+            const savedApiKey = localStorage.getItem('llm_api_key');
+            const savedModel = localStorage.getItem('llm_model');
+            if (savedApiKey && savedModel) {
+                fetch('/llm-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        api_key: savedApiKey,
+                        model: savedModel
+                    }),
+                }).then(response => {
+                    if (response.ok) {
+                        addNarrative(`AI Game Master activated with ${savedModel}! You can interact using natural language.`, false);
+                    }
+                }).catch(error => {
+                    console.error('Error applying saved LLM settings:', error);
+                });
+            } else {
+                // Show a prompt to set up API key
+                addNarrative('For enhanced AI Game Master features, click the ⚙️ Settings button and enter your Claude API key.', false);
+            }
         });
     </script>
 </body>

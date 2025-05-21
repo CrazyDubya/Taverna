@@ -19,6 +19,7 @@ import logging
 
 from .game_state import GameState
 from .event_formatter import EventFormatter
+from .llm_game_master import LLMGameMaster
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +55,9 @@ templates = Jinja2Templates(directory=str(templates_dir))
 # In-memory storage for game sessions with timestamps
 sessions: Dict[str, dict] = {}
 SESSION_TIMEOUT = 30 * 60  # 30 minutes in seconds
+
+# Initialize the LLM Game Master
+llm_gm = LLMGameMaster()
 
 # Clean up expired sessions periodically
 def cleanup_sessions():
@@ -156,9 +160,35 @@ async def process_command(command: CommandRequest):
                 ]
                 logger.info(f"New session created with {len(initial_events)} initial events")
         
-        # Process the command
-        result = game_state.process_command(command.input)
-        logger.debug(f"Command result: {result}")
+        # First, pass the input through the LLM Game Master
+        narrative_response, command_to_execute = llm_gm.process_input(
+            command.input, 
+            game_state, 
+            session_id
+        )
+        
+        # Check if the LLM identified a specific command to execute
+        if command_to_execute:
+            logger.info(f"LLM identified command: '{command_to_execute}' from input: '{command.input}'")
+            # Process the identified command through the regular game logic
+            result = game_state.process_command(command_to_execute)
+            logger.debug(f"Command result: {result}")
+            
+            # Use the command result but enhance it with the narrative response
+            if result.get('success', False):
+                # Only replace the message if the command was successful
+                result['message'] = narrative_response
+            else:
+                # If command failed, append LLM response to explain
+                result['message'] = f"{result.get('message', '')} {narrative_response}"
+        else:
+            # No specific command identified, use the narrative response directly
+            logger.info(f"Using narrative response for input: '{command.input}'")
+            result = {
+                'success': True,
+                'message': narrative_response,
+                'recent_events': []
+            }
         
         # Get any events that were generated
         events = []
@@ -275,6 +305,33 @@ async def delete_session(session_id: str):
         "message": "Session deleted successfully"
     }
 
+# LLM configuration endpoint
+@app.post("/llm-config")
+async def update_llm_config(request: Request):
+    """Update LLM Game Master configuration."""
+    data = await request.json()
+    
+    # Update API key if provided
+    if "api_key" in data:
+        llm_gm.api_key = data["api_key"]
+        logger.info("Updated LLM API key")
+    
+    # Update model if provided
+    if "model" in data:
+        llm_gm.model = data["model"]
+        logger.info(f"Updated LLM model to: {data['model']}")
+    
+    # Update system prompt if provided
+    if "system_prompt" in data:
+        llm_gm.system_prompt = data["system_prompt"]
+        logger.info("Updated LLM system prompt")
+    
+    return {
+        "success": True,
+        "message": "LLM configuration updated successfully",
+        "current_model": llm_gm.model
+    }
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
@@ -285,5 +342,6 @@ async def health_check():
     return {
         "status": "healthy",
         "active_sessions": len(sessions),
-        "expired_sessions_removed": expired_count
+        "expired_sessions_removed": expired_count,
+        "llm_configured": bool(llm_gm.api_key)
     }
