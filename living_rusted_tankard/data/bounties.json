@@ -8,18 +8,20 @@
       "status": "available",
       "objectives": [
         {
+          "id": "obj_rats_1",
           "description": "Clear 3 Giant Rats from the Cellar",
+          "type": "kill_target",
           "target_id": "giant_rat",
-          "current_progress": 0,
           "required_progress": 3,
-          "is_completed": false
+          "is_active": true 
         }
       ],
       "rewards": {
         "gold": 25,
         "xp": 10
       },
-      "prerequisites": []
+      "prerequisites": [],
+      "is_posted": true
     },
     {
       "id": "bounty_locket_001",
@@ -29,11 +31,12 @@
       "status": "available",
       "objectives": [
         {
+          "id": "obj_locket_1",
           "description": "Find Mirabelle's Locket",
+          "type": "collect_item",
           "target_id": "mirabelle_locket", 
-          "current_progress": 0,
           "required_progress": 1,
-          "is_completed": false
+          "is_active": true
         }
       ],
       "rewards": {
@@ -41,9 +44,10 @@
         "reputation": {
           "mirabelle": 5
         },
-        "items": ["ale_token_001"] 
+        "items": [{"item_id": "ale_token_001", "quantity": 1}] 
       },
-      "prerequisites": []
+      "prerequisites": [],
+      "is_posted": true
     },
     {
       "id": "bounty_delivery_001",
@@ -53,11 +57,12 @@
       "status": "available",
       "objectives": [
         {
+          "id": "obj_delivery_1",
           "description": "Deliver package to Elara the herbalist",
+          "type": "report_to_npc",
           "target_id": "elara_npc", 
-          "current_progress": 0,
           "required_progress": 1,
-          "is_completed": false
+          "is_active": true
         }
       ],
       "rewards": {
@@ -67,7 +72,89 @@
           "village_elders": 2
         }
       },
+      "prerequisites": [],
+      "is_posted": false
+    },
+    {
+      "id": "bounty_gene_special_task_001",
+      "title": "A Task for a Trusted Friend",
+      "description": "Gene needs someone discrete to handle a sensitive matter. He won't trust just anyone with this.",
+      "issuer": "gene_bartender",
+      "status": "available",
+      "is_posted": true,
+      "reputation_requirement": {"npc_id": "gene_bartender", "min_tier": "FRIENDLY"},
+      "objectives": [
+        {
+          "id": "obj_gene_task_1",
+          "description": "Retrieve a hidden package from the old mill.",
+          "type": "collect_item", 
+          "target_id": "hidden_package_mill", 
+          "required_progress": 1,
+          "is_active": true
+        },
+        {
+          "id": "obj_gene_task_2",
+          "description": "Deliver the package to Gene without opening it.",
+          "type": "report_to_npc",
+          "target_id": "gene_bartender",
+          "required_progress": 1,
+          "is_active": false
+        }
+      ],
+      "rewards": {
+        "gold": 100,
+        "xp": 75,
+        "reputation": {"gene_bartender": 15}
+      },
       "prerequisites": []
+    },
+    {
+      "id": "bounty_rats_multi_001",
+      "title": "The Rat Problem Escalates",
+      "description": "The giant rats in the cellar were just the beginning! Their broodmother is down there, and she's huge! We need someone to take her out before she births another legion.",
+      "issuer": "gene_bartender",
+      "status": "available",
+      "is_posted": true,
+      "reputation_requirement": {"npc_id": "gene_bartender", "min_tier": "FRIENDLY"},
+      "prerequisites": ["bounty_rats_001"],
+      "objectives": [
+        {
+          "id": "objective1_rats_multi",
+          "description": "Investigate the Deep Cellar for signs of the Broodmother.",
+          "type": "discover_location",
+          "target_id": "deep_cellar", 
+          "required_progress": 1,
+          "current_progress": 0,
+          "is_completed": false,
+          "is_active": true
+        },
+        {
+          "id": "objective2_rats_multi",
+          "description": "Eliminate the Rat Broodmother.",
+          "type": "kill_target",
+          "target_id": "rat_broodmother", 
+          "required_progress": 1,
+          "current_progress": 0,
+          "is_completed": false,
+          "is_active": false
+        },
+        {
+          "id": "objective3_rats_multi",
+          "description": "Report your success to Gene.",
+          "type": "report_to_npc",
+          "target_id": "gene_bartender",
+          "required_progress": 1,
+          "current_progress": 0,
+          "is_completed": false,
+          "is_active": false
+        }
+      ],
+      "rewards": {
+        "gold": 150,
+        "xp": 100,
+        "reputation": {"gene_bartender": 15},
+        "items": [{"item_id": "ale_deluxe", "quantity": 1}]
+      }
     }
   ]
 }
