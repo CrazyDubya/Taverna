@@ -43,16 +43,39 @@ class SnapshotManager:
         board_notes = self._get_visible_board_notes()
         
         # Create player state snapshot
+        player_inventory = []
+        if hasattr(self.game_state.player, 'inventory'):
+            inventory = self.game_state.player.inventory
+            if hasattr(inventory, 'items') and isinstance(inventory.items, dict):
+                for _, inv_item in inventory.items.items():
+                    if hasattr(inv_item, 'item') and hasattr(inv_item, 'quantity'):
+                        player_inventory.append({
+                            'name': inv_item.item.name,
+                            'quantity': inv_item.quantity
+                        })
+        
         player_state = {
             'gold': self.game_state.player.gold,
             'has_room': self.game_state.player.has_room,
             'tiredness': getattr(self.game_state.player, 'tiredness', 0),
-            'inventory': [item.name for item in getattr(self.game_state.player, 'inventory', [])]
+            'inventory': player_inventory
         }
         
         # Create and return the snapshot
+        try:
+            if hasattr(self.game_state.clock, 'get_time'):
+                time_value = self.game_state.clock.get_time()
+            elif hasattr(self.game_state.clock, 'get_current_time'):
+                time_value = self.game_state.clock.get_current_time().hours
+            elif hasattr(self.game_state.clock, 'current_time'):
+                time_value = self.game_state.clock.current_time.hours
+            else:
+                time_value = 0.0
+        except:
+            time_value = 0.0
+            
         snapshot = GameSnapshot(
-            time=self.game_state.clock.get_time(),
+            time=time_value,
             present_npcs=present_npcs,
             board_notes=board_notes,
             player=player_state,
