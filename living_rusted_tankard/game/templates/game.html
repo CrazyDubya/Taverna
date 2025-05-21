@@ -35,19 +35,29 @@
                     <h2 class="text-xl font-bold text-amber-500 mb-4">Game Settings</h2>
                     
                     <div class="mb-4">
-                        <label class="block text-gray-300 mb-2">Claude API Key</label>
-                        <input type="password" id="api-key-input" class="w-full bg-gray-700 text-white p-2 rounded-lg" 
-                               placeholder="sk-ant-api...">
-                        <p class="text-xs text-gray-400 mt-1">Required for advanced AI interactions</p>
+                        <label class="block text-gray-300 mb-2">Ollama URL</label>
+                        <input type="text" id="ollama-url-input" class="w-full bg-gray-700 text-white p-2 rounded-lg" 
+                               placeholder="http://localhost:11434" value="http://localhost:11434">
+                        <p class="text-xs text-gray-400 mt-1">URL of your Ollama server</p>
                     </div>
                     
                     <div class="mb-4">
                         <label class="block text-gray-300 mb-2">AI Model</label>
                         <select id="model-select" class="w-full bg-gray-700 text-white p-2 rounded-lg">
-                            <option value="claude-3-haiku-20240307">Claude 3 Haiku (Fast)</option>
-                            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet (Balanced)</option>
-                            <option value="claude-3-opus-20240229">Claude 3 Opus (Powerful)</option>
+                            <option value="long-gemma:latest">long-gemma:latest</option>
+                            <option value="llama3:8b">llama3:8b</option>
+                            <option value="llama3.1:8b">llama3.1:8b</option>
+                            <option value="mistral-small:24b">mistral-small:24b</option>
+                            <option value="phi3:14b-medium-128k-instruct-q8_0">phi3:14b</option>
+                            <option value="gemma2:9b">gemma2:9b</option>
                         </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <button id="test-connection-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full">
+                            Test Ollama Connection
+                        </button>
+                        <p id="connection-status" class="text-xs mt-1 text-gray-400">Connection status will appear here</p>
                     </div>
                     
                     <div class="flex justify-end space-x-3 mt-6">
@@ -164,8 +174,58 @@
             message.className = isPlayer 
                 ? 'text-amber-300 font-bold' 
                 : 'text-gray-200';
-            message.textContent = isPlayer ? `> ${text}` : text;
-            narrativeContent.appendChild(message);
+            
+            // Check if this is a system message with conversation options
+            if (!isPlayer && text.includes('[Options:')) {
+                // Split the text into narrative and options
+                const parts = text.split('[Options:');
+                const narrativeText = parts[0].trim();
+                const optionsText = parts[1].trim();
+                
+                // Format the narrative part
+                message.textContent = narrativeText;
+                narrativeContent.appendChild(message);
+                
+                // Create a styled container for options
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'bg-gray-700 rounded-lg p-3 mt-2 mb-4';
+                
+                // Add a header
+                const optionsHeader = document.createElement('div');
+                optionsHeader.className = 'text-amber-400 font-bold mb-2';
+                optionsHeader.textContent = 'Conversation Options:';
+                optionsContainer.appendChild(optionsHeader);
+                
+                // Format the options as clickable buttons
+                const optionLines = optionsText.split('\n');
+                
+                optionLines.forEach(line => {
+                    // Skip empty lines and the closing bracket
+                    if (line.trim() === '' || line.trim() === ']') {
+                        return;
+                    }
+                    
+                    const optionButton = document.createElement('button');
+                    optionButton.className = 'bg-gray-600 hover:bg-gray-500 text-white rounded px-3 py-1 my-1 block w-full text-left';
+                    optionButton.textContent = line.trim();
+                    
+                    // Make the option clickable
+                    optionButton.addEventListener('click', () => {
+                        const optionText = line.trim().replace(/^\d+\.\s*/, '');
+                        commandInput.value = optionText;
+                        handleCommand();
+                    });
+                    
+                    optionsContainer.appendChild(optionButton);
+                });
+                
+                narrativeContent.appendChild(optionsContainer);
+            } else {
+                // Regular message
+                message.textContent = isPlayer ? `> ${text}` : text;
+                narrativeContent.appendChild(message);
+            }
+            
             narrativeContent.scrollTop = narrativeContent.scrollHeight;
         }
 
@@ -382,13 +442,63 @@
             sendCommand(command);
         }
 
-        // LLM API configuration functions
-        async function saveLLMSettings() {
-            const apiKey = document.getElementById('api-key-input').value.trim();
+        // Ollama LLM configuration functions
+        async function testOllamaConnection() {
+            const ollamaUrl = document.getElementById('ollama-url-input').value.trim();
             const model = document.getElementById('model-select').value;
+            const connectionStatus = document.getElementById('connection-status');
             
-            if (!apiKey) {
-                alert('API Key is required for AI-powered interactions');
+            if (!ollamaUrl) {
+                connectionStatus.textContent = 'Please enter an Ollama URL';
+                connectionStatus.className = 'text-xs mt-1 text-red-400';
+                return;
+            }
+            
+            try {
+                connectionStatus.textContent = 'Testing connection...';
+                connectionStatus.className = 'text-xs mt-1 text-blue-400';
+                
+                const response = await fetch('/llm-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ollama_url: ollamaUrl,
+                        model: model
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+                
+                const result = await response.json();
+                if (result.success && result.ollama_connected) {
+                    connectionStatus.textContent = result.model_available 
+                        ? `Connected successfully! Model "${model}" is available.` 
+                        : `Connected to Ollama, but model "${model}" is not available. Available models: ${result.available_models?.join(', ') || 'none'}`;
+                    connectionStatus.className = result.model_available 
+                        ? 'text-xs mt-1 text-green-400' 
+                        : 'text-xs mt-1 text-yellow-400';
+                } else {
+                    connectionStatus.textContent = `Connection failed: ${result.message}`;
+                    connectionStatus.className = 'text-xs mt-1 text-red-400';
+                }
+            } catch (error) {
+                console.error('Error testing Ollama connection:', error);
+                connectionStatus.textContent = `Error: ${error.message}`;
+                connectionStatus.className = 'text-xs mt-1 text-red-400';
+            }
+        }
+        
+        async function saveLLMSettings() {
+            const ollamaUrl = document.getElementById('ollama-url-input').value.trim();
+            const model = document.getElementById('model-select').value;
+            const connectionStatus = document.getElementById('connection-status');
+            
+            if (!ollamaUrl) {
+                alert('Ollama URL is required');
                 return;
             }
             
@@ -400,7 +510,7 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        api_key: apiKey,
+                        ollama_url: ollamaUrl,
                         model: model
                     }),
                 });
@@ -410,21 +520,26 @@
                 }
                 
                 const result = await response.json();
-                if (result.success) {
-                    // Save API key to localStorage (note: in a real app, consider security implications)
-                    localStorage.setItem('llm_api_key', apiKey);
-                    localStorage.setItem('llm_model', model);
+                if (result.success && result.ollama_connected) {
+                    // Save settings to localStorage
+                    localStorage.setItem('ollama_url', ollamaUrl);
+                    localStorage.setItem('ollama_model', model);
                     
                     // Close the modal
                     toggleSettingsModal(false);
                     
-                    // Show success message
-                    addNarrative(`AI Game Master activated using ${model}! You can now interact in natural language.`, false);
+                    if (result.model_available) {
+                        // Show success message
+                        addNarrative(`AI Game Master activated using ${model} on Ollama! You can now interact in natural language.`, false);
+                    } else {
+                        // Show warning about missing model
+                        addNarrative(`Connected to Ollama, but model "${model}" is not available. Please pull it with "ollama pull ${model}" or choose another model in settings.`, false);
+                    }
                 } else {
-                    alert('Failed to update LLM settings: ' + (result.message || 'Unknown error'));
+                    alert('Failed to connect to Ollama: ' + (result.message || 'Unknown error'));
                 }
             } catch (error) {
-                console.error('Error saving LLM settings:', error);
+                console.error('Error saving Ollama settings:', error);
                 alert('Error saving settings: ' + error.message);
             } finally {
                 setLoading(false);
@@ -460,10 +575,10 @@
             // Set up settings modal handlers
             document.getElementById('settings-btn').addEventListener('click', () => {
                 // Load saved values if available
-                const savedApiKey = localStorage.getItem('llm_api_key') || '';
-                const savedModel = localStorage.getItem('llm_model') || 'claude-3-haiku-20240307';
+                const savedUrl = localStorage.getItem('ollama_url') || 'http://localhost:11434';
+                const savedModel = localStorage.getItem('ollama_model') || 'long-gemma';
                 
-                document.getElementById('api-key-input').value = savedApiKey;
+                document.getElementById('ollama-url-input').value = savedUrl;
                 document.getElementById('model-select').value = savedModel;
                 
                 toggleSettingsModal(true);
@@ -474,6 +589,7 @@
             });
             
             document.getElementById('save-settings-btn').addEventListener('click', saveLLMSettings);
+            document.getElementById('test-connection-btn').addEventListener('click', testOllamaConnection);
             
             // Load initial game state
             fetchGameState();
@@ -484,29 +600,63 @@
             // Add welcome message
             addNarrative('Welcome to The Living Rusted Tankard! Type "help" to see available commands.');
             
-            // Check if LLM API key is saved, and if so, apply it automatically
-            const savedApiKey = localStorage.getItem('llm_api_key');
-            const savedModel = localStorage.getItem('llm_model');
-            if (savedApiKey && savedModel) {
+            // Check if Ollama settings are saved, and if so, apply them automatically
+            const savedUrl = localStorage.getItem('ollama_url');
+            const savedModel = localStorage.getItem('ollama_model');
+            if (savedUrl && savedModel) {
                 fetch('/llm-config', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        api_key: savedApiKey,
+                        ollama_url: savedUrl,
                         model: savedModel
                     }),
-                }).then(response => {
-                    if (response.ok) {
-                        addNarrative(`AI Game Master activated with ${savedModel}! You can interact using natural language.`, false);
+                }).then(response => response.json())
+                .then(result => {
+                    if (result.success && result.ollama_connected) {
+                        if (result.model_available) {
+                            addNarrative(`AI Game Master activated with ${savedModel} on Ollama! You can interact using natural language.`, false);
+                        } else {
+                            addNarrative(`Connected to Ollama, but model "${savedModel}" is not available. Please pull it with "ollama pull ${savedModel}" or choose another model in settings.`, false);
+                        }
+                    } else {
+                        addNarrative('Could not connect to Ollama server. Please check the Ollama settings or make sure the server is running.', false);
                     }
                 }).catch(error => {
-                    console.error('Error applying saved LLM settings:', error);
+                    console.error('Error applying saved Ollama settings:', error);
+                    addNarrative('Error connecting to Ollama server. Please check your settings.', false);
                 });
             } else {
-                // Show a prompt to set up API key
-                addNarrative('For enhanced AI Game Master features, click the ⚙️ Settings button and enter your Claude API key.', false);
+                // Default to localhost:11434 with long-gemma:latest
+                fetch('/llm-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ollama_url: 'http://localhost:11434',
+                        model: 'long-gemma:latest'
+                    }),
+                }).then(response => response.json())
+                .then(result => {
+                    if (result.success && result.ollama_connected) {
+                        if (result.model_available) {
+                            addNarrative('AI Game Master activated with long-gemma:latest on local Ollama! You can interact using natural language.', false);
+                            // Save these default settings
+                            localStorage.setItem('ollama_url', 'http://localhost:11434');
+                            localStorage.setItem('ollama_model', 'long-gemma:latest');
+                        } else {
+                            addNarrative('Connected to Ollama, but the "long-gemma:latest" model is not available. Please pull it with "ollama pull long-gemma" or choose another model in settings.', false);
+                        }
+                    } else {
+                        addNarrative('For enhanced AI Game Master features, click the ⚙️ Settings button to configure your Ollama connection.', false);
+                    }
+                }).catch(error => {
+                    console.error('Error connecting to default Ollama server:', error);
+                    addNarrative('For enhanced AI Game Master features, click the ⚙️ Settings button to configure your Ollama connection.', false);
+                });
             }
         });
     </script>

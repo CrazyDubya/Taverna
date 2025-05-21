@@ -14,6 +14,7 @@ from typing import Dict, Any, Optional, List
 import uuid
 import os
 import time
+import requests
 from pathlib import Path
 import logging
 
@@ -311,10 +312,10 @@ async def update_llm_config(request: Request):
     """Update LLM Game Master configuration."""
     data = await request.json()
     
-    # Update API key if provided
-    if "api_key" in data:
-        llm_gm.api_key = data["api_key"]
-        logger.info("Updated LLM API key")
+    # Update Ollama URL if provided
+    if "ollama_url" in data:
+        llm_gm.ollama_url = data["ollama_url"]
+        logger.info(f"Updated Ollama URL to: {data['ollama_url']}")
     
     # Update model if provided
     if "model" in data:
@@ -326,11 +327,41 @@ async def update_llm_config(request: Request):
         llm_gm.system_prompt = data["system_prompt"]
         logger.info("Updated LLM system prompt")
     
-    return {
-        "success": True,
-        "message": "LLM configuration updated successfully",
-        "current_model": llm_gm.model
-    }
+    # Test connection to Ollama
+    try:
+        test_url = f"{llm_gm.ollama_url}/api/version"
+        logger.info(f"Testing Ollama connection at {test_url}")
+        response = requests.get(test_url, timeout=5)
+        response.raise_for_status()
+        
+        # Check if the model is available
+        models_url = f"{llm_gm.ollama_url}/api/tags"
+        models_response = requests.get(models_url, timeout=5)
+        models_response.raise_for_status()
+        models_data = models_response.json()
+        
+        # Get model names from response
+        available_models = [model.get("name") for model in models_data.get("models", [])]
+        
+        # Check if our model is available
+        model_available = llm_gm.model in available_models
+        
+        return {
+            "success": True,
+            "message": "LLM configuration updated successfully",
+            "current_model": llm_gm.model,
+            "ollama_connected": True,
+            "model_available": model_available,
+            "available_models": available_models
+        }
+    except Exception as e:
+        logger.error(f"Error connecting to Ollama: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Error connecting to Ollama: {str(e)}",
+            "current_model": llm_gm.model,
+            "ollama_connected": False
+        }
 
 # Health check endpoint
 @app.get("/health")
@@ -343,5 +374,5 @@ async def health_check():
         "status": "healthy",
         "active_sessions": len(sessions),
         "expired_sessions_removed": expired_count,
-        "llm_configured": bool(llm_gm.api_key)
+        "llm_configured": True  # Ollama is always configured with defaults
     }

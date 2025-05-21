@@ -41,7 +41,7 @@ if __name__ == "__main__":
     logger.info("Press Ctrl+C to stop the server")
     
     uvicorn.run(
-        "core.api:app",
+        "living_rusted_tankard.core.api:app",
         host=args.host,
         port=args.port,
         reload=args.reload,

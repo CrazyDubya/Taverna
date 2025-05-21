@@ -3,11 +3,12 @@ LLM Game Master for The Living Rusted Tankard.
 
 This module implements an LLM-powered game master that can interpret
 natural language inputs, convert them to game commands, and generate
-rich narrative responses.
+rich narrative responses using Ollama's long-gemma model.
 """
 import json
 import logging
 import os
+import re
 import requests
 import time
 from typing import Dict, List, Any, Optional, Tuple, Union
@@ -32,27 +33,24 @@ class LLMChatMessage:
             self.timestamp = time.time()
 
     def to_dict(self) -> Dict[str, str]:
-        """Convert to the format expected by Claude API."""
+        """Convert to the format expected by the LLM API."""
         return {"role": self.role, "content": self.content}
 
 
 class LLMGameMaster:
     """LLM-powered game master for interpreting and responding to natural language inputs."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "claude-3-haiku-20240307"):
-        """Initialize the LLM Game Master.
+    def __init__(self, ollama_url: str = "http://localhost:11434", model: str = "long-gemma:latest"):
+        """Initialize the LLM Game Master using Ollama.
         
         Args:
-            api_key: API key for Claude (or None to use environment variable)
-            model: Model name to use
+            ollama_url: URL of the Ollama server
+            model: Model name to use (default: long-gemma:latest)
         """
-        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
-        if not self.api_key:
-            logger.warning("No ANTHROPIC_API_KEY provided or found in environment variables. LLM functionality will be limited.")
-        
+        self.ollama_url = ollama_url
         self.model = model
-        self.base_url = "https://api.anthropic.com/v1/messages"
         self.conversation_histories: Dict[str, List[LLMChatMessage]] = {}
+        self.current_conversations: Dict[str, Dict[str, Any]] = {}  # Track active conversations by session
         
         # Default system prompt
         self.system_prompt = self._get_default_system_prompt()
@@ -84,16 +82,43 @@ When a player inputs a message:
 5. Maintain the medieval fantasy atmosphere in all responses.
 6. Keep your responses relatively concise (2-3 paragraphs maximum).
 
+CONVERSATION OPTIONS FEATURE:
+When the player talks to an NPC, always end your response with 3-5 conversation options presented as a numbered list.
+These should be short phrases (5-7 words each) that represent what the player might want to say next.
+Format these at the end of your response like this:
+
+[Options:
+1. Ask about local rumors
+2. Order a drink
+3. Inquire about available rooms
+4. Bid farewell]
+
+The options should be contextually appropriate based on:
+- Which NPC they're talking to (barkeep offers drinks, merchants offer goods, etc.)
+- The current conversation topic
+- The player's situation (do they have money, are they injured, etc.)
+- Potential story hooks or quests that could be activated
+
 The game world centers around The Rusted Tankard, a lively tavern with:
 - A main taproom with a bar, tables, and a fireplace
-- Rooms available for rent upstairs
+- Rooms available for rent upstairs (2 gold per night)
 - A cellar with mysterious noises
-- Various NPCs including Gene (bartender), Serena (waitress), and others
+- Various NPCs including Old Tom (barkeeper), Sally (regular patron), and others
 - A notice board with quests/bounties
 - Rumors of strange happenings in the area
 
+The tavern serves:
+- Ale (1 gold)
+- Mead (2 gold)
+- Wine (3 gold)
+- Stew of the day (2 gold)
+- Bread and cheese (1 gold)
+- Mystery meat pie (3 gold)
+
 IMPORTANT: Your goal is to make the game fun and accessible even when the player doesn't use exact command syntax.
 Help guide them toward the right commands without breaking immersion.
+
+If the player's input appears to be selecting one of the conversation options you previously offered (they might use the number or repeat part of the option text), respond as if they chose that option.
 """
 
     def _build_game_context(self, game_state) -> Dict[str, Any]:
@@ -188,9 +213,66 @@ Help guide them toward the right commands without breaking immersion.
         # Trim history if it's too long
         if len(history) > MAX_HISTORY_LENGTH:
             self.conversation_histories[session_id] = history[-MAX_HISTORY_LENGTH:]
+        
+        # If this is an assistant message that contains conversation options,
+        # update the current conversation state
+        if message.role == "assistant" and "[Options:" in message.content:
+            self._update_conversation_state(session_id, message.content)
+    
+    def _update_conversation_state(self, session_id: str, content: str) -> None:
+        """Update the conversation state with options provided by the LLM.
+        
+        Args:
+            session_id: The session ID
+            content: The message content
+        """
+        # Extract conversation options
+        if "[Options:" not in content:
+            return
+            
+        # Initialize conversation state for this session if it doesn't exist
+        if session_id not in self.current_conversations:
+            self.current_conversations[session_id] = {
+                "talking_to": None,
+                "options": [],
+                "last_updated": time.time()
+            }
+            
+        # Extract the options
+        options_part = content.split("[Options:")[1]
+        if "]" in options_part:
+            options_part = options_part.split("]")[0]
+            
+        options = []
+        for line in options_part.strip().split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Extract option number and text
+            if re.match(r"^\d+\.\s+", line):
+                option_text = re.sub(r"^\d+\.\s+", "", line)
+                options.append(option_text)
+                
+        # Update the conversation state
+        self.current_conversations[session_id]["options"] = options
+        self.current_conversations[session_id]["last_updated"] = time.time()
+        
+        # Try to determine who the player is talking to
+        talking_to = None
+        message_lower = content.lower()
+        possible_npcs = ["old tom", "barkeep", "bartender", "sally", "patron"]
+        
+        for npc in possible_npcs:
+            if npc in message_lower:
+                talking_to = npc
+                break
+                
+        if talking_to:
+            self.current_conversations[session_id]["talking_to"] = talking_to
 
     def process_input(self, user_input: str, game_state, session_id: str) -> Tuple[str, Optional[str]]:
-        """Process a user input using the LLM.
+        """Process a user input using the Ollama LLM.
         
         Args:
             user_input: The user's input text
@@ -201,12 +283,43 @@ Help guide them toward the right commands without breaking immersion.
             Tuple of (narrative_response, command_to_execute)
             The command_to_execute may be None if no specific command was identified
         """
-        # Check if we have an API key before making any requests
-        if not self.api_key:
-            # Simple fallback when no API key is available
-            if user_input.lower().strip() in ['help', '?']:
-                return game_state._generate_help_text(), 'help'
-            return "I need an API key to function properly. Please set the ANTHROPIC_API_KEY environment variable.", None
+        # Try simple command matching for basic commands
+        user_input_lower = user_input.lower().strip()
+        if user_input_lower in ['help', '?']:
+            return game_state._generate_help_text(), 'help'
+        elif user_input_lower in ['look', 'l']:
+            # Provide more detailed description for basic look command
+            tavern_description = """
+            You find yourself in The Rusted Tankard, a warm and inviting tavern with weathered wooden beams overhead. 
+            
+            The main room is filled with sturdy oak tables and chairs, most occupied by locals and travelers alike. A large stone fireplace dominates one wall, casting flickering shadows across the room. The crackling fire provides both warmth and light, making the tavern feel cozy despite its size.
+            
+            To your right is the bar counter, polished smooth by years of use. Behind it stands Old Tom, the barkeep, arranging mugs and bottles. Several patrons lean against the counter, engaged in conversation or simply enjoying their drinks.
+            
+            On the far wall, you notice a wooden notice board covered with various papers - announcements, bounties, and job postings. Beside it, a narrow staircase leads to the upper floor where rooms are available for rent.
+            
+            The air is filled with the aroma of hearty stew, freshly baked bread, and the distinct smell of ale. The ambient noise is a pleasant mixture of conversation, occasional laughter, and the soft notes of someone strumming a lute in the corner.
+            """
+            return tavern_description.strip(), 'look'
+        elif user_input_lower in ['inventory', 'i', 'inv']:
+            return "Let me check what you're carrying...", 'inventory'
+        elif user_input_lower in ['status', 'stats']:
+            return "Let me tell you about your current condition...", 'status'
+        elif user_input_lower in ['talk', 'speak']:
+            # Handle talk command with no target
+            npc_list = "You look around and see who you could talk to:\n\n"
+            if hasattr(game_state, 'npc_manager'):
+                present_npcs = game_state.npc_manager.get_present_npcs()
+                if present_npcs:
+                    for npc in present_npcs:
+                        npc_list += f"- {npc.name}, {npc.description}\n"
+                else:
+                    npc_list += "There doesn't seem to be anyone interesting to talk to right now."
+            else:
+                npc_list += "- Old Tom, the barkeep with a mysterious past\n"
+                npc_list += "- Sally, a regular patron who always seems to be here\n"
+            
+            return npc_list, 'talk'
         
         # Build the context object with game state
         context = self._build_game_context(game_state)
@@ -223,49 +336,47 @@ Help guide them toward the right commands without breaking immersion.
         # Create a human-readable context string
         context_str = json.dumps(context, indent=2)
         
-        # Add context and instructions to the system prompt
-        enhanced_prompt = f"""
-{self.system_prompt}
-
-CURRENT GAME STATE:
-{context_str}
-
-Based on the user's input, determine if it maps to a specific game command. If so, include the command in your response
-in the format: [COMMAND: command_name arg1 arg2] at the very beginning of your response.
-
-For example, if the user says "I want to see what items I have", you would respond with:
-[COMMAND: inventory] You check your belongings...
-
-If the user says "Talk to the bartender", you would respond with:
-[COMMAND: talk gene_bartender] You approach the bartender...
-
-Only include a command if you're confident it matches the user's intent. Otherwise, provide a helpful response
-that guides them toward valid commands without explicitly telling them what to type.
-"""
+        # Create the full prompt with system instructions, context, and history
+        messages = []
         
-        # Convert history to the format expected by Claude API
-        formatted_history = [msg.to_dict() for msg in history[-MAX_HISTORY_LENGTH:]]
+        # Add system prompt as the first message
+        messages.append({
+            "role": "system", 
+            "content": f"{self.system_prompt}\n\nCURRENT GAME STATE:\n{context_str}"
+        })
+        
+        # Add conversation history
+        for msg in history[-MAX_HISTORY_LENGTH:]:
+            messages.append({"role": msg.role, "content": msg.content})
+        
+        # Add the current user message
+        messages.append({"role": "user", "content": user_input})
         
         try:
-            # Generate a response from the LLM
-            headers = {
-                "x-api-key": self.api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json"
-            }
+            # Generate a response from Ollama
+            api_url = f"{self.ollama_url}/api/chat"
             
             data = {
                 "model": self.model,
-                "system": enhanced_prompt,
-                "messages": formatted_history + [{"role": "user", "content": user_input}],
-                "max_tokens": 1000,
-                "temperature": 0.7
+                "messages": messages,
+                "stream": False,
+                "options": {
+                    "temperature": 0.7,
+                    "top_p": 0.9
+                }
             }
             
-            response = requests.post(self.base_url, headers=headers, json=data)
+            logger.info(f"Sending request to Ollama at {api_url}")
+            response = requests.post(api_url, json=data)
             response.raise_for_status()
             
-            llm_response = response.json()["content"][0]["text"]
+            logger.debug(f"Ollama response: {response.text}")
+            response_data = response.json()
+            
+            if "message" in response_data and "content" in response_data["message"]:
+                llm_response = response_data["message"]["content"]
+            else:
+                raise ValueError("Unexpected response format from Ollama")
             
             # Extract command if present
             command_to_execute = None
@@ -289,6 +400,17 @@ that guides them toward valid commands without explicitly telling them what to t
             return narrative_response, command_to_execute
             
         except Exception as e:
-            logger.error(f"Error generating LLM response: {e}")
+            logger.error(f"Error generating Ollama response: {e}", exc_info=True)
             # Fallback response
-            return f"I'm having trouble processing your request. Please try again with a clearer command. Error: {str(e)}", None
+            
+            # If this was just a simple command we missed, try to guess it
+            if len(user_input_lower.split()) <= 2:
+                # Check for common command patterns
+                if any(word in user_input_lower for word in ['talk', 'speak', 'chat']):
+                    return "I think you want to talk to someone. You can use 'talk' followed by the person's name.", 'talk'
+                elif any(word in user_input_lower for word in ['buy', 'purchase']):
+                    return "I think you want to buy something. You can use 'buy' followed by the item name.", 'buy'
+                elif any(word in user_input_lower for word in ['rest', 'sleep']):
+                    return "I think you want to rest. You can use the 'rest' command.", 'rest'
+            
+            return f"I'm having trouble connecting to the Ollama server at {self.ollama_url}. Please ensure it's running with the {self.model} model. Try using a direct command like 'look' or 'inventory'.", None
