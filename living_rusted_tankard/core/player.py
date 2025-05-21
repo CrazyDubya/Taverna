@@ -17,6 +17,9 @@ class PlayerState(BaseModel):
     _no_sleep_quest_locked: bool = False
     inventory: Inventory = Field(default_factory=Inventory)
     flags: Dict[str, Any] = Field(default_factory=dict)  # For tracking quest states and other flags
+    reputation: Dict[str, int] = Field(default_factory=dict) # Entity ID to reputation score
+    active_bounty_ids: List[str] = Field(default_factory=list) # IDs of bounties player has accepted
+    completed_bounty_ids: List[str] = Field(default_factory=list) # IDs of bounties player has completed
     last_ate: float = 0.0  # Game time when player last ate
     last_drank: float = 0.0  # Game time when player last drank
     

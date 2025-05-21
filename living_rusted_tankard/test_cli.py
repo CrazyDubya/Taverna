@@ -4,7 +4,7 @@ import sys
 import cmd
 from unittest.mock import patch, MagicMock
 from cli import GameCLI
-from core.game import GameState
+from core.game_state import GameState
 
 def test_cli_interaction():
     """Test basic CLI interaction."""

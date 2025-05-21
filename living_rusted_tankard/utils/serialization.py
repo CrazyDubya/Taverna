@@ -7,81 +7,99 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, Type, TypeVar, Generic
-from dataclasses import asdict, is_dataclass
+from typing import Dict, Any, Optional, TYPE_CHECKING
 
-T = TypeVar('T')
-
-class Serializable:
-    """Base class for serializable objects."""
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert object to a dictionary."""
-        if is_dataclass(self):
-            return asdict(self)
-        return {}
-
-    @classmethod
-    def from_dict(cls: Type[T], data: Dict[str, Any]) -> T:
-        """Create object from dictionary."""
-        return cls(**data)  # type: ignore
+if TYPE_CHECKING:
+    from living_rusted_tankard.core.game_state import GameState
+    # Assuming Narrator and CommandParser types would be imported if they were actual classes
+    # from living_rusted_tankard.core.llm.narrator import Narrator 
+    # from living_rusted_tankard.core.llm.parser import CommandParser 
 
 
-def save_game_state(state: Dict[str, Any], save_dir: str = 'saves') -> str:
+# The Serializable class and its direct usage can be phased out
+# as Pydantic models have their own to_dict (model_dump) and from_dict (model_validate).
+
+def save_game_state(
+    game_state_instance: 'GameState', 
+    save_dir: str = 'saves',
+    filename_base: Optional[str] = None
+) -> str:
     """
-    Save game state to a JSON file.
+    Save game state to a JSON file using GameState.to_dict().
 
     Args:
-        state: Game state dictionary to save
-        save_dir: Directory to save the game state
+        game_state_instance: The GameState object to save.
+        save_dir: Directory to save the game state.
+        filename_base: Optional base for the filename. If None, a timestamp is used.
+                       .json extension will be added.
 
     Returns:
-        Path to the saved file
+        Path to the saved file.
     """
-    # Ensure save directory exists
     os.makedirs(save_dir, exist_ok=True)
 
-    # Create a timestamped filename
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f'save_{timestamp}.json'
+    if filename_base:
+        # Ensure it ends with .json, but first remove if it's already there to avoid .json.json
+        if filename_base.endswith('.json'):
+            filename_base = filename_base[:-5]
+        filename = f"{filename_base}.json"
+    else:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'save_{timestamp}.json'
+    
     filepath = Path(save_dir) / filename
 
     try:
-        # Convert any Serializable objects to dicts
-        def serialize(obj):
-            if isinstance(obj, Serializable):
-                return obj.to_dict()
-            elif isinstance(obj, dict):
-                return {k: serialize(v) for k, v in obj.items()}
-            elif isinstance(obj, (list, tuple)):
-                return [serialize(item) for item in obj]
-            return obj
-
-        serialized_state = serialize(state)
-
-        # Save to file
+        # GameState.to_dict() should produce a JSON-serializable dictionary
+        # Pydantic's model_dump(mode='json') handles complex types like datetime, enums.
+        state_dict = game_state_instance.to_dict()
+        
         with open(filepath, 'w') as f:
-            json.dump(serialized_state, f, indent=2)
+            json.dump(state_dict, f, indent=2)
 
         return str(filepath)
     except Exception as e:
+        # Log the exception for better debugging
+        print(f"Error during save_game_state: {type(e).__name__} - {e}")
         raise RuntimeError(f"Failed to save game state: {str(e)}")
 
 
-def load_game_state(filepath: str) -> Dict[str, Any]:
+def load_game_state(
+    filepath: str, 
+    narrator: Any,  # Replace Any with actual Narrator type hint
+    command_parser: Any, # Replace Any with actual CommandParser type hint
+    data_dir: str = "data" # data_dir needed for GameState.from_dict
+) -> 'GameState':
     """
-    Load game state from a JSON file.
+    Load game state from a JSON file using GameState.from_dict().
 
     Args:
-        filepath: Path to the save file
+        filepath: Path to the save file.
+        narrator: Initialized Narrator instance.
+        command_parser: Initialized CommandParser instance.
+        data_dir: Path to the game's data directory.
 
     Returns:
-        Deserialized game state
+        Deserialized GameState object.
     """
     try:
         with open(filepath, 'r') as f:
-            return json.load(f)
+            data_dict = json.load(f)
+        
+        # Need to import GameState here to avoid circular imports at module level
+        from living_rusted_tankard.core.game_state import GameState
+        
+        # GameState.from_dict will handle reconstruction
+        game_state_instance = GameState.from_dict(
+            data_dict, 
+            narrator=narrator, 
+            command_parser=command_parser,
+            data_dir=data_dir
+        )
+        return game_state_instance
     except Exception as e:
+        # Log the exception for better debugging
+        print(f"Error during load_game_state: {type(e).__name__} - {e}")
         raise RuntimeError(f"Failed to load game state: {str(e)}")
 
 
