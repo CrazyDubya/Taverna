@@ -183,8 +183,25 @@ async def process_command(command: CommandRequest):
                 # If command failed, append LLM response to explain
                 result['message'] = f"{result.get('message', '')} {narrative_response}"
         else:
-            # No specific command identified, use the narrative response directly
-            logger.info(f"Using narrative response for input: '{command.input}'")
+            # We have two cases here:
+            # 1. Examining an object with pre-defined facts (the LLM will generate a description)
+            # 2. A completely open-ended input that doesn't map to a specific command
+            
+            # For objects with special handling, check if the input is examining something
+            examining_object = None
+            input_lower = command.input.lower()
+            if input_lower.startswith('look at ') or input_lower.startswith('look ') or input_lower.startswith('examine '):
+                parts = input_lower.replace('look at ', '').replace('look ', '').replace('examine ', '').strip().split()
+                if len(parts) > 0:
+                    examining_object = parts[0]
+            
+            # Log what we're doing
+            if examining_object:
+                logger.info(f"Special handling for examining object: '{examining_object}' from input: '{command.input}'")
+            else:
+                logger.info(f"Using narrative response for input: '{command.input}'")
+            
+            # In either case, use the narrative response directly
             result = {
                 'success': True,
                 'message': narrative_response,

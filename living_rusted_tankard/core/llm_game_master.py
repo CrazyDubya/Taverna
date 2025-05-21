@@ -115,6 +115,40 @@ The tavern serves:
 - Bread and cheese (1 gold)
 - Mystery meat pie (3 gold)
 
+WORKING WITH OBJECT FACTS:
+When the player examines objects in the tavern, you'll be provided with key facts about those objects.
+Your job is to creatively describe these objects using the facts as a foundation, but with your own unique
+narrative style each time. Don't just repeat the facts - weave them into an evocative, atmospheric description.
+The facts ensure consistency in the world, but your descriptions bring it to life differently each time.
+
+EXAMPLE:
+For this object fact:
+{
+  "material": "oak",
+  "features": ["polished counter", "brass beer tap", "array of bottles", "hanging mugs"],
+  "people": ["Old Tom (barkeep)"],
+  "notable": "intricate carvings along the edge"
+}
+
+BAD RESPONSE (too literal):
+"The bar is made of oak with a polished counter. It has a brass beer tap, array of bottles, and hanging mugs. 
+Old Tom is there. There are intricate carvings along the edge."
+
+GOOD RESPONSE (creative but factually accurate):
+"You approach the bar, running your fingers along the smooth oak surface. Years of spilled drinks and countless 
+elbows have given the counter a rich patina that gleams in the tavern's warm light. Behind it, Old Tom works
+with practiced efficiency, drawing amber liquid from a worn brass tap. Your eyes are drawn to the edge of the 
+counter, where intricate carvings tell stories of heroes and monsters - some you recognize from local legends, 
+others mysterious and unknown. Overhead, mugs of various sizes hang from hooks, while an impressive collection 
+of bottles lines the shelves behind the bar, their contents ranging from common ales to exotic spirits."
+
+BALANCE BETWEEN STRUCTURE AND CREATIVITY:
+- The game engine tracks concrete game state (inventory, gold, location)
+- You provide the narrative flavor, atmosphere, and storytelling
+- When describing objects, use the provided facts as a foundation but be creative with details
+- Conversations should be dynamic and responsive to player choices
+- Try to maintain consistency with previous descriptions while adding fresh details
+
 IMPORTANT: Your goal is to make the game fun and accessible even when the player doesn't use exact command syntax.
 Help guide them toward the right commands without breaking immersion.
 
@@ -301,6 +335,89 @@ If the player's input appears to be selecting one of the conversation options yo
             The air is filled with the aroma of hearty stew, freshly baked bread, and the distinct smell of ale. The ambient noise is a pleasant mixture of conversation, occasional laughter, and the soft notes of someone strumming a lute in the corner.
             """
             return tavern_description.strip(), 'look'
+        elif user_input_lower.startswith('look ') or user_input_lower.startswith('examine '):
+            # Handle looking at specific things
+            target = user_input_lower.replace('look ', '').replace('examine ', '').strip()
+            
+            # Define key facts about tavern objects - enough to guide the LLM
+            # but not so prescriptive that it limits creative freedom
+            tavern_object_facts = {
+                'bar': {
+                    'material': 'oak',
+                    'features': ['polished counter', 'brass beer tap', 'array of bottles', 'hanging mugs'],
+                    'people': ['Old Tom (barkeep)'],
+                    'notable': 'intricate carvings along the edge'
+                },
+                
+                'fireplace': {
+                    'material': 'river stone',
+                    'features': ['large hearth', 'crackling fire', 'mantelpiece with trinkets'],
+                    'notable': 'rusty dagger mounted on a plaque above'
+                },
+                
+                'notice board': {
+                    'location': 'near entrance',
+                    'contents': [
+                        'wanted poster for "Fingers Fenton" (50 gold)',
+                        'notice about wolf problem from Farmer Giles',
+                        'advertisement for Widow Tilda\'s bakery',
+                        'request to investigate abandoned mine',
+                        'mysterious note with strange symbol'
+                    ]
+                },
+                
+                'stairs': {
+                    'material': 'oak',
+                    'features': ['creaky steps', 'polished banister', 'sign about room prices'],
+                    'leads_to': 'upper floor with rooms for rent',
+                    'price': '2 gold per night'
+                },
+                
+                'patrons': {
+                    'groups': [
+                        'farmers sharing stories',
+                        'merchants in discussion',
+                        'hooded figure drinking alone',
+                        'young locals laughing',
+                        'older couple by fireplace'
+                    ]
+                },
+                
+                'old tom': {
+                    'appearance': 'elderly man with gray hair and beard',
+                    'clothing': 'white shirt, dark vest, apron',
+                    'role': 'barkeep',
+                    'notable': 'efficiency of movement, set of keys on belt'
+                },
+                
+                'sally': {
+                    'appearance': 'middle-aged woman with auburn hair in a bun',
+                    'clothing': 'forest green dress, woolen shawl',
+                    'role': 'regular patron, widow, farm owner',
+                    'notable': 'wooden bird pendant, knows everyone in town'
+                }
+            }
+            
+            # Check if we have facts for this target
+            if target in tavern_object_facts:
+                # Just pass the command to the LLM but include the object facts
+                # in the context so it can generate a unique description based on them
+                facts = tavern_object_facts[target]
+                
+                # Add these facts to the session's conversation context
+                # This gives the LLM the core information without prescribing exact wording
+                if session_id not in self.current_conversations:
+                    self.current_conversations[session_id] = {}
+                    
+                self.current_conversations[session_id]['examining_object'] = target
+                self.current_conversations[session_id]['object_facts'] = facts
+                
+                # Let the LLM generate the description - we'll inject the facts into its context
+                return None, None
+            
+            # For other targets, just let the LLM handle it directly
+            return None, None
+            
         elif user_input_lower in ['inventory', 'i', 'inv']:
             return "Let me check what you're carrying...", 'inventory'
         elif user_input_lower in ['status', 'stats']:
@@ -336,13 +453,29 @@ If the player's input appears to be selecting one of the conversation options yo
         # Create a human-readable context string
         context_str = json.dumps(context, indent=2)
         
+        # Check if the player is examining something specific
+        examining_info = ""
+        if session_id in self.current_conversations:
+            session_context = self.current_conversations[session_id]
+            if 'examining_object' in session_context and 'object_facts' in session_context:
+                examining_object = session_context['examining_object']
+                object_facts = session_context['object_facts']
+                
+                # Format the object facts as a string
+                facts_str = json.dumps(object_facts, indent=2)
+                examining_info = f"\n\nPLAYER IS EXAMINING: {examining_object}\nOBJECT FACTS:\n{facts_str}\n"
+                
+                # Clear the examining state after using it
+                del session_context['examining_object']
+                del session_context['object_facts']
+        
         # Create the full prompt with system instructions, context, and history
         messages = []
         
-        # Add system prompt as the first message
+        # Add system prompt as the first message with context and examining info
         messages.append({
             "role": "system", 
-            "content": f"{self.system_prompt}\n\nCURRENT GAME STATE:\n{context_str}"
+            "content": f"{self.system_prompt}\n\nCURRENT GAME STATE:\n{context_str}{examining_info}"
         })
         
         # Add conversation history
@@ -390,6 +523,17 @@ If the player's input appears to be selecting one of the conversation options yo
                     command_to_execute = llm_response[command_start:command_end].strip()
                     # Remove the command part from the narrative response
                     narrative_response = llm_response[command_end + 1:].strip()
+            
+            # Also try to detect implied commands from examining objects
+            # If we're examining an object with known facts, pass that info to the game engine
+            elif session_id in self.current_conversations:
+                session_context = self.current_conversations[session_id]
+                if 'examining_object' in session_context:
+                    # Extract the command that was used to generate this response
+                    examining_object = session_context.get('examining_object')
+                    if examining_object:
+                        command_to_execute = f"look {examining_object}"
+                        # Don't modify the narrative response here - we want the LLM's rich description
             
             # Add the assistant's response to history
             self.add_to_history(
