@@ -10,10 +10,10 @@ from pathlib import Path
 from typing import Dict, Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from living_rusted_tankard.core.game_state import GameState
+    from core.game_state import GameState
     # Assuming Narrator and CommandParser types would be imported if they were actual classes
-    # from living_rusted_tankard.core.llm.narrator import Narrator 
-    # from living_rusted_tankard.core.llm.parser import CommandParser 
+    # from core.llm.narrator import Narrator 
+    # from core.llm.parser import CommandParser 
 
 
 # The Serializable class and its direct usage can be phased out
@@ -87,7 +87,7 @@ def load_game_state(
             data_dict = json.load(f)
         
         # Need to import GameState here to avoid circular imports at module level
-        from living_rusted_tankard.core.game_state import GameState
+        from core.game_state import GameState
         
         # GameState.from_dict will handle reconstruction
         game_state_instance = GameState.from_dict(

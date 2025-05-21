@@ -31,10 +31,10 @@ class GameCLI(cmd.Cmd):
     def update_game(self) -> None:
         """Update game state and show any new events."""
         current_time = self.game.clock.current_time
-        delta = current_time - self.last_update_time
+        # Don't try to compute delta, just update
         
         # Update game state
-        self.game.update(delta)
+        self.game.update()
         self.last_update_time = current_time
         
         # Show any new events
@@ -45,52 +45,91 @@ class GameCLI(cmd.Cmd):
         # In a real implementation, this would show events that happened since last update
         pass
     
+    def do_EOF(self, arg: str) -> bool:
+        """Exit on Ctrl+D."""
+        print("\nGoodbye!")
+        return True
+        
+    def do_help(self, arg: str) -> None:
+        """Show available commands."""
+        print("\nAvailable commands:")
+        print("-------------------")
+        print("status - Show your current status (gold, inventory, etc.)")
+        print("look - Look around the current location")
+        print("inventory - Show your inventory")
+        print("talk [npc_id] - Talk to an NPC")
+        print("gamble [amount] - Try your luck at gambling")
+        print("rest - Rest for a while")
+        print("quit - Exit the game")
+        print("help - Show this help message")
+    
     def do_status(self, arg: str) -> None:
         """Show current game status."""
         status = self.game._handle_status()
-        if status["status"] != "success":
+        if not status.get("success", False):
             print("Error getting status.")
             return
-        
-        data = status["data"]
+            
+        data = status.get("data", {})
         print(f"\n=== Status ===")
-        print(f"Time: {data['time']}")
-        print(f"Gold: {data['gold']}")
-        print(f"Room: {'Yes' if data['has_room'] else 'No'}")
-        print(f"Tiredness: {data['tiredness']}")
-        print(f"Energy: {data['energy']}")
-        print(f"Status: {data['status_effects']}")
+        print(f"Time: {data.get('time', 'Unknown')}")
+        print(f"Gold: {data.get('gold', 0)}")
+        print(f"Room: {'Yes' if data.get('has_room', False) else 'No'}")
+        print(f"Tiredness: {data.get('tiredness', 0)}")
+        print(f"Energy: {data.get('energy', 0)}")
         
-        # Show current event if any
-        if 'current_event' in data:
-            print(f"\nEvent: {data['current_event']}")
-            print(f"{data['event_description']}")
-        
-        # Show present NPCs
-        npcs = self.game.npc_manager.get_present_npcs()
-        if npcs:
+        if "status_effects" in data and data["status_effects"]:
+            print(f"Status Effects: {data['status_effects']}")
+            
+        if "active_bounties" in data and data["active_bounties"]:
+            print("\nActive Bounties:")
+            if isinstance(data["active_bounties"], list):
+                for bounty in data["active_bounties"]:
+                    print(f"- {bounty}")
+            else:
+                print(f"- {data['active_bounties']}")
+                
+        if "present_npcs" in data:
             print("\nPresent NPCs:")
-            for npc in npcs:
-                print(f"- {npc.name} ({npc.npc_type.name.lower()}): {npc.description}")
+            for npc in data["present_npcs"]:
+                print(f"- {npc['name']}: {npc['description']}")
+                
+        print("\nType 'help' for a list of commands.")
+            
+    def do_inventory_simple(self, arg: str) -> None:
+        """Show your inventory (simplified version)."""
+        print("\nYour Inventory:")
+        print("--------------")
+        if self.game.player.inventory.is_empty():
+            print("Your inventory is empty.")
+        else:
+            for item in self.game.player.inventory.list_items_for_display():
+                print(f"{item['name']} (x{item['quantity']}) - {item['description']}")
+                
+        print(f"\nGold: {self.game.player.gold} coins")
     
     def do_time(self, arg: str) -> None:
         """Show current in-game time."""
-        time_info = self.game._handle_time()
-        print(f"Current time: {time_info['time']}")
-        print(f"Hours passed: {time_info['hours_passed']:.1f}")
+        try:
+            time_str = self.game.clock.get_formatted_time()
+            hours_passed = self.game.clock.time.hours
+            print(f"Current time: {time_str}")
+            print(f"Hours passed: {hours_passed:.1f}")
+        except Exception as e:
+            print(f"Error getting time: {e}")
     
     def do_inventory(self, arg: str) -> None:
         """Show your inventory."""
         inv = self.game._handle_inventory()
-        if inv["status"] != "success":
+        if not inv.get("success", False):
             print(inv.get("message", "Can't access inventory."))
             return
         
-        data = inv["data"]
-        print(f"\n=== Inventory ({data['count']} items) ===")
-        print(f"Gold: {data['gold']}")
+        data = inv.get("data", {})
+        print(f"\n=== Inventory ({data.get('count', 0)} items) ===")
+        print(f"Gold: {data.get('gold', 0)}")
         
-        if data['items']:
+        if data.get('items'):
             print("\nItems:")
             for item in data['items']:
                 print(f"- {item['name']}: {item['description']}")
@@ -166,34 +205,34 @@ class GameCLI(cmd.Cmd):
         """Talk to an NPC. Usage: talk <npc_id>"""
         if not arg:
             # List NPCs to talk to
-            npcs = self.game.npc_manager.get_interactive_npcs()
+            npcs = self.game.npc_manager.get_interactive_npcs(self.game.player)
             if not npcs:
                 print("No one is willing to talk right now.")
                 return
                 
             print("\n=== People to Talk To ===")
             for npc in npcs:
-                print(f"{npc['id']}: {npc['name']} - {npc['description']} ({npc['mood']})")
+                print(f"{npc['id']}: {npc['name']} - {npc['description']}")
         else:
             # Talk to the specified NPC
             npc = self.game.npc_manager.get_npc(arg)
-            if not npc or not npc.present:
+            if not npc or not npc.is_present:
                 print(f"{arg} is not here right now.")
                 return
                 
-            # For now, just show a simple interaction
-            # In a real implementation, this would show available dialogue options
-            print(f"\nYou talk to {npc.name}.")
+            # Use the game's interaction system
+            result = self.game.interact_with_npc(arg, "talk", topic=None)
             
-            # Simple mood-based response
-            if npc.current_mood == "happy":
-                print(f"{npc.name} smiles and greets you warmly.")
-            elif npc.current_mood == "angry":
-                print(f"{npc.name} grumbles something under their breath.")
-            elif npc.current_mood == "talkative":
-                print(f"{npc.name} starts rambling about their day.")
+            if result.get("success", False):
+                print(result.get("message", f"You talk with {npc.name}."))
+                
+                # If there are available topics, show them
+                if "topics" in result:
+                    print("\nPossible topics:")
+                    for topic in result["topics"]:
+                        print(f"- {topic}")
             else:
-                print(f"'What do you want?' {npc.name} asks.")
+                print(result.get("message", f"Couldn't talk to {npc.name}"))
     
     def do_gamble(self, arg: str) -> None:
         """Gamble some gold. Usage: gamble <amount> [npc_id]"""

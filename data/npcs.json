@@ -1,0 +1,84 @@
+{
+  "npc_definitions": [
+    {
+      "id": "gene_bartender",
+      "name": "Gene",
+      "description": "A burly middle-aged man with a thick mustache who runs the tavern.",
+      "npc_type": "BARKEEP",
+      "disposition": "FRIENDLY",
+      "schedule": [[8, 23]],
+      "departure_chance": 0.0,
+      "visit_frequency": 1.0,
+      "gold": 150,
+      "inventory": [
+        {"id": "ale", "quantity": 10},
+        {"id": "wine", "quantity": 5},
+        {"id": "bread", "quantity": 8}
+      ],
+      "conversation_topics": ["The old days", "Rumors in town", "The mysterious locked door"],
+      "relationships": {},
+      "interactions": {
+        "buy_drinks": {
+          "id": "buy_drinks",
+          "name": "Buy a drink",
+          "description": "Purchase a drink from Gene.",
+          "action_name": "barkeep_sell_drink"
+        }
+      }
+    },
+    {
+      "id": "serena_waitress",
+      "name": "Serena",
+      "description": "A cheerful young woman with auburn hair who serves food and drinks.",
+      "npc_type": "SERVANT",
+      "disposition": "FRIENDLY",
+      "schedule": [[10, 22]],
+      "departure_chance": 0.05,
+      "visit_frequency": 0.9,
+      "gold": 30,
+      "inventory": [
+        {"id": "bread", "quantity": 5},
+        {"id": "stew", "quantity": 3}
+      ],
+      "conversation_topics": ["Local gossip", "Rumors in town"],
+      "relationships": {}
+    },
+    {
+      "id": "old_man_jenkins",
+      "name": "Old Man Jenkins",
+      "description": "An elderly man who seems to always be in the tavern, telling tall tales.",
+      "npc_type": "PATRON",
+      "disposition": "NEUTRAL",
+      "schedule": [[14, 23]],
+      "departure_chance": 0.1,
+      "visit_frequency": 0.8,
+      "gold": 5,
+      "inventory": [
+        {"id": "ale", "quantity": 1}
+      ],
+      "conversation_topics": ["The old days", "Rumors in town"],
+      "relationships": {}
+    },
+    {
+      "id": "travelling_merchant_elara",
+      "name": "Elara the Merchant",
+      "description": "A well-traveled merchant with exotic goods and interesting tales.",
+      "npc_type": "MERCHANT",
+      "disposition": "NEUTRAL",
+      "schedule": [[9, 20]],
+      "departure_chance": 0.0,
+      "visit_frequency": 0.0,
+      "gold": 300,
+      "base_inventory_ids": [
+        "healing_potion_minor", 
+        "elixir_luck", 
+        "exotic_spices", 
+        "arrows", 
+        "dagger", 
+        "wine"
+      ],
+      "conversation_topics": ["rare_goods", "distant_lands", "trade_secrets"],
+      "relationships": {}
+    }
+  ]
+}

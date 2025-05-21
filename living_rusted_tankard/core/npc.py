@@ -2,8 +2,9 @@
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Callable, Set, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, Any, Callable, Set, TYPE_CHECKING, Union
 import random
+import json
 from pydantic import BaseModel, Field as PydanticField
 
 if TYPE_CHECKING:
@@ -132,16 +133,21 @@ class NPC(BaseModel):
             quantity = 1
             if item_id in ["elixir_luck", "exotic_spices", "bread", "healing_potion_minor", "arrows"]:
                 quantity = random.randint(1, 5)
-            inventory_item = item_def.model_copy(deep=True)
-            inventory_item.quantity = quantity 
+            # Create inventory item in the proper format
+            from .items import InventoryItem
+            inventory_item = InventoryItem(item=item_def.model_copy(deep=True), quantity=quantity)
             self.inventory.append(inventory_item)
 
         if self.current_event_modifier == "war_in_north":
-            if not any(item.id == "dagger" for item in self.inventory): # type: ignore
+            if not any(item.item.id == "dagger" for item in self.inventory): # Now inventory holds InventoryItem objects
                 dagger_def = ITEM_DEFINITIONS.get("dagger")
                 if dagger_def: 
-                    dagger_item = dagger_def.model_copy(deep=True)
-                    dagger_item.quantity = random.randint(1,2)
+                    # Create inventory item in the proper format
+                    from .items import InventoryItem
+                    dagger_item = InventoryItem(
+                        item=dagger_def.model_copy(deep=True),
+                        quantity=random.randint(1,2)
+                    )
                     self.inventory.append(dagger_item)
 
     def modify_relationship(self, player_id: str, change: float, event_bus=None) -> float:
@@ -205,22 +211,21 @@ class NPC(BaseModel):
         return {"success": True, "message": response_message, "topics": available_topics}
 
 
-class NPCManager(BaseModel):
-    _npc_definitions: Dict[str, Any] = PrivateAttr(default_factory=dict) 
-    npcs: Dict[str, NPC] = PydanticField(default_factory=dict) 
-    _data_dir: Path = PrivateAttr()
-    _event_bus: Optional[Any] = PrivateAttr(default=None)
-
-    def __init__(self, data_dir: Union[str, Path], event_bus: Optional[Any] = None, **data: Any):
-        super().__init__(**data)
+class NPCManager:
+    """Manages NPCs in the game world. Not a Pydantic model for compatibility."""
+    
+    def __init__(self, data_dir: Union[str, Path], event_bus: Optional[Any] = None):
         self._data_dir = Path(data_dir)
         self._event_bus = event_bus
+        self._npc_definitions = {}  # Initialize as empty dict
+        self.npcs = {}  # Dictionary of active NPCs
+        
+        # Load NPC definitions from JSON
         self._load_npc_definitions()
-        if not self.npcs: 
+        
+        # Initialize NPCs from definitions if none exist yet
+        if not self.npcs:
             self._initialize_npcs_from_definitions()
-        else: 
-            for npc_instance in self.npcs.values():
-                 pass 
 
     def _load_npc_definitions(self) -> None:
         npc_file = self._data_dir / "npcs.json"
@@ -248,8 +253,12 @@ class NPCManager(BaseModel):
                 for item_data in processed_data.get("inventory", []):
                     item_def = ITEM_DEFINITIONS.get(item_data["id"])
                     if item_def:
-                        inv_item = item_def.model_copy(deep=True)
-                        inv_item.quantity = item_data.get("quantity", 1)
+                        # Create inventory item in the proper format
+                        from .items import InventoryItem
+                        inv_item = InventoryItem(
+                            item=item_def.model_copy(deep=True),
+                            quantity=item_data.get("quantity", 1)
+                        )
                         inventory_objects.append(inv_item)
                 processed_data["inventory"] = inventory_objects
 
@@ -332,7 +341,29 @@ class NPCManager(BaseModel):
             self._event_bus.dispatch(NPCInteractionEvent(npc_id=npc.id, player_id=player_state.id, interaction_type=interaction_id, data=action_result))
         return action_result
 
+    def add_npc(self, npc: NPC) -> None:
+        """Add an NPC to the game world."""
+        self.npcs[npc.id] = npc
+        
     def set_global_event_modifier(self, event_name: Optional[str]) -> None:
         for npc in self.npcs.values():
             if npc.id == "travelling_merchant_elara": 
                 npc.current_event_modifier = event_name
+                
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize NPCManager state to a dictionary."""
+        return {
+            "npcs": {npc_id: npc.model_dump() for npc_id, npc in self.npcs.items()}
+        }
+        
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any], data_dir: str = "data", event_bus: Optional[Any] = None) -> 'NPCManager':
+        """Create an NPCManager from serialized data."""
+        manager = cls(data_dir=data_dir, event_bus=event_bus)
+        
+        # Load NPCs from serialized data
+        if "npcs" in data and isinstance(data["npcs"], dict):
+            for npc_id, npc_data in data["npcs"].items():
+                manager.npcs[npc_id] = NPC.model_validate(npc_data)
+                
+        return manager

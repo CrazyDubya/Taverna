@@ -1,0 +1,51 @@
+{
+  "bounties": [
+    {
+      "id": "missing_shipment",
+      "title": "Find the Missing Shipment",
+      "description": "A shipment of ale barrels has gone missing. Find out what happened to it.",
+      "issuer": "Gene the Bartender",
+      "status": "available",
+      "difficulty": "EASY",
+      "time_limit_hours": 72,
+      "rewards": {
+        "gold": 50,
+        "items": [
+          {"item_id": "wine", "quantity": 1}
+        ]
+      },
+      "objectives": [
+        {
+          "id": "talk_to_gene",
+          "type": "report_to_npc",
+          "description": "Talk to Gene about the shipment",
+          "target_id": "gene_bartender",
+          "order": 1,
+          "is_complete": false,
+          "progress": 0,
+          "required_progress": 1
+        },
+        {
+          "id": "find_cellar",
+          "type": "discover_location",
+          "description": "Check the tavern cellar",
+          "target_id": "deep_cellar",
+          "order": 2,
+          "is_complete": false,
+          "progress": 0,
+          "required_progress": 1
+        },
+        {
+          "id": "report_findings",
+          "type": "report_to_npc",
+          "description": "Report your findings to Gene",
+          "target_id": "gene_bartender",
+          "order": 3,
+          "is_complete": false,
+          "progress": 0,
+          "required_progress": 1
+        }
+      ]
+    }
+  ]
+}

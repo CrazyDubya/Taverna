@@ -100,14 +100,19 @@
     </div>
 
     <script>
-        // Game state
+        // Game state and session management
         let gameState = {
             time: 'Morning, Day 1',
             gold: 10,
             inventory: [],
-            quests: [],
-            narrative: []
+            active_bounties: [],
+            status_effects: []
         };
+        
+        let sessionId = localStorage.getItem('gameSessionId');
+        let commandHistory = [];
+        let historyIndex = -1;
+        let isLoading = false;
 
         // DOM Elements
         const commandInput = document.getElementById('command-input');
@@ -131,72 +136,201 @@
 
         // Update the UI with the current game state
         function updateUI() {
+            // Clear loading state
+            setLoading(false);
+            
             // Update time
-            gameTimeElement.textContent = gameState.time;
+            if (gameState.time) {
+                gameTimeElement.textContent = gameState.time;
+            }
             
             // Update gold
-            goldAmountElement.innerHTML = `
-                <span class="text-yellow-400 text-2xl">${gameState.gold}</span>
-                <span class="ml-1">gp</span>
-            `;
+            if (gameState.gold !== undefined) {
+                goldAmountElement.innerHTML = `
+                    <span class="text-yellow-400 text-2xl">${gameState.gold}</span>
+                    <span class="ml-1">gp</span>
+                `;
+            }
             
             // Update inventory
-            inventoryListElement.innerHTML = gameState.inventory
-                .map(item => `<li>• ${item}</li>`)
-                .join('');
+            if (gameState.inventory) {
+                inventoryListElement.innerHTML = '';
+                
+                if (Array.isArray(gameState.inventory) && gameState.inventory.length > 0) {
+                    gameState.inventory.forEach(item => {
+                        const li = document.createElement('li');
+                        if (typeof item === 'string') {
+                            li.textContent = `• ${item}`;
+                        } else if (item.name) {
+                            let itemText = `• ${item.name}`;
+                            if (item.quantity && item.quantity > 1) {
+                                itemText += ` (${item.quantity})`;
+                            }
+                            li.textContent = itemText;
+                        }
+                        inventoryListElement.appendChild(li);
+                    });
+                } else {
+                    inventoryListElement.innerHTML = '<li>Your inventory is empty</li>';
+                }
+            }
             
-            // Update quests
-            questListElement.innerHTML = gameState.quests
-                .map(quest => `
-                    <li class="bg-gray-700 p-2 rounded">
-                        <div class="font-bold">${quest.title}</div>
-                        <div class="text-sm text-gray-300">${quest.description}</div>
-                    </li>
-                `)
-                .join('');
+            // Update quests/bounties
+            questListElement.innerHTML = '';
+            const bounties = gameState.active_bounties || [];
+            
+            if (Array.isArray(bounties) && bounties.length > 0) {
+                bounties.forEach(bounty => {
+                    const li = document.createElement('li');
+                    li.className = 'bg-gray-700 p-2 rounded';
+                    
+                    // Handle different bounty formats
+                    if (typeof bounty === 'string') {
+                        // Simple string format
+                        li.innerHTML = `<div class="font-bold">${bounty}</div>`;
+                    } else if (bounty.title) {
+                        // Object with title and description
+                        li.innerHTML = `
+                            <div class="font-bold">${bounty.title}</div>
+                            <div class="text-sm text-gray-300">${bounty.description || ''}</div>
+                        `;
+                    }
+                    
+                    questListElement.appendChild(li);
+                });
+            } else {
+                questListElement.innerHTML = '<li class="italic text-gray-400">No active quests</li>';
+            }
+        }
+        
+        // Set loading state
+        function setLoading(isLoading) {
+            if (isLoading) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Sending...';
+                submitBtn.classList.add('opacity-50');
+                commandInput.disabled = true;
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Send';
+                submitBtn.classList.remove('opacity-50');
+                commandInput.disabled = false;
+                commandInput.focus();
+            }
         }
 
         // Fetch the current game state from the server
         async function fetchGameState() {
+            if (!sessionId) {
+                // Create a new session first by sending an empty command
+                await sendCommand('help');
+                return;
+            }
+            
             try {
-                const response = await fetch('/api/state');
+                setLoading(true);
+                const response = await fetch(`/state/${sessionId}`);
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        // Session not found, reset and create a new one
+                        localStorage.removeItem('gameSessionId');
+                        sessionId = null;
+                        addNarrative('Starting a new game session...');
+                        await sendCommand('help');
+                        return;
+                    }
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+                
                 const data = await response.json();
-                gameState = data;
+                gameState = data.game_state;
                 updateUI();
+                
+                // Process any events
+                if (data.events && data.events.length > 0) {
+                    data.events.forEach(event => {
+                        addNarrative(event.message || event.text || 'Event occurred');
+                    });
+                }
             } catch (error) {
                 console.error('Error fetching game state:', error);
-                addNarrative('Error connecting to the game server.');
+                addNarrative('Error connecting to the game server. Please try refreshing the page.');
+                setLoading(false);
             }
         }
 
         // Send a command to the server
         async function sendCommand(command) {
             try {
-                const response = await fetch('/api/command', {
+                setLoading(true);
+                
+                // Add to command history
+                if (command.trim() && (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== command)) {
+                    commandHistory.push(command);
+                    historyIndex = commandHistory.length;
+                }
+                
+                const response = await fetch('/command', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ command }),
+                    body: JSON.stringify({ 
+                        input: command,
+                        session_id: sessionId
+                    }),
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
                 
                 const data = await response.json();
                 
-                if (data.success) {
-                    // Update game state
-                    gameState = data.state;
-                    updateUI();
-                    
-                    // Add response to narrative
-                    if (data.message) {
-                        addNarrative(data.message);
-                    }
-                } else {
-                    addNarrative(data.error || 'An error occurred.');
+                // Save session ID
+                if (data.session_id && (!sessionId || sessionId !== data.session_id)) {
+                    sessionId = data.session_id;
+                    localStorage.setItem('gameSessionId', sessionId);
+                    console.log(`Game session ID: ${sessionId}`);
+                }
+                
+                // Update game state
+                gameState = data.game_state;
+                updateUI();
+                
+                // Add response to narrative
+                if (data.output) {
+                    addNarrative(data.output);
+                }
+                
+                // Process any events
+                if (data.events && data.events.length > 0) {
+                    data.events.forEach(event => {
+                        addNarrative(event.message || event.text || 'Event occurred');
+                    });
                 }
             } catch (error) {
                 console.error('Error sending command:', error);
-                addNarrative('Error sending command to the server.');
+                addNarrative('Error sending command to the server. Please try again.');
+                setLoading(false);
+            }
+        }
+        
+        // Navigate command history
+        function navigateHistory(direction) {
+            if (commandHistory.length === 0) return;
+            
+            if (direction === 'up') {
+                historyIndex = Math.max(0, historyIndex - 1);
+            } else if (direction === 'down') {
+                historyIndex = Math.min(commandHistory.length, historyIndex + 1);
+            }
+            
+            if (historyIndex < commandHistory.length) {
+                commandInput.value = commandHistory[historyIndex];
+            } else {
+                commandInput.value = '';
             }
         }
 
@@ -215,10 +349,16 @@
 
         // Initialize the game
         document.addEventListener('DOMContentLoaded', () => {
-            // Set up event listeners
-            commandInput.addEventListener('keypress', (e) => {
+            // Set up command input event listeners
+            commandInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     handleCommand();
+                } else if (e.key === 'ArrowUp') {
+                    navigateHistory('up');
+                    e.preventDefault();
+                } else if (e.key === 'ArrowDown') {
+                    navigateHistory('down');
+                    e.preventDefault();
                 }
             });
             
@@ -231,7 +371,7 @@
             commandInput.focus();
             
             // Add welcome message
-            addNarrative('Welcome to The Living Rusted Tankard! What would you like to do?');
+            addNarrative('Welcome to The Living Rusted Tankard! Type "help" to see available commands.');
         });
     </script>
 </body>

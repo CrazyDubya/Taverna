@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING, List, Dict, Any, Optional
 
 if TYPE_CHECKING:
-    from living_rusted_tankard.core.game_state import GameState
-    from living_rusted_tankard.core.player import PlayerState
+    from core.game_state import GameState
+    from core.player import PlayerState
 
 # Helper function to find a bounty by partial ID or title from a list of bounties
 def find_bounty_by_term(term: str, bounty_list: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:

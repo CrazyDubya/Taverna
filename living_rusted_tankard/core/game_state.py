@@ -1,7 +1,7 @@
 from typing import Dict, Optional, Callable, Any, List, TYPE_CHECKING, Union, Deque
 from collections import deque 
 from datetime import datetime
-from pydantic import BaseModel, Field 
+from pydantic import BaseModel, Field
 from core.player import PlayerState
 from .clock import GameClock, GameTime
 from .room import RoomManager
@@ -21,8 +21,8 @@ from .events import (
     NPCRelationshipChangeEvent
 )
 from .event_formatter import EventFormatter
-from living_rusted_tankard.game.commands.bounty_commands import BOUNTY_COMMAND_HANDLERS 
-from living_rusted_tankard.game.commands.reputation_commands import REPUTATION_COMMAND_HANDLERS 
+from game.commands.bounty_commands import BOUNTY_COMMAND_HANDLERS 
+from game.commands.reputation_commands import REPUTATION_COMMAND_HANDLERS 
 
 if TYPE_CHECKING:
     from .snapshot import SnapshotManager
@@ -146,15 +146,17 @@ class GameState:
         if not ITEM_DEFINITIONS: 
             load_item_definitions(self._data_dir)
 
+        # Add starting items
         starting_item_ids = ["bread", "ale"]
         for item_id in starting_item_ids:
             if item_id in ITEM_DEFINITIONS: 
-                success, msg = self.player.inventory.add_item(item_id_to_add=item_id, quantity=1)
+                success = self.player.inventory.add_item(item_id, quantity=1)
                 if not success:
-                    print(f"Warning: Failed to add starting item '{item_id}': {msg}")
+                    print(f"Warning: Failed to add starting item '{item_id}'")
             else:
                 print(f"Warning: Starting item ID '{item_id}' not found in ITEM_DEFINITIONS.")
         
+        # Initialize player attributes
         if not hasattr(self.player, 'active_bounty_ids'): 
             self.player.active_bounty_ids = set() 
         if not hasattr(self.player, 'completed_bounty_ids'):
@@ -163,6 +165,9 @@ class GameState:
             self.player.active_effects = [] 
         if not hasattr(self.player, 'storage_inventory'): # Ensure storage_inventory is initialized
             self.player.storage_inventory = Inventory()
+            
+        # Give player some starting gold
+        self.player.gold = 20
             
         self._add_event("Welcome to The Rusted Tankard!", "info")
 
@@ -811,39 +816,45 @@ class GameState:
 
 
     def save_game(self, filename: str) -> bool:
-        try: import json 
-             save_data = self.to_dict() 
-             save_data["save_timestamp"] = datetime.now().isoformat() 
-             with open(filename, 'w') as f: json.dump(save_data, f, indent=2)
-             self._add_event(f"Game saved to {filename}", "success")
-             return True
+        try: 
+            import json 
+            save_data = self.to_dict() 
+            save_data["save_timestamp"] = datetime.now().isoformat() 
+            with open(filename, 'w') as f: 
+                json.dump(save_data, f, indent=2)
+            self._add_event(f"Game saved to {filename}", "success")
+            return True
         except Exception as e: self._add_event(f"Failed to save game: {str(e)}", "error"); return False
     
     def load_game(self, filename: str) -> bool:
-        try: import json 
-             with open(filename, 'r') as f: save_data_dict = json.load(f)
-             temp_gs = GameState.from_dict(save_data_dict, data_dir=str(self._data_dir))
-             self.clock = temp_gs.clock
-             self.player = temp_gs.player
-             self.room_manager = temp_gs.room_manager
-             self.npc_manager = temp_gs.npc_manager
-             self.economy = temp_gs.economy
-             self.gambling_manager = temp_gs.gambling_manager
-             self.bounty_manager = temp_gs.bounty_manager
-             self.news_manager = temp_gs.news_manager 
-             self.active_global_events = temp_gs.active_global_events 
-             self.events = temp_gs.events
-             self._last_update_time = temp_gs._last_update_time
-             self.travelling_merchant_active = temp_gs.travelling_merchant_active
-             self.travelling_merchant_npc_id = temp_gs.travelling_merchant_npc_id
-             self.travelling_merchant_arrival_time = temp_gs.travelling_merchant_arrival_time
-             self.travelling_merchant_departure_time = temp_gs.travelling_merchant_departure_time
-             self.travelling_merchant_temporary_items = temp_gs.travelling_merchant_temporary_items
-             self._data_dir = temp_gs._data_dir 
-             self.pending_command = temp_gs.pending_command
-             
-             self._add_event("Game loaded successfully!", "success")
-             return True
-        except Exception as e: self._add_event(f"Failed to load game: {str(e)}", "error"); return False
+        try: 
+            import json 
+            with open(filename, 'r') as f: 
+                save_data_dict = json.load(f)
+            temp_gs = GameState.from_dict(save_data_dict, data_dir=str(self._data_dir))
+            self.clock = temp_gs.clock
+            self.player = temp_gs.player
+            self.room_manager = temp_gs.room_manager
+            self.npc_manager = temp_gs.npc_manager
+            self.economy = temp_gs.economy
+            self.gambling_manager = temp_gs.gambling_manager
+            self.bounty_manager = temp_gs.bounty_manager
+            self.news_manager = temp_gs.news_manager 
+            self.active_global_events = temp_gs.active_global_events 
+            self.events = temp_gs.events
+            self._last_update_time = temp_gs._last_update_time
+            self.travelling_merchant_active = temp_gs.travelling_merchant_active
+            self.travelling_merchant_npc_id = temp_gs.travelling_merchant_npc_id
+            self.travelling_merchant_arrival_time = temp_gs.travelling_merchant_arrival_time
+            self.travelling_merchant_departure_time = temp_gs.travelling_merchant_departure_time
+            self.travelling_merchant_temporary_items = temp_gs.travelling_merchant_temporary_items
+            self._data_dir = temp_gs._data_dir 
+            self.pending_command = temp_gs.pending_command
+            
+            self._add_event("Game loaded successfully!", "success")
+            return True
+        except Exception as e: 
+            self._add_event(f"Failed to load game: {str(e)}", "error")
+            return False
 
     def get_snapshot(self) -> Dict[str, Any]: return self.snapshot_manager.create_snapshot()

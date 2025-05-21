@@ -1,4 +1,6 @@
 """Item system for The Living Rusted Tankard."""
+import json
+from pathlib import Path
 from enum import Enum
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
@@ -19,74 +21,67 @@ class Item(BaseModel):
     item_type: ItemType
     base_price: int = 0
     effects: Dict[str, float] = Field(default_factory=dict)
+    
+    def model_copy(self, *args, **kwargs):
+        """For compatibility with Pydantic v2 - needed by NPC code."""
+        return self.copy(*args, **kwargs)
 
 
 class InventoryItem(BaseModel):
-    """Wrapper class for items in the inventory with quantity tracking."""
+    """An item in the player's inventory."""
     item: Item
     quantity: int = 1
 
-    class Config:
-        # For Pydantic v2, default is 'protected', which is fine.
-        # If compatibility with v1 was needed for private attributes,
-        # you might set underscore_attrs_are_private = True,
-        # but 'item' and 'quantity' are public.
-        pass
 
 class Inventory(BaseModel):
-    """Player's inventory system with quantity tracking and stackable items."""
-    # Using alias "items" for the serialized output, while keeping _items for internal use.
-    # Pydantic will handle mapping this during serialization/deserialization.
-    # Or, more simply, just name it 'items' directly if no underscore is desired.
-    # For this refactor, let's stick to a public 'items' field for simplicity with Pydantic.
+    """Player inventory for storing items."""
     items: Dict[str, InventoryItem] = Field(default_factory=dict)
-        
-    def add_item(self, item_to_add: Item, quantity: int = 1) -> tuple[bool, str]: # Renamed 'item' to 'item_to_add'
-        """Add an item to the inventory.
+    
+    def add_item(self, item_id: str, quantity: int = 1) -> bool:
+        """Add items to the inventory.
         
         Args:
-            item: The Item to add
-            quantity: Number of items to add (must be positive)
+            item_id: The ID of the item to add
+            quantity: The quantity to add (default: 1)
             
         Returns:
-            tuple: (success: bool, message: str)
+            bool: True if successful, False if item_id not found
         """
-        if not isinstance(quantity, int) or quantity <= 0:
-            return False, "Quantity must be a positive integer"
+        global ITEM_DEFINITIONS
+        # If this exact item object is already in the inventory, just increase quantity
+        if item_id in self.items:
+            self.items[item_id].quantity += quantity
+            return True
             
-        try:
-            if item_to_add.id in self.items:
-                # Item exists, update quantity
-                self.items[item_to_add.id].quantity += quantity
-            else:
-                # New item
-                self.items[item_to_add.id] = InventoryItem(item=item_to_add, quantity=quantity)
-                
-            return True, f"Added {quantity} x {item_to_add.name} to inventory"
-        except Exception as e:
-            return False, f"Failed to add item: {str(e)}"
-
+        # Otherwise, find the item in the definitions
+        if item_id in ITEM_DEFINITIONS:
+            self.items[item_id] = InventoryItem(
+                item=ITEM_DEFINITIONS[item_id],
+                quantity=quantity
+            )
+            return True
+            
+        print(f"Warning: Item ID '{item_id}' not found in ITEM_DEFINITIONS.")
+        return False
+    
     def remove_item(self, item_id: str, quantity: int = 1) -> tuple[bool, str]:
         """Remove items from the inventory.
         
         Args:
-            item_id: ID of the item to remove
-            quantity: Number of items to remove (default: 1)
+            item_id: The ID of the item to remove
+            quantity: The quantity to remove (default: 1)
             
         Returns:
-            tuple: (success: bool, message: str)
+            Tuple[bool, str]: (success, message)
         """
-        if not isinstance(quantity, int) or quantity <= 0:
-            return False, "Quantity must be a positive integer"
-            
-        if item_id not in self.items:
-            return False, f"Item '{item_id}' not found in inventory"
-            
         try:
+            if item_id not in self.items:
+                return False, f"Item '{item_id}' not in inventory."
+                
             if self.items[item_id].quantity > quantity:
-                # Reduce quantity
                 self.items[item_id].quantity -= quantity
-                return True, f"Removed {quantity} x {self.items[item_id].item.name}"
+                return True, f"Removed {quantity} {self.items[item_id].item.name}(s) from inventory."
+                
             elif self.items[item_id].quantity == quantity:
                 # Remove the item entirely
                 item_name = self.items[item_id].item.name
@@ -156,34 +151,41 @@ class Inventory(BaseModel):
         display_list = []
         for item_id, inv_item in self.items.items():
             display_list.append({
-                "id": inv_item.item.id,
+                "id": item_id,
                 "name": inv_item.item.name,
                 "description": inv_item.item.description,
-                "item_type": inv_item.item.item_type.value,
-                "base_price": inv_item.item.base_price,
-                "effects": inv_item.item.effects,
                 "quantity": inv_item.quantity,
+                "type": inv_item.item.item_type.value,
+                "base_price": inv_item.item.base_price
             })
         return display_list
-        
-    def get_total_items(self) -> int:
-        """Get the total number of distinct item types in the inventory."""
-        return len(self.items)
-
-    def get_total_quantity(self) -> int:
-        """Get the total quantity of all items in the inventory."""
-        return sum(inv_item.quantity for inv_item in self.items.values())
-        
+                
     def is_empty(self) -> bool:
         """Check if the inventory is empty.
         
         Returns:
-            bool: True if the inventory is empty
+            bool: True if inventory has no items, False otherwise.
         """
         return not self.items
+        
+    def get_total_items(self) -> int:
+        """Get the total number of unique items in the inventory.
+        
+        Returns:
+            int: The number of unique items
+        """
+        return len(self.items)
+        
+    def get_total_quantity(self) -> int:
+        """Get the total quantity of all items in the inventory.
+        
+        Returns:
+            int: The total quantity of all items
+        """
+        return sum(item.quantity for item in self.items.values())
 
 
-# Common items in the tavern
+# Built-in tavern items that are always available
 TAVERN_ITEMS = {
     "ale": Item(
         id="ale",
@@ -207,28 +209,43 @@ TAVERN_ITEMS = {
         description="A fresh loaf of crusty bread.",
         item_type=ItemType.FOOD,
         base_price=1,
-        effects={"hunger": -0.3}
-    ),
-    "elixir_luck": Item(
-        id="elixir_luck",
-        name="Elixir of Minor Luck",
-        description="A shimmering, faintly glowing potion. Might bring a touch of good fortune.",
-        item_type=ItemType.MISC, # Or a new "POTION" type if desired
-        base_price=75,
-        effects={"luck_modifier": 0.1} # Assuming a temporary luck effect
-    ),
-    "map_fragment_grove": Item(
-        id="map_fragment_grove",
-        name="Map Fragment to a Hidden Grove",
-        description="A tattered piece of parchment showing a path to a secluded grove, rumored to have rare herbs.",
-        item_type=ItemType.MISC,
-        base_price=120
-    ),
-    "exotic_spices": Item(
-        id="exotic_spices",
-        name="Bag of Exotic Spices",
-        description="A small, fragrant bag of spices from a faraway land. Highly valued by cooks.",
-        item_type=ItemType.MISC, # Could also be a new "INGREDIENT" type
-        base_price=50
+        effects={"hunger": -0.2}
     ),
 }
+
+# Default item definitions - initially empty, populated by load_item_definitions 
+ITEM_DEFINITIONS = {}
+
+def load_item_definitions(data_dir: Path = Path("data")) -> Dict[str, Item]:
+    """Load item definitions from items.json and populate ITEM_DEFINITIONS."""
+    global ITEM_DEFINITIONS
+    
+    # First, populate with built-in TAVERN_ITEMS
+    ITEM_DEFINITIONS.update(TAVERN_ITEMS)
+    
+    try:
+        # Then try to load from file
+        items_file = data_dir / "items.json"
+        if not items_file.exists():
+            print(f"Warning: Item definitions file not found at {items_file}")
+            return ITEM_DEFINITIONS
+            
+        with open(items_file, 'r') as f:
+            data = json.load(f)
+        
+        # Add additional items from file 
+        for item_data in data.get("items", []):
+            item = Item(
+                id=item_data["id"],
+                name=item_data["name"],
+                description=item_data.get("description", ""),
+                item_type=ItemType(item_data.get("item_type", "misc")),
+                base_price=item_data.get("base_price", 0),
+                effects=item_data.get("effects", {})
+            )
+            ITEM_DEFINITIONS[item.id] = item
+        
+        return ITEM_DEFINITIONS
+    except Exception as e:
+        print(f"Error loading item definitions: {e}")
+        return ITEM_DEFINITIONS

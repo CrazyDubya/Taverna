@@ -10,14 +10,20 @@ def main():
     print("Starting The Living Rusted Tankard...")
     
     try:
+        # Import the modules first to check for errors
+        import sys
+        import os
+        
+        # Add current directory to path just in case
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        
         from core.game_state import GameState
         from cli import GameCLI
+        from core.npc import NPC, NPCType, NPCDisposition, NPCSkill
+        from pathlib import Path
         
         # Initialize game state
         game = GameState()
-        
-        # Add some test NPCs
-        from core.npc import NPC
         game.npc_manager.add_npc(NPC(
             id="barkeep",
             name="Old Tom",

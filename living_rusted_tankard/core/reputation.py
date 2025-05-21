@@ -94,7 +94,7 @@ def get_reputation_tier(score: int) -> str:
     # For negative scores, iterate from low to high (excluding Neutral and above)
     if score < 0:
         for threshold, name in REPUTATION_TIERS:
-             if name in ["Neutral", "Friendly", "Liked", "Trusted", "Hero"]:
+            if name in ["Neutral", "Friendly", "Liked", "Trusted", "Hero"]:
                 continue
             # For negative tiers, the score should be less than or equal to the tier's upper bound.
             # E.g., Hated is -75. If score is -75 or -80, it's Hated.

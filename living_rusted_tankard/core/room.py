@@ -2,13 +2,13 @@
 from typing import Dict, Optional, List, Tuple, TYPE_CHECKING
 import random
 import string
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 if TYPE_CHECKING:
     from core.player import PlayerState # Assuming PlayerState is in core.player
 
 from core.clock import GameClock # Assuming GameClock is in core.clock
-from pydantic import model_validator
+# using validator instead of model_validator for compatibility with v1
 
 # Cost to rent a room for one night
 ROOM_COST = 10
@@ -28,20 +28,20 @@ class Room(BaseModel):
     has_storage_chest: bool = False # Added
     storage_chest_cost_modifier: int = STORAGE_CHEST_COST_MODIFIER # Added
 
-    @model_validator(mode='after')
-    def set_name_if_none(cls, values):
-        if values.name is None:
-            if values.id.startswith("room_"):
-                parts = values.id.split("_")
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Set name if none was provided
+        if self.name is None:
+            if self.id.startswith("room_"):
+                parts = self.id.split("_")
                 if len(parts) > 1:
-                    values.name = f"Room {parts[1]}"
+                    self.name = f"Room {parts[1]}"
                 else:
-                    values.name = values.id
+                    self.name = self.id
             else:
-                values.name = values.id
-        if values.description is None and values.name:
-             values.description = f"This is {values.name}."
-        return values
+                self.name = self.id
+        if self.description is None and self.name:
+             self.description = f"This is {self.name}."
     
     def rent(self, player_id: str, with_storage_chest: bool = False) -> bool: # Added with_storage_chest
         if self.is_occupied and self.occupant_id != player_id : # Allow re-renting to same player if needed by logic elsewhere
@@ -84,10 +84,11 @@ class Room(BaseModel):
 class RoomManager(BaseModel):
     rooms: Dict[str, Room] = Field(default_factory=dict)
     current_room_id: Optional[str] = None 
-    _default_num_rooms: int = Field(10, exclude=True) 
+    _default_num_rooms: int = 10  # Regular class attribute, not a Field
 
-    @model_validator(mode='after')
-    def ensure_rooms_initialized(self):
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Initialize rooms if needed
         if not self.rooms: 
             self._initialize_rooms(self._default_num_rooms)
         
@@ -123,7 +124,6 @@ class RoomManager(BaseModel):
 
         if self.current_room_id is None and "tavern_main" in self.rooms:
             self.current_room_id = "tavern_main"
-        return self
     
     def _generate_room_id(self, number: int) -> str:
         return f"room_{number}{random.choice(string.ascii_uppercase[:3])}"

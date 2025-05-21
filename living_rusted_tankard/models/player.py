@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional, TYPE_CHECKING, Type, TypeVar
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field
 import uuid
 
 if TYPE_CHECKING:
@@ -51,9 +51,9 @@ class PlayerState(BaseModel):
         return self.player_id
         
     # Private attributes
-    _no_sleep_quest_unlocked: bool = PrivateAttr(default=False)
-    _npc_state: Optional['NPCState'] = PrivateAttr(default=None)
-    _npc_state_cls: Type['NPCState'] = PrivateAttr()
+    _no_sleep_quest_unlocked: bool = Field(default=False, exclude=True)
+    _npc_state: Optional['NPCState'] = Field(default=None, exclude=True)
+    _npc_state_cls: Optional[Type['NPCState']] = Field(default=None, exclude=True)
     
     def __init__(self, **data):
         super().__init__(**data)

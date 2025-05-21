@@ -1,0 +1,37 @@
+{
+  "news_items": [
+    {
+      "id": "harvest_festival",
+      "text": "I hear the annual Harvest Festival is coming up soon. Farmers from all around will be bringing their best crops.",
+      "source_types": ["BARKEEP", "PATRON", "SERVANT"],
+      "conditions": {
+        "min_day": 1
+      }
+    },
+    {
+      "id": "traveling_merchant",
+      "text": "Word is that a merchant caravan was spotted on the road. They might be stopping by the tavern soon.",
+      "source_types": ["BARKEEP", "PATRON"],
+      "conditions": {
+        "min_day": 1
+      }
+    },
+    {
+      "id": "strange_noises",
+      "text": "Have you heard those odd noises coming from the cellar lately? The bartender says it's just rats, but I'm not so sure.",
+      "source_types": ["PATRON", "SERVANT"],
+      "conditions": {
+        "min_day": 2
+      }
+    },
+    {
+      "id": "war_rumors",
+      "text": "There are rumors of conflict brewing in the north. Some say troops are already being mustered.",
+      "source_types": ["MERCHANT", "ADVENTURER", "GUARD"],
+      "conditions": {
+        "min_day": 5,
+        "requires_event": "war_in_north"
+      }
+    }
+  ]
+}

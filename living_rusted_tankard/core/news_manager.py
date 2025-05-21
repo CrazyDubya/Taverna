@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Union, Any
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field
 from pathlib import Path
 import json
 import random
@@ -21,12 +21,15 @@ class NewsItem(BaseModel):
 
 class NewsManager(BaseModel):
     news_items: List[NewsItem] = Field(default_factory=list)
-    _data_dir: Path = PrivateAttr()
-    _loaded: bool = PrivateAttr(default=False)
+    
+    class Config:
+        # Allow setting attributes that aren't fields
+        extra = "allow"
 
     def __init__(self, data_dir: Union[str, Path] = "data", **data: Any):
         super().__init__(**data) # For Pydantic model fields if any are passed via data
         self._data_dir = Path(data_dir)
+        self._loaded = False  # Initialize _loaded
         self._load_news_items()
 
     def _load_news_items(self) -> None:

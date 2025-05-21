@@ -1,0 +1,59 @@
+{
+  "items": [
+    {
+      "id": "healing_potion_minor",
+      "name": "Minor Healing Potion",
+      "description": "A small vial of red liquid that restores some health.",
+      "item_type": "misc",
+      "base_price": 10,
+      "effects": {
+        "health": 0.3
+      }
+    },
+    {
+      "id": "wine",
+      "name": "Bottle of Wine",
+      "description": "A decent vintage from a nearby vineyard.",
+      "item_type": "drink",
+      "base_price": 8,
+      "effects": {
+        "tiredness": -0.2,
+        "happiness": 0.3
+      }
+    },
+    {
+      "id": "elixir_luck",
+      "name": "Elixir of Luck",
+      "description": "A mysterious potion that improves your fortune. Smells like cinnamon.",
+      "item_type": "misc",
+      "base_price": 25,
+      "effects": {
+        "luck": 0.5
+      }
+    },
+    {
+      "id": "exotic_spices",
+      "name": "Exotic Spices",
+      "description": "Rare spices from distant lands that can enhance any meal.",
+      "item_type": "food",
+      "base_price": 15,
+      "effects": {}
+    },
+    {
+      "id": "arrows",
+      "name": "Bundle of Arrows",
+      "description": "Finely crafted arrows for hunting or defense.",
+      "item_type": "misc",
+      "base_price": 5,
+      "effects": {}
+    },
+    {
+      "id": "dagger",
+      "name": "Iron Dagger",
+      "description": "A simple but effective iron dagger.",
+      "item_type": "misc",
+      "base_price": 12,
+      "effects": {}
+    }
+  ]
+}

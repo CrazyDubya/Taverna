@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional, List, Union, Tuple, TYPE_CHECKING
 from enum import Enum
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field
 import json
 from pathlib import Path
 
@@ -63,15 +63,18 @@ class Bounty(BaseModel):
         return all(obj.is_completed for obj in self.objectives)
 
 class BountyManager(BaseModel):
-    _bounty_definitions: Dict[str, Bounty] = PrivateAttr(default_factory=dict)
     # managed_bounties_state will store instances of Bounty which now include current_objective_index
     # and the full state of objectives (current_progress, is_completed, is_active)
     managed_bounties_state: Dict[str, Bounty] = Field(default_factory=dict)
-    _data_dir: Path = PrivateAttr(default=Path("data"))
+    
+    class Config:
+        # Allow setting attributes that aren't fields
+        extra = "allow"
 
     def __init__(self, data_dir: Union[str, Path] = "data", **data: Any):
         super().__init__(**data) 
         self._data_dir = Path(data_dir)
+        self._bounty_definitions = {}  # Initialize _bounty_definitions
         self._load_bounties()
 
     def _load_bounties(self) -> None:

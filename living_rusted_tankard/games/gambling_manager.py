@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import asdict
-from living_rusted_tankard.core.player import PlayerState
-from living_rusted_tankard.games.gambling import GamblingGames, GameResult, GameType
+from core.player import PlayerState
+from games.gambling import GamblingGames, GameResult, GameType
 
 class GamblingManager:
     """Manages gambling interactions and state in the game."""

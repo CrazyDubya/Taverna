@@ -24,11 +24,10 @@ class Economy(BaseModel):
     # State to be serialized
     current_event_id: Optional[str] = None
     event_duration: float = 0.0
-
-    # Runtime/static data, initialized but not directly part of the serialized dict from GameState
-    _side_jobs: Dict[str, dict] = PrivateAttr(default_factory=dict)
-    _economic_events: Dict[str, dict] = PrivateAttr(default_factory=dict)
-    _current_event_data: Optional[Dict[str, Any]] = PrivateAttr(default=None) # Runtime cache of current_event dict
+    
+    class Config:
+        # Allow setting attributes that aren't fields
+        extra = "allow"
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -36,11 +35,10 @@ class Economy(BaseModel):
         self._economic_events = self._initialize_economic_events()
         self._reconstruct_current_event()
 
-    @model_validator(mode='after')
-    def _reconstruct_current_event_validator(self):
-        # This ensures that if current_event_id is loaded, _current_event_data is populated.
-        self._reconstruct_current_event()
-        return self
+    @validator('current_event_id', always=True)
+    def _reconstruct_current_event_validator(cls, v, values):
+        # This validator runs after the object is created in v1
+        return v
 
     def _reconstruct_current_event(self):
         if self.current_event_id and self.current_event_id in self._economic_events:

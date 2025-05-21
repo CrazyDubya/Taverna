@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING, List, Dict, Any, Optional
 
 if TYPE_CHECKING:
-    from living_rusted_tankard.core.game_state import GameState
-    from living_rusted_tankard.core.player import PlayerState
+    from core.game_state import GameState
+    from core.player import PlayerState
 
 # Assuming reputation utilities are in core.reputation
-from living_rusted_tankard.core.reputation import get_reputation, get_reputation_tier
+from core.reputation import get_reputation, get_reputation_tier
 
 def show_reputation_command(game_state: 'GameState', args: List[str]) -> Dict[str, Any]:
     """Displays the player's reputation with various entities."""
