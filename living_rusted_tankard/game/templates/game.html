@@ -181,12 +181,14 @@
                 ? 'text-amber-300 font-bold' 
                 : 'text-gray-200';
             
-            // Check if this is a system message with conversation options
-            if (!isPlayer && text.includes('[Options:')) {
+            // Check if this is a system message with conversation options (case insensitive)
+            const optionsRegex = /\[options?:\s*([^\]]+)\]/i;
+            const optionsMatch = text.match(optionsRegex);
+            
+            if (!isPlayer && optionsMatch) {
                 // Split the text into narrative and options
-                const parts = text.split('[Options:');
-                const narrativeText = parts[0].trim();
-                const optionsText = parts[1].trim();
+                const narrativeText = text.replace(optionsRegex, '').trim();
+                let optionsText = optionsMatch[1].trim();
                 
                 // Format the narrative part
                 message.textContent = narrativeText;
@@ -202,23 +204,49 @@
                 optionsHeader.textContent = 'Conversation Options:';
                 optionsContainer.appendChild(optionsHeader);
                 
-                // Format the options as clickable buttons
-                const optionLines = optionsText.split('\n');
+                // Parse options - handle both newline-separated and inline numbered formats
+                let optionItems = [];
                 
-                optionLines.forEach(line => {
-                    // Skip empty lines and the closing bracket
-                    if (line.trim() === '' || line.trim() === ']') {
-                        return;
+                // First try splitting by newlines (multi-line format)
+                const optionLines = optionsText.split('\n');
+                if (optionLines.length > 1) {
+                    // Multi-line format
+                    optionItems = optionLines.map(line => line.trim()).filter(line => line.length > 0);
+                } else {
+                    // Single line format - split by numbers (1. 2. 3. etc.)
+                    const numberPattern = /\d+\.\s*/g;
+                    const parts = optionsText.split(numberPattern);
+                    
+                    // Remove empty first element if it exists
+                    if (parts[0].trim() === '') {
+                        parts.shift();
                     }
                     
+                    optionItems = parts.map(part => part.trim()).filter(part => part.length > 0);
+                }
+                
+                console.log('Debug - Options text:', optionsText);
+                console.log('Debug - Parsed option items:', optionItems);
+                
+                optionItems.forEach((optionText, index) => {
+                    if (!optionText) return;
+                    
+                    console.log(`Debug - Processing option ${index}:`, optionText);
+                    
                     const optionButton = document.createElement('button');
-                    optionButton.className = 'bg-gray-600 hover:bg-gray-500 text-white rounded px-3 py-1 my-1 block w-full text-left';
-                    optionButton.textContent = line.trim();
+                    optionButton.className = 'bg-gray-600 hover:bg-gray-500 text-white rounded px-3 py-1 my-1 block w-full text-left transition-colors';
+                    
+                    // Display text with number if it doesn't already have one
+                    const displayText = optionText.match(/^\d+\./) ? optionText : `${index + 1}. ${optionText}`;
+                    optionButton.textContent = displayText;
                     
                     // Make the option clickable
                     optionButton.addEventListener('click', () => {
-                        const optionText = line.trim().replace(/^\d+\.\s*/, '');
-                        commandInput.value = optionText;
+                        // Remove the number and period from the beginning if present
+                        const cleanOptionText = optionText.replace(/^\d+\.\s*/, '');
+                        console.log('Debug - Clicking option:', cleanOptionText);
+                        
+                        commandInput.value = cleanOptionText;
                         
                         // Add a small delay to show the selection, then execute
                         setTimeout(() => {

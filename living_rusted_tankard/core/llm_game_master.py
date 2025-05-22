@@ -86,13 +86,17 @@ When a player inputs a message:
 CONVERSATION OPTIONS FEATURE:
 When the player talks to an NPC, always end your response with 3-5 conversation options presented as a numbered list.
 These should be short phrases (5-7 words each) that represent what the player might want to say next.
-Format these at the end of your response like this:
+Format these at the end of your response like this (you can use either format):
 
+Multi-line format:
 [Options:
 1. Ask about local rumors
 2. Order a drink
 3. Inquire about available rooms
 4. Bid farewell]
+
+OR single-line format:
+[Options: 1. Ask about local rumors 2. Order a drink 3. Inquire about available rooms 4. Bid farewell]
 
 The options should be contextually appropriate based on:
 - Which NPC they're talking to (barkeep offers drinks, merchants offer goods, etc.)
@@ -381,8 +385,10 @@ These memories will be included in future conversations to maintain consistency.
         # Remove memory tags from the response
         cleaned_response = re.sub(memory_pattern, '', response, flags=re.IGNORECASE)
         
-        # Clean up any double spaces or newlines left by removing tags
-        cleaned_response = re.sub(r'\s+', ' ', cleaned_response).strip()
+        # Clean up any double spaces left by removing tags, but preserve newlines for options formatting
+        cleaned_response = re.sub(r'[ \t]+', ' ', cleaned_response)  # Only collapse horizontal whitespace
+        cleaned_response = re.sub(r'\n\s*\n', '\n', cleaned_response)  # Remove empty lines but keep structure
+        cleaned_response = cleaned_response.strip()
         
         return cleaned_response
 
