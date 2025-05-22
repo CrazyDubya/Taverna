@@ -49,6 +49,14 @@
       "type": "drink",
       "value": 15,
       "effects": {"happiness": 0.3, "courage": 2, "duration_hours": 1.0, "inebriation": 0.3}
+    },
+    {
+      "id": "old_toms_surprise",
+      "name": "Old Tom's Surprise",
+      "description": "A mysterious concoction brewed by Old Tom using ingredients from all corners of the land. Some say it brings good luck, others claim it unlocks hidden memories. It definitely has a kick to it.",
+      "type": "drink",
+      "value": 3,
+      "effects": {"luck_modifier": 0.2, "memory_enhancement": 1, "courage": 1, "duration_hours": 2.0, "inebriation": 0.1, "mysterious_effect": true}
     }
   ]
 }

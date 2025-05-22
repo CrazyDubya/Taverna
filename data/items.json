@@ -1,59 +1,62 @@
 {
   "items": [
+    {"id": "ale", "name": "Mug of Ale", "description": "A frothy mug of the tavern's house ale.", "type": "drink", "value": 2, "effects": {"happiness": 0.1, "duration_hours": 0.5}},
+    {"id": "stew", "name": "Hearty Stew", "description": "A warm, filling stew with chunks of meat and vegetables.", "type": "food", "value": 3, "effects": {"hunger_reduction": 0.5, "duration_hours": 0}},
+    {"id": "bread", "name": "Loaf of Bread", "description": "A fresh loaf of crusty bread.", "type": "food", "value": 1, "effects": {"hunger_reduction": 0.3, "duration_hours": 0}},
+    {"id": "elixir_luck", "name": "Elixir of Minor Luck", "description": "A shimmering, faintly glowing potion.", "type": "potion", "value": 75, "effects": {"luck_modifier": 0.1, "duration_hours": 1}},
+    {"id": "map_fragment_grove", "name": "Map Fragment (Grove)", "description": "Part of a map showing a path to a hidden grove.", "type": "quest", "value": 20},
+    {"id": "exotic_spices", "name": "Exotic Spices", "description": "Aromatic spices from afar.", "type": "crafting_material", "value": 15},
+    {"id": "dagger", "name": "Iron Dagger", "description": "A simple iron dagger.", "type": "weapon", "value": 10, "properties": {"damage": "1d4"}},
+    {"id": "healing_potion_minor", "name": "Minor Healing Potion", "description": "Restores a small amount of health.", "type": "potion", "value": 25, "effects": {"heal": 10, "duration_hours": 0}},
+    {"id": "arrows", "name": "Arrows", "description": "A bundle of arrows.", "type": "ammo", "value": 5, "quantity_modifier": 10},
+    {"id": "cheese", "name": "Cheese Wedge", "description": "A wedge of cheese.", "type": "food", "value": 3, "effects": {"hunger_reduction": 0.2, "duration_hours": 0}},
+    {"id": "whiskey", "name": "Whiskey", "description": "Strong whiskey.", "type": "drink", "value": 4, "effects": {"courage": 1, "duration_hours": 0.5, "inebriation": 0.2}},
     {
-      "id": "healing_potion_minor",
-      "name": "Minor Healing Potion",
-      "description": "A small vial of red liquid that restores some health.",
-      "item_type": "misc",
-      "base_price": 10,
-      "effects": {
-        "health": 0.3
-      }
+      "id": "spiced_potatoes", 
+      "name": "Spiced Potatoes", 
+      "description": "Warm, spiced potatoes that fill the belly and settle the nerves.", 
+      "type": "food", 
+      "value": 8, 
+      "effects": {"resolve_boost": 1, "duration_hours": 0.5}
     },
     {
-      "id": "wine",
-      "name": "Bottle of Wine",
-      "description": "A decent vintage from a nearby vineyard.",
-      "item_type": "drink",
-      "base_price": 8,
-      "effects": {
-        "tiredness": -0.2,
-        "happiness": 0.3
-      }
+      "id": "travelers_ration", 
+      "name": "Traveler's Ration", 
+      "description": "Hardy, preserved food for a long journey. Bolsters stamina.", 
+      "type": "food", 
+      "value": 12, 
+      "effects": {"stamina_boost": 10, "duration_hours": 1.0}
     },
     {
-      "id": "elixir_luck",
-      "name": "Elixir of Luck",
-      "description": "A mysterious potion that improves your fortune. Smells like cinnamon.",
-      "item_type": "misc",
-      "base_price": 25,
-      "effects": {
-        "luck": 0.5
-      }
+      "id": "mystery_brew", 
+      "name": "Mystery Brew", 
+      "description": "A frothy, strange-smelling drink from the back of the cellar. Effects unknown... or are they?", 
+      "type": "drink", 
+      "value": 7, 
+      "effects": {"random_effect": true, "duration_hours": 0.25}
     },
     {
-      "id": "exotic_spices",
-      "name": "Exotic Spices",
-      "description": "Rare spices from distant lands that can enhance any meal.",
-      "item_type": "food",
-      "base_price": 15,
-      "effects": {}
+      "id": "ale_token_001",
+      "name": "Ale Token",
+      "description": "A wooden token redeemable for one mug of ale.",
+      "type": "misc",
+      "value": 2
     },
     {
-      "id": "arrows",
-      "name": "Bundle of Arrows",
-      "description": "Finely crafted arrows for hunting or defense.",
-      "item_type": "misc",
-      "base_price": 5,
-      "effects": {}
+      "id": "ale_deluxe",
+      "name": "Gene's Deluxe Ale",
+      "description": "A special brew, much richer and more potent than the usual swill. A rare treat!",
+      "type": "drink",
+      "value": 15,
+      "effects": {"happiness": 0.3, "courage": 2, "duration_hours": 1.0, "inebriation": 0.3}
     },
     {
-      "id": "dagger",
-      "name": "Iron Dagger",
-      "description": "A simple but effective iron dagger.",
-      "item_type": "misc",
-      "base_price": 12,
-      "effects": {}
+      "id": "old_toms_surprise",
+      "name": "Old Tom's Surprise",
+      "description": "A mysterious concoction brewed by Old Tom using ingredients from all corners of the land. Some say it brings good luck, others claim it unlocks hidden memories. It definitely has a kick to it.",
+      "type": "drink",
+      "value": 3,
+      "effects": {"luck_modifier": 0.2, "memory_enhancement": 1, "courage": 1, "duration_hours": 2.0, "inebriation": 0.1, "mysterious_effect": true}
     }
   ]
 }

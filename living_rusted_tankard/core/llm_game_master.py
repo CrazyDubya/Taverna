@@ -98,6 +98,16 @@ Multi-line format:
 OR single-line format:
 [Options: 1. Ask about local rumors 2. Order a drink 3. Inquire about available rooms 4. Bid farewell]
 
+IMPORTANT: When conversation options involve game mechanics (buying, selling, using items, spending gold), 
+you MUST include the appropriate game command in your response using the [COMMAND: ] format.
+
+Examples:
+- If player chooses to buy a drink for 3 gold: [COMMAND: buy old_toms_surprise 3]
+- If player chooses to rent a room: [COMMAND: rent room]
+- If player chooses to use an item: [COMMAND: use health_potion]
+
+The command should be placed BEFORE the narrative response so the game mechanics execute first, then your narrative enhances the result.
+
 The options should be contextually appropriate based on:
 - Which NPC they're talking to (barkeep offers drinks, merchants offer goods, etc.)
 - The current conversation topic
@@ -112,13 +122,18 @@ The game world centers around The Rusted Tankard, a lively tavern with:
 - A notice board with quests/bounties
 - Rumors of strange happenings in the area
 
-The tavern serves:
-- Ale (1 gold)
-- Mead (2 gold)
-- Wine (3 gold)
-- Stew of the day (2 gold)
-- Bread and cheese (1 gold)
-- Mystery meat pie (3 gold)
+The tavern serves (items available for purchase):
+- Ale (2 gold) - house ale, provides happiness
+- Stew (3 gold) - hearty meal, reduces hunger
+- Bread (1 gold) - simple food, reduces hunger
+- Cheese (3 gold) - dairy treat, small hunger reduction
+- Whiskey (4 gold) - strong drink, provides courage
+- Old Tom's Surprise (3 gold) - mysterious brew with special effects
+- Mystery Brew (7 gold) - strange drink with unknown effects
+- Healing Potion (25 gold) - restores health
+- Traveler's Ration (12 gold) - boosts stamina for journeys
+
+Special/Quest items may also be available from NPCs or special events.
 
 WORKING WITH OBJECT FACTS:
 When the player examines objects in the tavern, you'll be provided with key facts about those objects.
@@ -563,13 +578,27 @@ These memories will be included in future conversations to maintain consistency.
             memories_str = "\n".join([f"- {memory}" for memory in memories])
             memories_info = f"\n\nIMPORTANT MEMORIES FROM PREVIOUS INTERACTIONS:\n{memories_str}\n"
         
+        # Add information about recent player input to help with command detection
+        input_context = ""
+        if user_input:
+            # Check if this looks like a response to a purchase/transaction offer
+            purchase_keywords = ['buy', 'purchase', 'take it', 'i\'ll try it', 'sounds good', 'yes', 'sure', 'okay']
+            reject_keywords = ['no', 'pass', 'skip', 'not interested', 'too expensive']
+            
+            user_lower = user_input.lower()
+            
+            if any(keyword in user_lower for keyword in purchase_keywords):
+                input_context += f"\n\nNOTE: Player input '{user_input}' suggests they want to make a purchase or accept an offer. Consider if this should trigger a game command.\n"
+            elif any(keyword in user_lower for keyword in reject_keywords):
+                input_context += f"\n\nNOTE: Player input '{user_input}' suggests they are declining an offer.\n"
+        
         # Create the full prompt with system instructions, context, and history
         messages = []
         
-        # Add system prompt as the first message with context, examining info, and memories
+        # Add system prompt as the first message with context, examining info, memories, and input context
         messages.append({
             "role": "system", 
-            "content": f"{self.system_prompt}\n\nCURRENT GAME STATE:\n{context_str}{examining_info}{memories_info}"
+            "content": f"{self.system_prompt}\n\nCURRENT GAME STATE:\n{context_str}{examining_info}{memories_info}{input_context}"
         })
         
         # Add conversation history
