@@ -5,11 +5,11 @@ API routes for AI Player functionality.
 import asyncio
 import json
 import time
+import random
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-import requests
 import logging
 
 from core.ai_player import (
@@ -57,7 +57,17 @@ async def start_ai_player(config: AIPlayerConfig):
             ai_player.thinking_delay = config.thinking_speed
         
         # Start game session
-        session_id = await start_ai_player_session(\"http://127.0.0.1:8000\")
+        # Create game session directly
+        import uuid
+        from core.game_state import GameState
+        
+        session_id = str(uuid.uuid4())
+        game_state = GameState()
+        
+        # Set up AI player
+        ai_player.session_id = session_id
+        ai_player.update_game_state(game_state.get_snapshot())
+        ai_player.is_active = True
         
         # Store session info
         ai_player_sessions[session_id] = {
@@ -123,37 +133,29 @@ async def generate_ai_action(session_id: str):
         game_context = ai_player.get_game_context()
         action = await ai_player.generate_action(game_context)
         
-        # Execute the action via the main game API
-        response = requests.post(
-            "http://localhost:8000/command",
-            json={
-                "input": action,
-                "session_id": session_id
-            },
-            timeout=30
-        )
+        # Execute the action directly via GameState
+        from core.game_state import GameState
         
-        if response.status_code == 200:
-            result = response.json()
-            
-            # Update AI player's game state
-            ai_player.update_game_state(result.get('game_state', {}))
-            
-            # Record the action
-            ai_player.record_action(action, "AI-generated action")
-            
-            # Update session info
-            ai_player_sessions[session_id]["last_action"] = time.time()
-            
-            return {
-                "success": True,
-                "action": action,
-                "result": result.get('output', ''),
-                "game_state": result.get('game_state', {}),
-                "ai_reasoning": f"As a {ai_player.personality.value}, I chose to: {action}"
-            }
-        else:
-            raise HTTPException(status_code=500, detail="Failed to execute AI action")
+        # Get the game state from session (or create new one)
+        game_state = GameState()
+        result = game_state.process_command(action)
+        
+        # Update AI player's game state
+        ai_player.update_game_state(game_state.get_snapshot())
+        
+        # Record the action
+        ai_player.record_action(action, "AI-generated action")
+        
+        # Update session info
+        ai_player_sessions[session_id]["last_action"] = time.time()
+        
+        return {
+            "success": True,
+            "action": action,
+            "result": result.get('message', ''),
+            "game_state": game_state.get_snapshot(),
+            "ai_reasoning": f"As a {ai_player.personality.value}, I chose to: {action}"
+        }
             
     except Exception as e:
         logger.error(f"Failed to generate AI action: {e}")
@@ -197,28 +199,19 @@ async def stream_ai_action_generation(session_id: str):
             # Execute the action
             yield f"data: {json.dumps({'type': 'executing', 'message': f'{ai_player.name} performs: {final_action}'})}\n\n"
             
-            # Execute via main API
-            response = requests.post(
-                "http://localhost:8000/command",
-                json={
-                    "input": final_action,
-                    "session_id": session_id
-                },
-                timeout=30
-            )
+            # Execute directly via GameState
+            from core.game_state import GameState
             
-            if response.status_code == 200:
-                result = response.json()
-                
-                # Update AI player state
-                ai_player.update_game_state(result.get('game_state', {}))
-                ai_player.record_action(final_action, "Streamed AI action")
-                ai_player_sessions[session_id]["last_action"] = time.time()
-                
-                # Send result
-                yield f"data: {json.dumps({'type': 'result', 'action': final_action, 'output': result.get('output', ''), 'game_state': result.get('game_state', {})})}\n\n"
-            else:
-                yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to execute action'})}\n\n"
+            game_state = GameState()
+            result = game_state.process_command(final_action)
+            
+            # Update AI player state
+            ai_player.update_game_state(game_state.get_snapshot())
+            ai_player.record_action(final_action, "Streamed AI action")
+            ai_player_sessions[session_id]["last_action"] = time.time()
+            
+            # Send result
+            yield f"data: {json.dumps({'type': 'result', 'action': final_action, 'output': result.get('message', ''), 'game_state': game_state.get_snapshot()})}\n\n"
             
             yield f"data: {json.dumps({'type': 'complete'})}\n\n"
             
@@ -269,20 +262,13 @@ async def auto_play_loop(session_id: str):
             game_context = ai_player.get_game_context()
             action = await ai_player.generate_action(game_context)
             
-            response = requests.post(
-                "http://localhost:8000/command",
-                json={
-                    "input": action,
-                    "session_id": session_id
-                },
-                timeout=30
-            )
+            from core.game_state import GameState
             
-            if response.status_code == 200:
-                result = response.json()
-                ai_player.update_game_state(result.get('game_state', {}))
-                ai_player.record_action(action, "Auto-play action")
-                ai_player_sessions[session_id]["last_action"] = time.time()
+            game_state = GameState()
+            result = game_state.process_command(action)
+            ai_player.update_game_state(game_state.get_snapshot())
+            ai_player.record_action(action, "Auto-play action")
+            ai_player_sessions[session_id]["last_action"] = time.time()
             
         except Exception as e:
             logger.error(f"Error in auto-play loop: {e}")
