@@ -91,7 +91,7 @@ class Parser:
                     "format": "json",
                     "stream": False
                 },
-                timeout=10
+                timeout=1  # Reduce timeout to fail fast and avoid blocking
             )
             response.raise_for_status()
             result = response.json()

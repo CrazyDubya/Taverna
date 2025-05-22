@@ -13,9 +13,6 @@ from pydantic import BaseModel
 import logging
 
 from core.ai_player import (
-    get_ai_player, 
-    set_ai_player_personality, 
-    start_ai_player_session,
     AIPlayerPersonality
 )
 
@@ -39,23 +36,33 @@ ai_player_sessions: Dict[str, Dict[str, Any]] = {}
 @router.post("/start")
 async def start_ai_player(config: AIPlayerConfig):
     """Start an AI player session with specified personality."""
+    logger.info(f"🚀 [TRACE] Function called with config: {config}")
     try:
         # Validate personality
+        logger.info("🔍 [TRACE] Validating personality...")
         try:
             personality = AIPlayerPersonality(config.personality)
+            logger.info(f"✅ [TRACE] Personality validated: {personality}")
         except ValueError:
+            logger.error(f"❌ [TRACE] Invalid personality: {config.personality}")
             raise HTTPException(
                 status_code=400, 
                 detail=f"Invalid personality. Must be one of: {[p.value for p in AIPlayerPersonality]}"
             )
         
         # Create AI player directly without any LLM calls
+        logger.info("🔍 [TRACE] Importing modules...")
         import uuid
+        logger.info("🔍 [TRACE] Importing GameState...")
         from core.game_state import GameState
+        logger.info("🔍 [TRACE] Importing AIPlayer...")
         from core.ai_player import AIPlayer
         
+        logger.info("🔍 [TRACE] Creating session ID...")
         session_id = str(uuid.uuid4())
+        logger.info("🔍 [TRACE] Creating GameState...")
         game_state = GameState()
+        logger.info("🔍 [TRACE] GameState created successfully")
         
         # Create AI player instance directly
         ai_player = AIPlayer(
@@ -307,6 +314,24 @@ async def stop_ai_player(session_id: str):
 async def test_endpoint():
     """Simple test endpoint to verify router is working."""
     return {"status": "ok", "message": "AI Player router is working"}
+
+@router.post("/start-simple")
+async def start_ai_player_simple(config: AIPlayerConfig):
+    """Simplified AI player start for testing."""
+    logger.info(f"🟢 [SIMPLE] Function reached with config: {config}")
+    import uuid
+    session_id = str(uuid.uuid4())
+    logger.info(f"🟢 [SIMPLE] Returning successful response")
+    
+    return {
+        "success": True,
+        "session_id": session_id,
+        "ai_player": {
+            "name": config.name or "TestAI",
+            "personality": config.personality,
+            "greeting": "Hello! This is a simplified AI player for testing."
+        }
+    }
 
 @router.get("/personalities")
 async def list_personalities():

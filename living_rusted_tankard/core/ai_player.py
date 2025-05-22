@@ -46,31 +46,61 @@ class AIPlayer:
         self.is_active = False
         self.thinking_delay = 2.0  # Seconds to "think" before acting
         
-        # Personality-based behavior patterns
+        # Personality-based behavior patterns with VALID game commands
         self.personality_traits = {
             AIPlayerPersonality.CURIOUS_EXPLORER: {
-                "preferred_commands": ["look", "examine", "explore", "ask about", "investigate"],
+                "preferred_commands": ["look", "read notice board", "interact", "jobs", "status", "inventory"],
                 "interaction_style": "eager and inquisitive",
                 "decision_pattern": "always chooses the most interesting option",
-                "greeting": f"Hello! I'm {name}, a curious traveler always seeking new adventures!"
+                "greeting": f"Hello! I'm {name}, a curious traveler always seeking new adventures!",
+                "example_commands": [
+                    "look",
+                    "read notice board", 
+                    "interact gene_bartender talk",
+                    "jobs",
+                    "accept bounty bounty_rats_001",
+                    "inventory"
+                ]
             },
             AIPlayerPersonality.CAUTIOUS_MERCHANT: {
-                "preferred_commands": ["status", "inventory", "buy", "sell", "negotiate"],
+                "preferred_commands": ["status", "inventory", "buy", "jobs", "work"],
                 "interaction_style": "careful and business-minded", 
                 "decision_pattern": "evaluates cost-benefit before acting",
-                "greeting": f"Greetings. I am {name}, a merchant who values careful planning and good deals."
+                "greeting": f"Greetings. I am {name}, a merchant who values careful planning and good deals.",
+                "example_commands": [
+                    "status",
+                    "inventory", 
+                    "jobs",
+                    "interact gene_bartender talk",
+                    "buy ale",
+                    "work cleaning"
+                ]
             },
             AIPlayerPersonality.SOCIAL_BUTTERFLY: {
-                "preferred_commands": ["talk", "greet", "chat", "ask", "listen"],
+                "preferred_commands": ["interact", "read notice board", "look", "jobs"],
                 "interaction_style": "friendly and talkative",
                 "decision_pattern": "prioritizes social interactions and relationships",
-                "greeting": f"Hi there! I'm {name}! I love meeting new people and hearing their stories!"
+                "greeting": f"Hi there! I'm {name}! I love meeting new people and hearing their stories!",
+                "example_commands": [
+                    "interact gene_bartender talk",
+                    "read notice board",
+                    "look",
+                    "jobs",
+                    "help"
+                ]
             },
             AIPlayerPersonality.MYSTERIOUS_WANDERER: {
-                "preferred_commands": ["observe", "wait", "listen", "watch", "ponder"],
+                "preferred_commands": ["look", "wait", "status", "read notice board"],
                 "interaction_style": "cryptic and thoughtful",
                 "decision_pattern": "takes time to observe before acting",
-                "greeting": f"I am {name}... a wanderer seeking truths hidden in shadow and flame."
+                "greeting": f"I am {name}... a wanderer seeking truths hidden in shadow and flame.",
+                "example_commands": [
+                    "look",
+                    "wait",
+                    "status",
+                    "read notice board",
+                    "interact gene_bartender talk"
+                ]
             }
         }
     
@@ -91,15 +121,33 @@ CURRENT SITUATION:
 - Your goal is to explore and engage with the world authentically
 - Act naturally according to your personality
 
-RESPONSE FORMAT:
-Respond with ONLY a single command/action you want to take, like:
-- "look around the tavern"
-- "talk to the barkeeper"
-- "examine the notice board"
-- "check my inventory"
-- "buy an ale"
+VALID GAME COMMANDS:
+Use ONLY these exact command formats:
+- "look" - Look around current room
+- "status" - Check your status  
+- "inventory" - Check your items
+- "read notice board" - Read the notice board
+- "interact gene_bartender talk" - Talk to Gene the bartender
+- "interact <npc_id> talk" - Talk to NPCs (use their ID)
+- "jobs" - See available work
+- "work <job_name>" - Work a job if available
+- "buy <item>" - Buy items from vendors
+- "accept bounty <bounty_id>" - Accept bounties from notice board
+- "move <location>" - Move to different areas
+- "help" - Get help with commands
 
-Keep commands simple and natural. DO NOT explain your reasoning in the response.
+EXAMPLE COMMANDS FOR YOUR PERSONALITY:
+{chr(10).join(f'- "{cmd}"' for cmd in traits.get('example_commands', []))}
+
+BEHAVIORAL GUIDELINES:
+- Avoid repeating the same command consecutively
+- If you just used "look", try a different action like "jobs", "inventory", or "interact"
+- If you see bounties, consider exploring or talking to NPCs
+- Be curious and explore different aspects of the game
+- Mix information gathering with active participation
+
+RESPONSE FORMAT:
+Respond with ONLY ONE valid command from the list above. Choose something different from your recent actions.
 """
 
     async def generate_action_stream(self, game_context: str) -> AsyncGenerator[str, None]:
@@ -295,27 +343,4 @@ def set_ai_player_personality(personality: AIPlayerPersonality, name: str = None
     if name:
         _ai_player.name = name
 
-async def start_ai_player_session(api_base_url: str = "http://localhost:8000") -> str:
-    """Start a new game session for the AI player."""
-    ai_player = get_ai_player()
-    
-    try:
-        # Create initial session
-        response = requests.post(
-            f"{api_base_url}/command",
-            json={"input": "look around"},
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            ai_player.session_id = data.get('session_id')
-            ai_player.update_game_state(data.get('game_state', {}))
-            ai_player.is_active = True
-            return ai_player.session_id
-        else:
-            raise Exception(f"Failed to create session: {response.status_code}")
-            
-    except Exception as e:
-        logger.error(f"Failed to start AI player session: {e}")
-        raise
+# Removed start_ai_player_session - was causing circular dependency
