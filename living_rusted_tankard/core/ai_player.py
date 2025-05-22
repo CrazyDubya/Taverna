@@ -1,0 +1,321 @@
+"""
+AI Player system for The Living Rusted Tankard.
+Uses Ollama with gemma2:2b to create an autonomous character that players can watch.
+"""
+
+import asyncio
+import json
+import time
+import random
+from typing import Dict, Any, Optional, AsyncGenerator, List
+import requests
+import logging
+from dataclasses import dataclass
+from enum import Enum
+
+logger = logging.getLogger(__name__)
+
+class AIPlayerPersonality(Enum):
+    CURIOUS_EXPLORER = "curious_explorer"
+    CAUTIOUS_MERCHANT = "cautious_merchant" 
+    SOCIAL_BUTTERFLY = "social_butterfly"
+    MYSTERIOUS_WANDERER = "mysterious_wanderer"
+
+@dataclass
+class AIPlayerAction:
+    command: str
+    reasoning: str
+    personality_trait: str
+    timestamp: float
+
+class AIPlayer:
+    """An autonomous AI player that interacts with the game world."""
+    
+    def __init__(self, 
+                 name: str = "Gemma",
+                 personality: AIPlayerPersonality = AIPlayerPersonality.CURIOUS_EXPLORER,
+                 ollama_url: str = "http://localhost:11434",
+                 model: str = "gemma2:2b"):
+        self.name = name
+        self.personality = personality
+        self.ollama_url = ollama_url
+        self.model = model
+        self.session_id = None
+        self.action_history: List[AIPlayerAction] = []
+        self.game_state = {}
+        self.is_active = False
+        self.thinking_delay = 2.0  # Seconds to "think" before acting
+        
+        # Personality-based behavior patterns
+        self.personality_traits = {
+            AIPlayerPersonality.CURIOUS_EXPLORER: {
+                "preferred_commands": ["look", "examine", "explore", "ask about", "investigate"],
+                "interaction_style": "eager and inquisitive",
+                "decision_pattern": "always chooses the most interesting option",
+                "greeting": f"Hello! I'm {name}, a curious traveler always seeking new adventures!"
+            },
+            AIPlayerPersonality.CAUTIOUS_MERCHANT: {
+                "preferred_commands": ["status", "inventory", "buy", "sell", "negotiate"],
+                "interaction_style": "careful and business-minded", 
+                "decision_pattern": "evaluates cost-benefit before acting",
+                "greeting": f"Greetings. I am {name}, a merchant who values careful planning and good deals."
+            },
+            AIPlayerPersonality.SOCIAL_BUTTERFLY: {
+                "preferred_commands": ["talk", "greet", "chat", "ask", "listen"],
+                "interaction_style": "friendly and talkative",
+                "decision_pattern": "prioritizes social interactions and relationships",
+                "greeting": f"Hi there! I'm {name}! I love meeting new people and hearing their stories!"
+            },
+            AIPlayerPersonality.MYSTERIOUS_WANDERER: {
+                "preferred_commands": ["observe", "wait", "listen", "watch", "ponder"],
+                "interaction_style": "cryptic and thoughtful",
+                "decision_pattern": "takes time to observe before acting",
+                "greeting": f"I am {name}... a wanderer seeking truths hidden in shadow and flame."
+            }
+        }
+    
+    def get_personality_context(self) -> str:
+        """Get personality-specific context for LLM prompts."""
+        traits = self.personality_traits[self.personality]
+        return f"""
+You are {self.name}, an AI character in The Living Rusted Tankard tavern game.
+
+PERSONALITY: {self.personality.value}
+- Style: {traits['interaction_style']}
+- Decision Pattern: {traits['decision_pattern']}
+- Preferred Actions: {', '.join(traits['preferred_commands'])}
+
+CURRENT SITUATION:
+- You are in a medieval fantasy tavern
+- You can interact with NPCs, examine objects, buy items, etc.
+- Your goal is to explore and engage with the world authentically
+- Act naturally according to your personality
+
+RESPONSE FORMAT:
+Respond with ONLY a single command/action you want to take, like:
+- "look around the tavern"
+- "talk to the barkeeper"
+- "examine the notice board"
+- "check my inventory"
+- "buy an ale"
+
+Keep commands simple and natural. DO NOT explain your reasoning in the response.
+"""
+
+    async def generate_action_stream(self, game_context: str) -> AsyncGenerator[str, None]:
+        """Generate an action using LLM with streaming response."""
+        try:
+            personality_context = self.get_personality_context()
+            
+            prompt = f"""{personality_context}
+
+CURRENT GAME STATE:
+{game_context}
+
+RECENT ACTIONS:
+{self._get_recent_actions_summary()}
+
+What do you want to do next?"""
+
+            # Stream the LLM response
+            response = requests.post(
+                f"{self.ollama_url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": prompt,
+                    "stream": True,
+                    "options": {
+                        "temperature": 0.8,
+                        "top_p": 0.9,
+                        "max_tokens": 50
+                    }
+                },
+                stream=True,
+                timeout=30
+            )
+            
+            if response.status_code != 200:
+                yield "look around"
+                return
+            
+            generated_text = ""
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        chunk = json.loads(line.decode('utf-8'))
+                        if 'response' in chunk:
+                            token = chunk['response']
+                            generated_text += token
+                            yield token
+                        if chunk.get('done', False):
+                            break
+                    except json.JSONDecodeError:
+                        continue
+            
+            # Clean up the generated command
+            if not generated_text.strip():
+                yield "look around"
+                
+        except Exception as e:
+            logger.error(f"Error generating AI action: {e}")
+            yield "look around"
+    
+    async def generate_action(self, game_context: str) -> str:
+        """Generate a complete action using LLM."""
+        try:
+            personality_context = self.get_personality_context()
+            
+            prompt = f"""{personality_context}
+
+CURRENT GAME STATE:
+{game_context}
+
+RECENT ACTIONS:
+{self._get_recent_actions_summary()}
+
+What do you want to do next?"""
+
+            response = requests.post(
+                f"{self.ollama_url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.8,
+                        "top_p": 0.9,
+                        "max_tokens": 50
+                    }
+                },
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                action = result.get('response', '').strip()
+                
+                # Clean up the action - remove quotes, extra text
+                action = action.replace('"', '').replace("'", '').strip()
+                
+                # Take only the first line if multiple lines
+                action = action.split('\n')[0].strip()
+                
+                if not action:
+                    action = "look around"
+                
+                return action
+            else:
+                logger.error(f"LLM request failed: {response.status_code}")
+                return "look around"
+                
+        except Exception as e:
+            logger.error(f"Error generating AI action: {e}")
+            return "look around"
+    
+    def _get_recent_actions_summary(self) -> str:
+        """Get a summary of recent actions for context."""
+        if not self.action_history:
+            return "This is your first action in the tavern."
+        
+        recent = self.action_history[-3:]  # Last 3 actions
+        summary = []
+        for action in recent:
+            summary.append(f"- {action.command} ({action.reasoning})")
+        
+        return "Recent actions:\n" + "\n".join(summary)
+    
+    def record_action(self, command: str, reasoning: str = ""):
+        """Record an action taken by the AI player."""
+        action = AIPlayerAction(
+            command=command,
+            reasoning=reasoning,
+            personality_trait=self.personality.value,
+            timestamp=time.time()
+        )
+        self.action_history.append(action)
+        
+        # Keep only last 10 actions
+        if len(self.action_history) > 10:
+            self.action_history = self.action_history[-10:]
+    
+    def update_game_state(self, new_state: Dict[str, Any]):
+        """Update the AI player's understanding of the game state."""
+        self.game_state = new_state
+    
+    def get_game_context(self) -> str:
+        """Format current game state for LLM context."""
+        if not self.game_state:
+            return "You have just entered the tavern and are getting your bearings."
+        
+        context_parts = []
+        
+        # Time and location
+        if 'formatted_time' in self.game_state:
+            context_parts.append(f"Time: {self.game_state['formatted_time']}")
+        if 'location' in self.game_state:
+            context_parts.append(f"Location: {self.game_state['location']}")
+        
+        # Player status
+        if 'player' in self.game_state:
+            player = self.game_state['player']
+            if 'gold' in player:
+                context_parts.append(f"Your gold: {player['gold']}")
+            if 'inventory' in player and player['inventory']:
+                items = [item['name'] for item in player['inventory']]
+                context_parts.append(f"Your items: {', '.join(items)}")
+        
+        # NPCs present
+        if 'present_npcs' in self.game_state and self.game_state['present_npcs']:
+            npcs = [npc['name'] for npc in self.game_state['present_npcs']]
+            context_parts.append(f"People here: {', '.join(npcs)}")
+        
+        # Board notes
+        if 'board_notes' in self.game_state and self.game_state['board_notes']:
+            context_parts.append(f"Notice board has {len(self.game_state['board_notes'])} notices")
+        
+        return "\n".join(context_parts) if context_parts else "You are in the tavern."
+
+# Global AI player instance
+_ai_player = None
+
+def get_ai_player() -> AIPlayer:
+    """Get the global AI player instance."""
+    global _ai_player
+    if _ai_player is None:
+        _ai_player = AIPlayer()
+    return _ai_player
+
+def set_ai_player_personality(personality: AIPlayerPersonality, name: str = None):
+    """Set the AI player's personality and optionally name."""
+    global _ai_player
+    if _ai_player is None:
+        _ai_player = AIPlayer()
+    
+    _ai_player.personality = personality
+    if name:
+        _ai_player.name = name
+
+async def start_ai_player_session(api_base_url: str = "http://localhost:8000") -> str:
+    """Start a new game session for the AI player."""
+    ai_player = get_ai_player()
+    
+    try:
+        # Create initial session
+        response = requests.post(
+            f"{api_base_url}/command",
+            json={"input": "look around"},
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            ai_player.session_id = data.get('session_id')
+            ai_player.update_game_state(data.get('game_state', {}))
+            ai_player.is_active = True
+            return ai_player.session_id
+        else:
+            raise Exception(f"Failed to create session: {response.status_code}")
+            
+    except Exception as e:
+        logger.error(f"Failed to start AI player session: {e}")
+        raise

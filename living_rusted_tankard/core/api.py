@@ -65,6 +65,10 @@ llm_gm = LLMGameMaster()
 from .async_llm_pipeline import get_pipeline, initialize_pipeline, shutdown_pipeline
 async_llm_pipeline = get_pipeline()
 
+# Include AI Player routes
+from api.routers.ai_player import router as ai_player_router
+app.include_router(ai_player_router)
+
 # Startup and shutdown handlers for async pipeline
 @app.on_event("startup")
 async def startup_event():
@@ -161,6 +165,14 @@ async def index(request: Request):
     """Serve the main game interface."""
     return templates.TemplateResponse(
         "enhanced_game.html", 
+        {"request": request}
+    )
+
+@app.get("/ai-demo", response_class=HTMLResponse)
+async def ai_demo(request: Request):
+    """Serve the AI player demo interface."""
+    return templates.TemplateResponse(
+        "ai_player_demo.html",
         {"request": request}
     )
 
