@@ -11,7 +11,14 @@ from core.items import TAVERN_ITEMS
 class GameCLI(cmd.Cmd):
     """Command-line interface for The Living Rusted Tankard."""
     
-    intro = 'Welcome to The Living Rusted Tankard. Type help or ? to list commands.\n'
+    intro = """🍺 Welcome to The Living Rusted Tankard 🍺
+
+The heavy wooden door creaks open, revealing the warm glow of the tavern within.
+Flickering candlelight dances across weathered stone walls as the aroma of ale 
+and roasted meat fills your nostrils.
+
+Type 'help' to see available commands, 'new' to start fresh, or 'load' to continue a saved game.
+"""
     prompt = '(tavern) '
     
     def __init__(self, game_state):

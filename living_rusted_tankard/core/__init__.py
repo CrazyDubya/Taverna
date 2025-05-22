@@ -2,9 +2,18 @@
 
 # Only import the modules that don't cause circular imports
 from .clock import GameClock, GameTime
+from .game_state import GameState
+from .player import PlayerState
+from .npc import NPC, NPCManager
+from .economy import Economy
 
 # Define __all__ to control what's imported with `from core import *`
 __all__ = [
     'GameClock', 
-    'GameTime'
+    'GameTime',
+    'GameState',
+    'PlayerState',
+    'NPC',
+    'NPCManager',
+    'Economy'
 ]

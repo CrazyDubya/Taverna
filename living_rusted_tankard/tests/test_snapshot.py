@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch, PropertyMock
-from living_rusted_tankard.core.snapshot import SnapshotManager, GameSnapshot
-from living_rusted_tankard.core.game_state import GameState
-from living_rusted_tankard.core.npc import NPC
+from core.snapshot import SnapshotManager, GameSnapshot
+from core.game_state import GameState
+from core.npc import NPC
 from typing import List, Dict, Any
 
 

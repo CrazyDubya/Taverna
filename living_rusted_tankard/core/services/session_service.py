@@ -5,7 +5,7 @@ from sqlmodel import select, or_
 from sqlalchemy.orm import Session
 import uuid
 
-from core.models.game_state import GameStatePersistence, GameStateCreate, GameStateUpdate, GameSession
+from core.models.persistence_models import GameStatePersistence, GameStateCreate, GameStateUpdate, GameSession
 from core.db.session import get_session
 
 class SessionService:

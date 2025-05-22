@@ -191,9 +191,9 @@ TAVERN_ITEMS = {
         id="ale",
         name="Mug of Ale",
         description="A frothy mug of the tavern's house ale.",
-        item_type=ItemType.DRINK,
-        base_price=2,
-        effects={"tiredness": -0.1, "happiness": 0.2}
+        item_type=ItemType.MISC,
+        base_price=0,
+        effects={"happiness": 0.1, "duration_hours": 0.5}
     ),
     "stew": Item(
         id="stew",
@@ -207,9 +207,9 @@ TAVERN_ITEMS = {
         id="bread",
         name="Loaf of Bread",
         description="A fresh loaf of crusty bread.",
-        item_type=ItemType.FOOD,
-        base_price=1,
-        effects={"hunger": -0.2}
+        item_type=ItemType.MISC,
+        base_price=0,
+        effects={"hunger_reduction": 0.3, "duration_hours": 0.0}
     ),
 }
 

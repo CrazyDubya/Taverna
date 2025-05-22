@@ -5,11 +5,11 @@ import json
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from living_rusted_tankard.core.game_state import GameState
-from living_rusted_tankard.core.clock import GameClock, GameTime
-from living_rusted_tankard.core.npc import NPC, NPCManager, NPCType, NPCDisposition
-from living_rusted_tankard.core.snapshot import SnapshotManager
-from living_rusted_tankard.core.events import (
+from core.game_state import GameState
+from core.clock import GameClock, GameTime
+from core.npc import NPC, NPCManager, NPCType, NPCDisposition
+from core.snapshot import SnapshotManager
+from core.events import (
     NPCSpawnEvent,
     NPCDepartEvent,
     NPCInteractionEvent,

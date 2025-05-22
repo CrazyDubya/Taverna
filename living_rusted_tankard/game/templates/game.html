@@ -75,7 +75,9 @@
             <div class="narrative-feed bg-gray-800 p-4 rounded-lg shadow-lg overflow-y-auto mb-4">
                 <div id="narrative-content" class="space-y-4">
                     <!-- Narrative messages will be inserted here -->
-                    <div class="text-amber-100">Welcome to The Living Rusted Tankard! What would you like to do?</div>
+                    <div class="text-amber-100 italic text-center py-4">
+                        🍺 Preparing your adventure...
+                    </div>
                 </div>
                 
                 <!-- Memory indicator -->
@@ -678,8 +680,8 @@
             // Focus the input field
             commandInput.focus();
             
-            // Add welcome message
-            addNarrative('Welcome to The Living Rusted Tankard! Type "help" to see available commands.');
+            // Initial placeholder - actual welcome will come from server
+            // addNarrative('Loading your adventure...');
             
             // Check if Ollama settings are saved, and if so, apply them automatically
             const savedUrl = localStorage.getItem('ollama_url');

@@ -7,7 +7,6 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 from utils.serialization import (
-    Serializable,
     save_game_state,
     load_game_state,
     get_latest_save
@@ -15,35 +14,7 @@ from utils.serialization import (
 from utils.snapshot import GameSnapshot
 
 
-class TestSerializable(unittest.TestCase):
-    """Test the Serializable base class."""
-
-    def test_serializable_to_dict(self):
-        """Test that a serializable object can be converted to a dict."""
-        class TestObj(Serializable):
-
-            def __init__(self, x, y):
-                self.x = x
-                self.y = y
-
-        obj = TestObj(1, "test")
-        result = obj.to_dict()
-
-        self.assertEqual(result, {"x": 1, "y": "test"})
-
-    def test_serializable_from_dict(self):
-        """Test that an object can be created from a dict."""
-        class TestObj(Serializable):
-
-            def __init__(self, x, y):
-                self.x = x
-                self.y = y
-
-        data = {"x": 1, "y": "test"}
-        obj = TestObj.from_dict(data)
-
-        self.assertEqual(obj.x, 1)
-        self.assertEqual(obj.y, "test")
+# Serializable class has been removed - tests no longer needed
 
 
 class TestSaveLoadGameState(unittest.TestCase):

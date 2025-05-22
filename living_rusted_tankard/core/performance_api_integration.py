@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional
 import time
 import logging
 
-from .optimized_game_state import OptimizedGameState
+from .game_state import GameState as OptimizedGameState
 
 logger = logging.getLogger(__name__)
 

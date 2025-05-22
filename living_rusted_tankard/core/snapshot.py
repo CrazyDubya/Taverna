@@ -10,7 +10,8 @@ if TYPE_CHECKING:
 @dataclass
 class GameSnapshot:
     """A lightweight, serializable snapshot of the game state for the parser."""
-    time: float  # Current game time in hours
+    time: float  # Current game time in hours (raw decimal)
+    formatted_time: str  # Natural fantasy time display
     present_npcs: List[Dict[str, Any]]  # Currently present NPCs
     board_notes: List[str]  # Currently visible board notes
     player: Dict[str, Any]  # Player state
@@ -73,9 +74,25 @@ class SnapshotManager:
                 time_value = 0.0
         except:
             time_value = 0.0
+        
+        # Get formatted natural time
+        formatted_time = "Unknown time"
+        try:
+            from .time_display import format_time_for_display
+            formatted_time = format_time_for_display(time_value, "ui_main")
+        except Exception:
+            # Fallback to clock's formatted time if available
+            try:
+                if hasattr(self.game_state.clock, 'get_formatted_time'):
+                    formatted_time = self.game_state.clock.get_formatted_time()
+                elif hasattr(self.game_state.clock, 'current_time'):
+                    formatted_time = self.game_state.clock.current_time.format_time()
+            except Exception:
+                formatted_time = f"Day {int(time_value // 24) + 1}"
             
         snapshot = GameSnapshot(
             time=time_value,
+            formatted_time=formatted_time,
             present_npcs=present_npcs,
             board_notes=board_notes,
             player=player_state,

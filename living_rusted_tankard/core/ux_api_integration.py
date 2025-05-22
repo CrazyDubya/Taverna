@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .audio_system import audio_manager, game_audio, get_audio_config, process_game_audio
 from .economy_balancing import economy_balancer, get_economic_status, get_balanced_price
-from .optimized_game_state import OptimizedGameState
+from .game_state import GameState as OptimizedGameState
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,11 @@
-from typing import Dict, Optional, Callable, Any, List, TYPE_CHECKING, Union, Deque
+from typing import Dict, Optional, Callable, Any, List, TYPE_CHECKING, Union, Deque, Set
 from collections import deque 
 from datetime import datetime
 from pydantic import BaseModel, Field
+import uuid
+import time
+import logging
+from sqlmodel import SQLModel, Field as SQLField, Column, JSON, DateTime
 from core.player import PlayerState
 from .clock import GameClock, GameTime
 from .room import RoomManager
@@ -38,7 +42,17 @@ class GameEvent(BaseModel):
         arbitrary_types_allowed = True
 
 class GameState:
-    def __init__(self, data_dir: str = "data"):
+    """
+    Main GameState with integrated database persistence and performance optimizations.
+    
+    This class combines:
+    - Core game logic and state management
+    - Database persistence capabilities  
+    - Performance optimizations with caching
+    - Memory management and optimization
+    """
+    
+    def __init__(self, data_dir: str = "data", session_id: Optional[str] = None, db_id: Optional[str] = None):
         self._data_dir = Path(data_dir) 
         if not ITEM_DEFINITIONS: 
             load_item_definitions(self._data_dir)
@@ -72,6 +86,28 @@ class GameState:
         # Player state for two-step commands (e.g. rent confirmation)
         self.pending_command: Optional[Dict[str, Any]] = None
         
+        # Database persistence features
+        self._session_id = session_id or str(uuid.uuid4())
+        self._db_id = db_id
+        self._needs_save = True
+        
+        # Performance optimization features
+        self._present_npcs_cache: Dict[str, Any] = {}
+        self._present_npcs_set: Set[str] = set()
+        self._npc_cache_timestamp: float = 0.0
+        self._npc_cache_ttl: float = 0.5  # 0.5 second cache
+        
+        # Snapshot optimization
+        self._snapshot_cache: Optional[Dict[str, Any]] = None
+        self._snapshot_timestamp: float = 0.0
+        self._snapshot_ttl: float = 1.0  # 1 second cache
+        self._snapshot_dirty: bool = True
+        
+        # Event batch processing
+        self._event_batch: List[Dict[str, Any]] = []
+        self._event_batch_size: int = 5
+        self._last_event_process: float = 0.0
+        
         self._initialize_game()
 
     def to_dict(self) -> Dict[str, Any]:
@@ -94,17 +130,24 @@ class GameState:
             "travelling_merchant_departure_time": self.travelling_merchant_departure_time,
             "travelling_merchant_temporary_items": self.travelling_merchant_temporary_items,
             "_data_dir": str(self._data_dir),
-            "pending_command": self.pending_command
+            "pending_command": self.pending_command,
+            "session_id": self._session_id,
+            "db_id": self._db_id,
+            "serialized_at": datetime.utcnow().isoformat()
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], narrator: Optional[Any] = None, command_parser: Optional[Any] = None, data_dir: str = "data") -> 'GameState':
+    def from_dict(cls, data: Dict[str, Any], narrator: Optional[Any] = None, command_parser: Optional[Any] = None, data_dir: str = "data", session_id: Optional[str] = None, db_id: Optional[str] = None) -> 'GameState':
         game_state_data_dir = Path(data.get("_data_dir", data_dir)) 
         
         if not ITEM_DEFINITIONS:
             load_item_definitions(game_state_data_dir)
 
-        game_state = cls(data_dir=str(game_state_data_dir))
+        # Extract session info from data if not provided
+        session_id = session_id or data.get("session_id")
+        db_id = db_id or data.get("db_id")
+        
+        game_state = cls(data_dir=str(game_state_data_dir), session_id=session_id, db_id=db_id)
         
         game_state.clock = GameClock.model_validate(data['clock'])
         game_state.player = PlayerState.model_validate(data['player'])
@@ -169,21 +212,15 @@ class GameState:
         # Give player some starting gold
         self.player.gold = 20
             
-        # Add a more descriptive welcome message
+        # Add a single, immersive welcome message
         welcome_message = """
-Welcome to The Living Rusted Tankard, a cozy tavern nestled in a small village.
-The tavern is dimly lit, with a warm fire crackling in the hearth. The air is filled
-with the smell of ale, food, and the murmur of patrons. 
+The heavy wooden door of The Living Rusted Tankard creaks open, and warm lamplight spills out to greet you. The scent of roasted meat, fresh ale, and old wood fills your nostrils as you step inside. Flickering candles cast dancing shadows on weathered walls adorned with tavern keepsakes.
 
-You stand near the entrance, taking in the atmosphere. A sturdy bar runs along one wall,
-where a mustached barkeeper wipes glasses. Several tables are occupied by patrons of
-various backgrounds.
+A burly barkeeper with a magnificent mustache polishes glasses behind the sturdy oak bar, occasionally glancing up at the patrons scattered throughout the common room. The hearth crackles invitingly, its orange glow painting the faces of weary travelers sharing tales over their drinks.
 
-Type 'help' to see available commands, 'look' to examine your surroundings, or 'status'
-to check your current condition.
+What tale will you weave in this living tapestry of stories?
 """
-        self._add_event("Welcome to The Living Rusted Tankard!", "info")
-        self._add_event(welcome_message, "description")
+        self._add_event(welcome_message, "welcome")
 
 
     def _add_event(self, message: str, event_type: str = "info", data: Optional[Dict] = None) -> None:
@@ -903,6 +940,164 @@ A staircase leads up to the rooms for rent.
 
     def get_snapshot(self) -> Dict[str, Any]: return self.snapshot_manager.create_snapshot()
     
+    # ==================== DATABASE PERSISTENCE METHODS ====================
+    
+    @property
+    def session_id(self) -> str:
+        """Get the session ID."""
+        return self._session_id
+    
+    @property 
+    def db_id(self) -> Optional[str]:
+        """Get the database ID if persisted."""
+        return self._db_id
+        
+    def set_db_id(self, db_id: str) -> None:
+        """Set the database ID after persistence."""
+        self._db_id = db_id
+        
+    def mark_dirty(self) -> None:
+        """Mark state as needing database save."""
+        self._needs_save = True
+        
+    def mark_clean(self) -> None:
+        """Mark state as clean (saved to database)."""
+        self._needs_save = False
+        
+    def needs_save(self) -> bool:
+        """Check if state needs to be saved to database."""
+        return self._needs_save
+    
+    def to_persistence_model(self) -> Dict[str, Any]:
+        """Convert to database persistence format."""
+        return {
+            "id": self._db_id,
+            "session_id": self._session_id,
+            "player_name": getattr(self.player, 'name', 'Unknown Player'),
+            "game_data": self.to_dict(),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+    
+    @classmethod
+    def from_persistence_data(cls, data: Dict[str, Any], data_dir: str = "data") -> 'GameState':
+        """Create from database persistence data."""
+        session_id = data.get("session_id")
+        db_id = data.get("id")
+        game_data = data.get("game_data", {})
+        
+        # Create instance using from_dict with session info
+        instance = cls.from_dict(game_data, data_dir=data_dir, session_id=session_id, db_id=db_id)
+        instance.set_db_id(db_id)
+        instance.mark_clean()
+        return instance
+    
+    # ==================== PERFORMANCE OPTIMIZATION METHODS ====================
+    
+    def get_present_npcs_optimized(self) -> List[Any]:
+        """Get present NPCs with caching optimization."""
+        current_time = time.time()
+        
+        # Check cache validity
+        if (self._present_npcs_cache and 
+            current_time - self._npc_cache_timestamp < self._npc_cache_ttl):
+            return list(self._present_npcs_cache.values())
+        
+        # Cache miss - rebuild cache
+        present_npcs = self.npc_manager.get_present_npcs()
+        self._present_npcs_cache = {npc.id: npc for npc in present_npcs}
+        self._present_npcs_set = {npc.id for npc in present_npcs}
+        self._npc_cache_timestamp = current_time
+        
+        return present_npcs
+    
+    def _invalidate_npc_cache(self) -> None:
+        """Invalidate the NPC cache."""
+        self._npc_cache_timestamp = 0.0
+        self._present_npcs_cache.clear()
+        self._present_npcs_set.clear()
+    
+    def get_snapshot_optimized(self) -> Dict[str, Any]:
+        """Get game state snapshot with caching."""
+        current_time = time.time()
+        
+        # Check cache validity
+        if (self._snapshot_cache and not self._snapshot_dirty and
+            current_time - self._snapshot_timestamp < self._snapshot_ttl):
+            return self._snapshot_cache.copy()
+        
+        # Generate fresh snapshot
+        snapshot = self.get_snapshot()
+        
+        # Cache the snapshot
+        self._snapshot_cache = snapshot.copy()
+        self._snapshot_timestamp = current_time
+        self._snapshot_dirty = False
+        
+        return snapshot
+    
+    def _process_event_batch(self) -> None:
+        """Process batched events for better performance."""
+        if not self._event_batch:
+            return
+        
+        current_time = time.time()
+        if (len(self._event_batch) >= self._event_batch_size or
+            current_time - self._last_event_process > 1.0):  # Process every second at least
+            
+            # Process all batched events
+            for event_data in self._event_batch:
+                # Could add batch event processing logic here
+                pass
+            
+            self._event_batch.clear()
+            self._last_event_process = current_time
+    
+    def _add_event_optimized(self, message: str, event_type: str = "info", data: Optional[Dict[str, Any]] = None) -> None:
+        """Add event with batching optimization."""
+        # Add to batch instead of immediate processing
+        self._event_batch.append({
+            "message": message,
+            "event_type": event_type,
+            "data": data or {},
+            "timestamp": time.time()
+        })
+        
+        # Also add to immediate events for backward compatibility
+        self._add_event(message, event_type, data)
+        
+        # Mark snapshot as dirty
+        self._snapshot_dirty = True
+    
+    # ==================== ENHANCED UPDATE METHODS ====================
+    
+    def update_optimized(self, delta_override: Optional[float] = None) -> None:
+        """Optimized update method with performance tracking."""
+        start_time = time.time()
+        
+        # Call standard update
+        self.update(delta_override)
+        
+        # Process any pending events in batch
+        self._process_event_batch()
+        
+        # Mark snapshot as dirty
+        self._snapshot_dirty = True
+        
+        # Invalidate NPC cache
+        self._invalidate_npc_cache()
+        
+        # Mark for database save
+        self.mark_dirty()
+    
+    def process_command_enhanced(self, command: str) -> Dict[str, Any]:
+        """Process command with database marking and optimization."""
+        result = self.process_command(command)
+        self.mark_dirty()  # Any command changes state
+        self._snapshot_dirty = True  # Invalidate snapshot cache
+        return result
+    
+    # ==================== HELPER METHODS ====================
+
     def _generate_help_text(self) -> str:
         """Generate help text showing available commands."""
         help_text = """

@@ -38,32 +38,48 @@ class GameTime(BaseModel):
         dump = super().model_dump(**kwargs)
         dump['hour_of_day'] = self.hour_of_day
         dump['day'] = self.day
-        dump['formatted_time'] = self.format_time()
+        dump['formatted_time'] = self.format_time()  # Now uses natural time by default
+        dump['legacy_time'] = self.format_time(style="legacy")  # Keep decimal version for backward compatibility
         return dump
 
-    def format_time(self, format_str: str = None) -> str:
+    def format_time(self, format_str: str = None, style: str = "natural") -> str:
         """Format current time as a readable string.
         
         Args:
-            format_str: Optional format string. If None, uses default format.
-                Available placeholders: {day}, {hour:02d}, {minute:02d}, {ampm}
+            format_str: Optional format string. If None, uses default format based on style.
+                Available placeholders for legacy format: {day}, {hour:02d}, {minute:02d}, {ampm}
+            style: Display style - "natural" (default), "legacy", "bell", "narrative", "formal"
                 
         Returns:
             Formatted time string
         """
-        hours = int(self.hour_of_day)
-        minutes = int((self.hour_of_day % 1) * 60)
-        ampm = "AM" if hours < 12 else "PM"
+        # Import here to avoid circular imports
+        from .time_display import format_time_for_display
         
-        if format_str is None:
-            return f"Day {self.day}, {hours:02d}:{minutes:02d}"
+        if style == "natural" and format_str is None:
+            # Use natural fantasy time display
+            return format_time_for_display(self.hours, "ui_main")
+        elif style == "bell":
+            return format_time_for_display(self.hours, "ui_main")
+        elif style == "narrative":
+            return format_time_for_display(self.hours, "npc_casual")
+        elif style == "formal":
+            return format_time_for_display(self.hours, "npc_formal")
+        else:
+            # Legacy decimal format or custom format string
+            hours = int(self.hour_of_day)
+            minutes = int((self.hour_of_day % 1) * 60)
+            ampm = "AM" if hours < 12 else "PM"
             
-        return format_str.format(
-            day=self.day,
-            hour=hours if hours <= 12 else hours - 12,
-            minute=minutes,
-            ampm=ampm
-        )
+            if format_str is None:
+                return f"Day {self.day}, {hours:02d}:{minutes:02d}"
+                
+            return format_str.format(
+                day=self.day,
+                hour=hours if hours <= 12 else hours - 12,
+                minute=minutes,
+                ampm=ampm
+            )
     
     def to_real_time(self) -> datetime:
         """Convert to a real datetime (using current date)."""

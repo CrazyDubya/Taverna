@@ -1,4 +1,4 @@
-"""Game state models using SQLModel."""
+"""Persistence models for database storage using SQLModel."""
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Column, JSON, String, DateTime

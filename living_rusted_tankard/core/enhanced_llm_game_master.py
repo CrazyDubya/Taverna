@@ -263,25 +263,44 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
         """Check if the LLM service is currently available."""
         return self.health_monitor.check_health()
 
-    def get_fallback_response(self, user_input: str) -> LLMResponse:
-        """Generate fallback response when LLM is unavailable."""
-        user_input_lower = user_input.lower().strip()
-        
-        # Try to match to a known command
-        for command in ["look", "status", "inventory", "talk", "buy", "help"]:
-            if command in user_input_lower:
-                response_text = self.fallback_responses.get(command, self.fallback_responses["default"])
-                return LLMResponse(
-                    content=response_text,
-                    command=command if command in ["look", "status", "inventory"] else None,
-                    was_fallback=True
-                )
-        
-        # Default fallback
-        return LLMResponse(
-            content=self.fallback_responses["default"] + f" (The mystical connection seems unstable - tried to interpret: '{user_input}')",
-            was_fallback=True
-        )
+    def get_fallback_response(self, user_input: str, session_id: str = None, game_context: Optional[Dict] = None) -> LLMResponse:
+        """Generate fallback response when LLM is unavailable using enhanced error recovery."""
+        try:
+            from .error_recovery import handle_llm_error
+            
+            # Create a simulated LLM unavailable error
+            llm_error = Exception("LLM service unavailable")
+            
+            enhanced_response, command, actions = handle_llm_error(
+                llm_error, session_id, user_input, game_context
+            )
+            
+            return LLMResponse(
+                content=enhanced_response,
+                command=command,
+                actions=actions or [],
+                was_fallback=True
+            )
+            
+        except ImportError:
+            # Fallback to basic responses
+            user_input_lower = user_input.lower().strip()
+            
+            # Try to match to a known command
+            for command in ["look", "status", "inventory", "talk", "buy", "help"]:
+                if command in user_input_lower:
+                    response_text = self.fallback_responses.get(command, self.fallback_responses["default"])
+                    return LLMResponse(
+                        content=response_text,
+                        command=command if command in ["look", "status", "inventory"] else None,
+                        was_fallback=True
+                    )
+            
+            # Default fallback
+            return LLMResponse(
+                content=self.fallback_responses["default"] + f" (The mystical connection seems unstable - tried to interpret: '{user_input}')",
+                was_fallback=True
+            )
 
     def _build_optimized_context(self, game_state, session_id: str) -> str:
         """Build optimized context string to reduce token usage."""
@@ -359,7 +378,18 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
         # Check service availability first
         if not self.is_service_available():
             logger.warning("LLM service unavailable, using fallback response")
-            fallback = self.get_fallback_response(user_input)
+            
+            # Build game context for enhanced fallback
+            game_context = {}
+            try:
+                from .time_display import get_time_context_for_llm
+                game_context["current_time"] = get_time_context_for_llm(game_state.clock.current_time_hours)
+                present_npcs = game_state.get_present_npcs()
+                game_context["present_npcs"] = [npc.name for npc in present_npcs]
+            except Exception:
+                game_context = {"current_time": "evening", "present_npcs": []}
+            
+            fallback = self.get_fallback_response(user_input, session_id, game_context)
             return fallback.content, fallback.command, fallback.actions or []
         
         user_input_lower = user_input.lower().strip()
@@ -380,12 +410,19 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
         # Add optimized conversation history
         messages.extend([msg.to_dict() for msg in optimized_history])
         
-        # Add session memories if available
-        if session_id in self.session_memories:
-            recent_memories = self.session_memories[session_id][-3:]  # Last 3 memories
-            if recent_memories:
-                memory_text = " | ".join([mem.get("content", "") for mem in recent_memories])
-                messages.append({"role": "system", "content": f"MEMORY: {memory_text}"})
+        # Add enhanced memory context
+        try:
+            from .memory import get_memory_context_for_llm
+            memory_context = get_memory_context_for_llm(session_id, user_input)
+            if memory_context:
+                messages.append({"role": "system", "content": f"MEMORY: {memory_context}"})
+        except ImportError:
+            # Fallback to basic session memories
+            if session_id in self.session_memories:
+                recent_memories = self.session_memories[session_id][-3:]  # Last 3 memories
+                if recent_memories:
+                    memory_text = " | ".join([mem.get("content", "") for mem in recent_memories])
+                    messages.append({"role": "system", "content": f"MEMORY: {memory_text}"})
         
         # Add current user input
         messages.append({"role": "user", "content": user_input})
@@ -411,8 +448,17 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
         except Exception as e:
             logger.error(f"LLM request failed: {e}", exc_info=True)
             
-            # Intelligent fallback based on input
-            fallback = self.get_fallback_response(user_input)
+            # Intelligent fallback based on input with game context
+            game_context = {}
+            try:
+                from .time_display import get_time_context_for_llm
+                game_context["current_time"] = get_time_context_for_llm(game_state.clock.current_time_hours)
+                present_npcs = game_state.get_present_npcs()
+                game_context["present_npcs"] = [npc.name for npc in present_npcs]
+            except Exception:
+                game_context = {"current_time": "evening", "present_npcs": []}
+            
+            fallback = self.get_fallback_response(user_input, session_id, game_context)
             fallback.response_time = time.time() - start_time
             
             return fallback.content, fallback.command, fallback.actions or []
@@ -510,24 +556,44 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
         return optimized
 
     def _extract_memories_from_response(self, response: str, session_id: str) -> str:
-        """Extract and store memories from LLM response."""
+        """Extract and store memories from LLM response using enhanced memory system."""
         memory_pattern = r'\[MEMORY:\s*([^\]]+)\]'
         memories = re.findall(memory_pattern, response)
         
         if memories:
-            if session_id not in self.session_memories:
-                self.session_memories[session_id] = []
-            
-            for memory in memories:
-                memory_entry = {
-                    "content": memory.strip(),
-                    "timestamp": time.time()
-                }
-                self.session_memories[session_id].append(memory_entry)
+            try:
+                from .memory import add_session_memory, MemoryImportance
                 
-                # Limit memory storage
-                if len(self.session_memories[session_id]) > 20:
-                    self.session_memories[session_id] = self.session_memories[session_id][-15:]
+                for memory in memories:
+                    memory_content = memory.strip()
+                    
+                    # Determine importance based on content keywords
+                    importance = MemoryImportance.NORMAL
+                    if any(word in memory_content.lower() for word in ["quest", "mission", "important", "secret", "discovery"]):
+                        importance = MemoryImportance.HIGH
+                    elif any(word in memory_content.lower() for word in ["greeting", "hello", "small talk"]):
+                        importance = MemoryImportance.TRIVIAL
+                    elif any(word in memory_content.lower() for word in ["buy", "purchase", "trade", "gold"]):
+                        importance = MemoryImportance.LOW
+                    
+                    # Add to enhanced memory system
+                    add_session_memory(session_id, memory_content, importance)
+                    
+            except ImportError:
+                # Fallback to basic memory system
+                if session_id not in self.session_memories:
+                    self.session_memories[session_id] = []
+                
+                for memory in memories:
+                    memory_entry = {
+                        "content": memory.strip(),
+                        "timestamp": time.time()
+                    }
+                    self.session_memories[session_id].append(memory_entry)
+                    
+                    # Limit memory storage
+                    if len(self.session_memories[session_id]) > 20:
+                        self.session_memories[session_id] = self.session_memories[session_id][-15:]
             
             # Remove memory tags from response
             response = re.sub(memory_pattern, '', response).strip()

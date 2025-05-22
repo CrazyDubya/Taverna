@@ -147,12 +147,44 @@
         .btn-primary {
             background: linear-gradient(135deg, #d68c0a 0%, #efa31f 100%);
             transition: all 0.3s ease;
+            border: 1px solid #b47006;
         }
         
         .btn-primary:hover {
             background: linear-gradient(135deg, #b47006 0%, #d68c0a 100%);
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(214, 140, 10, 0.3);
+        }
+        
+        /* Message styling improvements */
+        .message-welcome {
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+        }
+        
+        .message-narrative {
+            background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+            border-left: 3px solid #6b7280;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            margin: 0.25rem 0;
+        }
+        
+        .message-system {
+            background: linear-gradient(135deg, #065f46 0%, #064e3b 100%);
+            border-left: 3px solid #10b981;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            margin: 0.25rem 0;
+            font-size: 0.875rem;
+        }
+        
+        /* Remove non-functional sound styles */
+        .audio-controls {
+            display: none;
         }
         
         /* Status indicators */
@@ -186,10 +218,6 @@
                 </div>
                 
                 <div class="flex items-center space-x-2">
-                    <!-- Audio Toggle -->
-                    <button id="audio-toggle" class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg transition-all">
-                        🔊
-                    </button>
                     
                     <!-- Mobile Menu Toggle -->
                     <button id="mobile-menu-toggle" class="md:hidden bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg">
@@ -206,17 +234,15 @@
             <!-- Enhanced Narrative Feed -->
             <div class="flex-1 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg overflow-hidden border border-gray-700">
                 <div id="narrative-content" class="narrative-feed overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
-                    <!-- Welcome message with enhanced styling -->
-                    <div class="bg-gradient-to-r from-tavern-900 to-gray-800 border-l-4 border-tavern-400 p-4 rounded-r-lg animate-fade-in">
-                        <div class="font-cinzel text-lg text-tavern-300 mb-2">Welcome, Traveler</div>
-                        <p class="narrative-text text-gray-300">
-                            You push open the heavy wooden door of The Living Rusted Tankard, and warm light spills out to greet you. 
-                            The air is thick with the scent of ale, roasted meat, and old wood. Flickering candles cast dancing shadows 
-                            on the walls, and you hear the low murmur of conversation from the tavern's patrons.
+                    <!-- Initial loading message - real welcome comes from server -->
+                    <div id="initial-loading" class="bg-gradient-to-r from-tavern-900 to-gray-800 border-l-4 border-tavern-400 p-4 rounded-r-lg animate-fade-in text-center">
+                        <div class="font-cinzel text-lg text-tavern-300 mb-2">🍺 The Living Rusted Tankard</div>
+                        <p class="narrative-text text-gray-400 italic">
+                            Preparing your adventure...
                         </p>
-                        <p class="narrative-text text-gray-400 mt-3 text-sm italic">
-                            Type a command below to begin your adventure, or simply tell the story what you'd like to do...
-                        </p>
+                        <div class="mt-3 text-tavern-400 animate-pulse-gentle">
+                            ⚙️ Loading game world...
+                        </div>
                     </div>
                 </div>
                 
@@ -273,17 +299,20 @@
                 
                 <!-- Quick Actions -->
                 <div id="quick-actions" class="flex flex-wrap gap-2 mt-2">
-                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded text-sm transition-all" data-command="look">
-                        👀 Look
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" data-command="look">
+                        👀 Look Around
                     </button>
-                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded text-sm transition-all" data-command="status">
-                        📊 Status
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" data-command="status">
+                        📊 Check Status
                     </button>
-                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded text-sm transition-all" data-command="inventory">
-                        🎒 Inventory
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" data-command="inventory">
+                        🎒 My Items
                     </button>
-                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded text-sm transition-all" data-command="talk to barkeeper">
-                        💬 Talk
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" data-command="talk to barkeeper">
+                        💬 Chat
+                    </button>
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" data-command="help">
+                        ❓ Help
                     </button>
                 </div>
             </div>
@@ -379,24 +408,6 @@
                     </select>
                 </div>
                 
-                <!-- Audio Settings -->
-                <div>
-                    <label class="block text-gray-300 mb-2 font-semibold">Audio Settings</label>
-                    <div class="space-y-2">
-                        <label class="flex items-center">
-                            <input type="checkbox" id="ambient-sounds" class="mr-2">
-                            <span class="text-sm">Ambient tavern sounds</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" id="sound-effects" class="mr-2">
-                            <span class="text-sm">Sound effects</span>
-                        </label>
-                        <div class="mt-2">
-                            <label class="block text-sm text-gray-400 mb-1">Volume</label>
-                            <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full">
-                        </div>
-                    </div>
-                </div>
                 
                 <!-- Performance Settings -->
                 <div>
@@ -426,13 +437,6 @@
         </div>
     </div>
     
-    <!-- Audio Elements -->
-    <audio id="ambient-audio" loop preload="auto">
-        <source src="/static/audio/tavern-ambience.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="sound-effect-audio" preload="auto">
-        <source src="/static/audio/coin-drop.mp3" type="audio/mpeg">
-    </audio>
 
     <script>
         // Enhanced game state management with UX improvements
@@ -450,7 +454,6 @@
                 this.commandHistory = JSON.parse(localStorage.getItem('commandHistory') || '[]');
                 this.historyIndex = -1;
                 this.isLoading = false;
-                this.audioEnabled = localStorage.getItem('audioEnabled') === 'true';
                 this.performanceOptimized = localStorage.getItem('performanceOptimized') !== 'false';
                 
                 this.initializeInterface();
@@ -487,6 +490,27 @@
                 if (!this.sessionId) {
                     this.sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                     localStorage.setItem('gameSessionId', this.sessionId);
+                }
+                
+                // Remove the initial loading message and start the game
+                setTimeout(() => {
+                    const initialLoading = document.getElementById('initial-loading');
+                    if (initialLoading) {
+                        initialLoading.remove();
+                    }
+                    // Get initial game state instead of sending a command
+                    this.initializeGameSession();
+                }, 1000);
+            }
+            
+            async initializeGameSession() {
+                try {
+                    // Send a simple initial command to get the welcome message
+                    const response = await this.sendCommand('look around');
+                    this.handleCommandResponse(response);
+                } catch (error) {
+                    console.error('Failed to initialize session:', error);
+                    // Show a fallback welcome message\n                    this.addNarrative('🍺 Welcome to The Living Rusted Tankard! The game is ready to begin. Type \"help\" to see available commands.', false, 'welcome');\n                    // Update the game state display with defaults\n                    this.updateGameState({\n                        time: { formatted: 'Morning, Day 1' },\n                        player: { gold: 20, inventory: [] },\n                        active_bounties: []\n                    });
                 }
             }
             
@@ -546,10 +570,6 @@
                     this.saveSettings();
                 });
                 
-                // Audio toggle
-                document.getElementById('audio-toggle').addEventListener('click', () => {
-                    this.toggleAudio();
-                });
                 
                 // Mobile menu
                 document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
@@ -628,10 +648,6 @@
                     this.handleEvents(response.events);
                 }
                 
-                // Play sound effects if enabled
-                if (this.audioEnabled && response.events) {
-                    this.playEventSounds(response.events);
-                }
             }
             
             handleError(error) {
@@ -640,11 +656,37 @@
                 this.addNarrative(`🔧 Something went wrong: ${error.message}. The tavern's magic seems disrupted.`);
             }
             
-            addNarrative(text, isPlayer = false) {
+            addNarrative(text, isPlayer = false, messageType = null) {
                 const message = document.createElement('div');
-                message.className = `animate-fade-in ${isPlayer 
-                    ? 'text-tavern-300 font-bold bg-gray-700 p-3 rounded-lg border-l-4 border-tavern-400' 
-                    : 'text-gray-200 narrative-text'}`;
+                
+                let className = 'animate-fade-in ';
+                if (isPlayer) {
+                    className += 'text-tavern-300 font-bold bg-gray-700 p-3 rounded-lg border-l-4 border-tavern-400';
+                } else {
+                    // Determine message type from content if not provided
+                    if (!messageType) {
+                        if (text.includes('Welcome to') || text.includes('heavy wooden door')) {
+                            messageType = 'welcome';
+                        } else if (text.includes('⚙️') || text.includes('💾') || text.includes('Loading')) {
+                            messageType = 'system';
+                        } else {
+                            messageType = 'narrative';
+                        }
+                    }
+                    
+                    switch (messageType) {
+                        case 'welcome':
+                            className += 'message-welcome text-blue-100';
+                            break;
+                        case 'system':
+                            className += 'message-system text-green-100';
+                            break;
+                        default:
+                            className += 'message-narrative text-gray-200 narrative-text';
+                    }
+                }
+                
+                message.className = className;
                 
                 // Handle conversation options
                 const optionsRegex = /\[options?:\s*([^\]]+)\]/i;
@@ -879,31 +921,9 @@
                 }, 100);
             }
             
-            toggleAudio() {
-                this.audioEnabled = !this.audioEnabled;
-                localStorage.setItem('audioEnabled', this.audioEnabled);
-                
-                const audioBtn = document.getElementById('audio-toggle');
-                audioBtn.textContent = this.audioEnabled ? '🔊' : '🔇';
-                
-                const ambientAudio = document.getElementById('ambient-audio');
-                if (this.audioEnabled) {
-                    ambientAudio.play().catch(() => {});
-                } else {
-                    ambientAudio.pause();
-                }
-            }
             
             loadSettings() {
-                // Load audio settings
-                document.getElementById('ambient-sounds').checked = this.audioEnabled;
-                document.getElementById('sound-effects').checked = localStorage.getItem('soundEffects') === 'true';
-                document.getElementById('volume-slider').value = localStorage.getItem('audioVolume') || '50';
                 document.getElementById('performance-optimizations').checked = this.performanceOptimized;
-                
-                // Apply audio settings
-                const audioBtn = document.getElementById('audio-toggle');
-                audioBtn.textContent = this.audioEnabled ? '🔊' : '🔇';
                 
                 // Apply performance settings
                 if (this.performanceOptimized) {
@@ -916,18 +936,8 @@
             }
             
             saveSettings() {
-                // Save audio settings
-                const ambientEnabled = document.getElementById('ambient-sounds').checked;
-                const soundEffectsEnabled = document.getElementById('sound-effects').checked;
-                const volume = document.getElementById('volume-slider').value;
                 const performanceEnabled = document.getElementById('performance-optimizations').checked;
-                
-                localStorage.setItem('audioEnabled', ambientEnabled);
-                localStorage.setItem('soundEffects', soundEffectsEnabled);
-                localStorage.setItem('audioVolume', volume);
                 localStorage.setItem('performanceOptimized', performanceEnabled);
-                
-                this.audioEnabled = ambientEnabled;
                 this.performanceOptimized = performanceEnabled;
                 
                 // Apply settings
@@ -958,17 +968,6 @@
                 });
             }
             
-            playEventSounds(events) {
-                const soundEffectsEnabled = localStorage.getItem('soundEffects') === 'true';
-                if (!soundEffectsEnabled) return;
-                
-                events.forEach(event => {
-                    if (event.type === 'success' && event.message && event.message.includes('gold')) {
-                        const soundEffect = document.getElementById('sound-effect-audio');
-                        soundEffect.play().catch(() => {});
-                    }
-                });
-            }
         }
         
         // Initialize the enhanced game interface

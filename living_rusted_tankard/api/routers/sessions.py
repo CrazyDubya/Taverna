@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 
-from core.models.game_state import GameState, GameStateCreate, GameStateUpdate, GameSession
+from core.models.persistence_models import GameState, GameStateCreate, GameStateUpdate, GameSession
 from core.services.session_service import SessionService
 from ..deps import get_session_service
 

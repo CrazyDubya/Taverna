@@ -18,7 +18,7 @@ import requests
 from pathlib import Path
 import logging
 
-from .db_game_state import DatabaseGameState as GameState
+from .game_state import GameState
 from .event_formatter import EventFormatter
 from .enhanced_llm_game_master import EnhancedLLMGameMaster as LLMGameMaster
 
@@ -57,8 +57,33 @@ templates = Jinja2Templates(directory=str(templates_dir))
 sessions: Dict[str, dict] = {}
 SESSION_TIMEOUT = 30 * 60  # 30 minutes in seconds
 
-# Initialize the LLM Game Master
+# Initialize the LLM Game Master and Async Pipeline
 llm_gm = LLMGameMaster()
+
+# Initialize async LLM pipeline for non-blocking processing
+from .async_llm_pipeline import get_pipeline, initialize_pipeline, shutdown_pipeline
+async_llm_pipeline = get_pipeline()
+
+# Startup and shutdown handlers for async pipeline
+@app.on_event("startup")
+async def startup_event():
+    """Initialize async systems on startup."""
+    logger.info("Starting async LLM pipeline...")
+    try:
+        await initialize_pipeline()
+        logger.info("Async LLM pipeline started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start async LLM pipeline: {e}")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up async systems on shutdown."""
+    logger.info("Shutting down async LLM pipeline...")
+    try:
+        await shutdown_pipeline()
+        logger.info("Async LLM pipeline shut down successfully")
+    except Exception as e:
+        logger.error(f"Error shutting down async LLM pipeline: {e}")
 
 # Clean up expired sessions periodically
 def cleanup_sessions():
@@ -124,7 +149,7 @@ def get_or_create_session(session_id: Optional[str] = None) -> tuple[GameState, 
 async def index(request: Request):
     """Serve the main game interface."""
     return templates.TemplateResponse(
-        "game.html", 
+        "enhanced_game.html", 
         {"request": request}
     )
 
@@ -161,12 +186,22 @@ async def process_command(command: CommandRequest):
                 ]
                 logger.info(f"New session created with {len(initial_events)} initial events")
         
-        # First, pass the input through the LLM Game Master
-        narrative_response, command_to_execute, action_results = llm_gm.process_input(
-            command.input, 
-            game_state, 
-            session_id
-        )
+        # Process the input through the async LLM pipeline (with sync fallback)
+        try:
+            narrative_response, command_to_execute, action_results = async_llm_pipeline.process_request_sync(
+                command.input, 
+                game_state, 
+                session_id
+            )
+            logger.debug(f"Processed via async pipeline: command='{command_to_execute}', actions={len(action_results or [])}")
+        except Exception as e:
+            logger.error(f"Error in async pipeline, falling back to direct LLM: {e}")
+            # Fallback to direct LLM processing
+            narrative_response, command_to_execute, action_results = llm_gm.process_input(
+                command.input, 
+                game_state, 
+                session_id
+            )
         
         # Check if the LLM identified a specific command to execute
         if command_to_execute:
@@ -456,3 +491,95 @@ async def llm_status():
             "timeout": 30
         }
     }
+
+# Async LLM Pipeline status endpoint
+@app.get("/async-llm-status")
+async def async_llm_status():
+    """Get async LLM pipeline status and statistics."""
+    try:
+        stats = async_llm_pipeline.get_stats()
+        is_healthy = async_llm_pipeline.is_healthy()
+        
+        return {
+            "is_healthy": is_healthy,
+            "statistics": stats,
+            "pipeline_running": async_llm_pipeline.is_running,
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        logger.error(f"Error getting async LLM status: {e}")
+        return {
+            "is_healthy": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }
+
+# Memory system status endpoint
+@app.get("/memory-status")
+async def memory_status():
+    """Get memory system status and statistics."""
+    try:
+        from .memory import get_memory_manager
+        manager = get_memory_manager()
+        
+        stats = manager.get_stats()
+        
+        return {
+            "is_healthy": stats["total_memories"] < 10000,  # Arbitrary health threshold
+            "statistics": stats,
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        logger.error(f"Error getting memory status: {e}")
+        return {
+            "is_healthy": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }
+
+# Memory cleanup endpoint
+@app.post("/memory-cleanup")
+async def memory_cleanup():
+    """Trigger memory cleanup and summarization."""
+    try:
+        from .memory import cleanup_old_memories
+        
+        summarized_count = cleanup_old_memories(age_threshold_hours=24.0)
+        
+        return {
+            "success": True,
+            "summarized_memories": summarized_count,
+            "message": f"Cleaned up and summarized {summarized_count} old memories",
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        logger.error(f"Error during memory cleanup: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }
+
+# Error recovery system status endpoint
+@app.get("/error-recovery-status")
+async def error_recovery_status():
+    """Get error recovery system status and health metrics."""
+    try:
+        from .error_recovery import get_error_recovery_system
+        
+        recovery_system = get_error_recovery_system()
+        health = recovery_system.get_system_health()
+        
+        return {
+            "is_healthy": health["is_healthy"],
+            "health_score": health["health_score"],
+            "system_health": health,
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        logger.error(f"Error getting error recovery status: {e}")
+        return {
+            "is_healthy": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }
