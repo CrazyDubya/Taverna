@@ -73,7 +73,7 @@ class AIPlayer:
                     "jobs",
                     "interact gene_bartender talk",
                     "buy ale",
-                    "work cleaning"
+                    "work clean_tables"
                 ]
             },
             AIPlayerPersonality.SOCIAL_BUTTERFLY: {
@@ -130,7 +130,8 @@ Use ONLY these exact command formats:
 - "interact gene_bartender talk" - Talk to Gene the bartender
 - "interact <npc_id> talk" - Talk to NPCs (use their ID)
 - "jobs" - See available work
-- "work <job_name>" - Work a job if available
+- "work clean_tables" - Work cleaning tables job
+- "work wash_dishes" - Work washing dishes job
 - "buy <item>" - Buy items from vendors
 - "accept bounty <bounty_id>" - Accept bounties from notice board
 - "move <location>" - Move to different areas
@@ -141,10 +142,13 @@ EXAMPLE COMMANDS FOR YOUR PERSONALITY:
 
 BEHAVIORAL GUIDELINES:
 - Avoid repeating the same command consecutively
-- If you just used "look", try a different action like "jobs", "inventory", or "interact"
-- If you see bounties, consider exploring or talking to NPCs
-- Be curious and explore different aspects of the game
-- Mix information gathering with active participation
+- After gathering information (jobs, bounties), take ACTION:
+  * Accept a bounty with "accept bounty bounty_rats_001"
+  * Try working with "work clean_tables" 
+  * Talk to NPCs with "interact gene_bartender talk"
+- Don't just observe - participate! Work jobs, accept bounties, talk to people
+- Mix 2-3 information commands with 1-2 action commands
+- Be decisive and try new things
 
 RESPONSE FORMAT:
 Respond with ONLY ONE valid command from the list above. Choose something different from your recent actions.

@@ -745,9 +745,17 @@ What tale will you weave in this living tapestry of stories?
 
     def _handle_available_jobs(self) -> Dict[str, Any]:
         jobs = self.economy.get_available_jobs(self.player.energy)
-        jobs_data = [{"id": j_id, "name": j["name"], "description": j["description"], "reward": f"{j['base_reward']}g", "tiredness": f"+{j['tiredness_cost']*100:.0f}%"} for j_id, j in jobs.items()]
-        if not jobs_data: return {"success": True, "message": "No jobs available."}
-        return {"success": True, "message": "Available jobs:", "data": jobs_data}
+        if not jobs: 
+            return {"success": True, "message": "No jobs available."}
+        
+        # Format jobs list for display
+        job_descriptions = []
+        for i, job in enumerate(jobs):
+            job_desc = f"{i+1}. {job['name']}: {job['description']} (Reward: {job['base_reward']} gold, Tiredness: +{job['tiredness_cost']*100:.0f}%)"
+            job_descriptions.append(job_desc)
+        
+        message = "Available jobs:\n" + "\n".join(job_descriptions)
+        return {"success": True, "message": message}
 
     def _handle_work(self, job_id: str) -> Dict[str, Any]:
         result = self.economy.perform_job(job_id, self.player.energy)
