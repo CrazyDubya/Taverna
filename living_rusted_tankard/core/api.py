@@ -21,6 +21,7 @@ import logging
 from .game_state import GameState
 from .event_formatter import EventFormatter
 from .enhanced_llm_game_master import EnhancedLLMGameMaster as LLMGameMaster
+from .items import ITEM_DEFINITIONS, load_item_definitions
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -74,6 +75,12 @@ async def startup_event():
         logger.info("Async LLM pipeline started successfully")
     except Exception as e:
         logger.error(f"Failed to start async LLM pipeline: {e}")
+    
+    # Ensure item definitions are loaded at startup
+    logger.info("Loading item definitions...")
+    if not ITEM_DEFINITIONS:
+        load_item_definitions()
+    logger.info(f"Loaded {len(ITEM_DEFINITIONS)} item definitions")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -135,6 +142,10 @@ def get_or_create_session(session_id: Optional[str] = None) -> tuple[GameState, 
     
     # Create new session
     new_session_id = str(uuid.uuid4())
+    # Ensure items are loaded before creating game state
+    from .items import ITEM_DEFINITIONS, load_item_definitions
+    if not ITEM_DEFINITIONS:
+        load_item_definitions()
     game_state = GameState()
     sessions[new_session_id] = {
         'game_state': game_state,
