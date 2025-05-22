@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Living Rusted Tankard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS Custom Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'medieval': ['MedievalSharp', 'cursive'],
+                        'cinzel': ['Cinzel', 'serif']
+                    },
+                    colors: {
+                        'tavern': {
+                            50: '#fdf4e3',
+                            100: '#fbe8c7',
+                            200: '#f7d18f',
+                            300: '#f3ba57',
+                            400: '#efa31f',
+                            500: '#d68c0a',
+                            600: '#b47006',
+                            700: '#925404',
+                            800: '#703f03',
+                            900: '#4e2b02',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-gentle': 'pulseGentle 2s ease-in-out infinite',
+                        'bounce-subtle': 'bounceSubtle 1s ease-in-out',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes pulseGentle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes bounceSubtle {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-5px); }
+            60% { transform: translateY(-3px); }
+        }
+        
+        .narrative-feed {
+            height: calc(100vh - 280px);
+            min-height: 400px;
+        }
+        
+        .sidebar {
+            height: calc(100vh - 2rem);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .narrative-feed {
+                height: calc(100vh - 200px);
+                min-height: 300px;
+            }
+            
+            .sidebar {
+                height: auto;
+                max-height: 50vh;
+            }
+            
+            .desktop-layout {
+                flex-direction: column;
+            }
+            
+            .mobile-sidebar {
+                order: 2;
+                width: 100%;
+                margin-top: 1rem;
+            }
+            
+            .mobile-main {
+                order: 1;
+                width: 100%;
+            }
+        }
+        
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #6B7280;
+            border-radius: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #9CA3AF;
+        }
+        
+        /* Typography improvements */
+        .narrative-text {
+            line-height: 1.7;
+            font-size: 1.1rem;
+        }
+        
+        /* Loading animation */
+        .loading-dots::after {
+            content: '';
+            animation: loadingDots 1.5s infinite;
+        }
+        
+        @keyframes loadingDots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+        
+        /* Command history styling */
+        .command-history {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 1px solid #374151;
+        }
+        
+        /* Enhanced button styles */
+        .btn-primary {
+            background: linear-gradient(135deg, #d68c0a 0%, #efa31f 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #b47006 0%, #d68c0a 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(214, 140, 10, 0.3);
+        }
+        
+        /* Status indicators */
+        .status-online {
+            background: #10B981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+        
+        .status-offline {
+            background: #EF4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+        
+        .status-degraded {
+            background: #F59E0B;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200 min-h-screen">
+    <div class="flex desktop-layout h-screen p-2 md:p-4 gap-2 md:gap-4">
+        <!-- Main Content -->
+        <div class="flex-1 mobile-main flex flex-col">
+            <!-- Enhanced Header -->
+            <header class="bg-gradient-to-r from-gray-800 to-gray-700 p-3 md:p-4 rounded-lg shadow-xl mb-4 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <h1 class="text-2xl md:text-3xl font-bold text-tavern-400 font-medieval">
+                        🍺 The Living Rusted Tankard
+                    </h1>
+                    <div id="connection-status" class="w-3 h-3 rounded-full status-online"></div>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <!-- Audio Toggle -->
+                    <button id="audio-toggle" class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg transition-all">
+                        🔊
+                    </button>
+                    
+                    <!-- Mobile Menu Toggle -->
+                    <button id="mobile-menu-toggle" class="md:hidden bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg">
+                        ☰
+                    </button>
+                    
+                    <!-- Settings Button -->
+                    <button id="settings-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg transition-all">
+                        ⚙️ Settings
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Enhanced Narrative Feed -->
+            <div class="flex-1 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg overflow-hidden border border-gray-700">
+                <div id="narrative-content" class="narrative-feed overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
+                    <!-- Welcome message with enhanced styling -->
+                    <div class="bg-gradient-to-r from-tavern-900 to-gray-800 border-l-4 border-tavern-400 p-4 rounded-r-lg animate-fade-in">
+                        <div class="font-cinzel text-lg text-tavern-300 mb-2">Welcome, Traveler</div>
+                        <p class="narrative-text text-gray-300">
+                            You push open the heavy wooden door of The Living Rusted Tankard, and warm light spills out to greet you. 
+                            The air is thick with the scent of ale, roasted meat, and old wood. Flickering candles cast dancing shadows 
+                            on the walls, and you hear the low murmur of conversation from the tavern's patrons.
+                        </p>
+                        <p class="narrative-text text-gray-400 mt-3 text-sm italic">
+                            Type a command below to begin your adventure, or simply tell the story what you'd like to do...
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Loading Indicator -->
+                <div id="loading-indicator" class="hidden p-2 text-center text-tavern-400">
+                    <span class="loading-dots">Weaving the tale</span>
+                </div>
+            </div>
+            
+            <!-- Enhanced Command Input -->
+            <div class="mt-4 space-y-2">
+                <!-- Command History Toggle -->
+                <div class="flex justify-between items-center">
+                    <button id="history-toggle" class="text-sm text-gray-400 hover:text-tavern-400 transition-colors">
+                        📜 Command History (0)
+                    </button>
+                    <button id="clear-history" class="text-sm text-gray-400 hover:text-red-400 transition-colors">
+                        🗑️ Clear
+                    </button>
+                </div>
+                
+                <!-- Command History Panel -->
+                <div id="command-history-panel" class="hidden command-history rounded-lg p-3 max-h-32 overflow-y-auto custom-scrollbar">
+                    <div id="command-history-list" class="space-y-1 text-sm">
+                        <!-- History items will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Enhanced Input Area -->
+                <div class="flex gap-2">
+                    <div class="flex-1 relative">
+                        <input 
+                            type="text" 
+                            id="command-input" 
+                            placeholder="What would you like to do? (e.g., 'look around', 'talk to barkeeper', 'buy ale')"
+                            class="w-full bg-gray-700 text-white p-3 md:p-4 rounded-lg border border-gray-600 focus:border-tavern-400 focus:ring-2 focus:ring-tavern-400/20 outline-none transition-all text-base"
+                            autocomplete="off"
+                        >
+                        <!-- Input suggestions -->
+                        <div id="input-suggestions" class="hidden absolute bottom-full left-0 right-0 mb-1 bg-gray-700 border border-gray-600 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                            <!-- Suggestions will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <button 
+                        id="submit-btn" 
+                        class="btn-primary text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
+                    >
+                        <span class="hidden md:inline">Send</span>
+                        <span class="md:hidden">→</span>
+                    </button>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div id="quick-actions" class="flex flex-wrap gap-2 mt-2">
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded text-sm transition-all" data-command="look">
+                        👀 Look
+                    </button>
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded text-sm transition-all" data-command="status">
+                        📊 Status
+                    </button>
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded text-sm transition-all" data-command="inventory">
+                        🎒 Inventory
+                    </button>
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded text-sm transition-all" data-command="talk to barkeeper">
+                        💬 Talk
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Enhanced Sidebar -->
+        <div class="w-full mobile-sidebar md:w-80 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl p-4 sidebar overflow-y-auto custom-scrollbar border border-gray-700">
+            <!-- Performance Indicator -->
+            <div class="mb-4 p-2 bg-gray-700 rounded-lg">
+                <div class="flex justify-between items-center text-xs text-gray-400">
+                    <span>Performance</span>
+                    <span id="performance-indicator" class="text-green-400">⚡ Optimized</span>
+                </div>
+            </div>
+            
+            <!-- Enhanced Time Display -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold text-tavern-400 mb-3 border-b border-gray-700 pb-2 font-cinzel flex items-center">
+                    🕐 Time
+                </h2>
+                <div id="game-time" class="text-center text-xl font-medieval bg-gray-700 rounded-lg p-3 text-tavern-300">
+                    Morning, Day 1
+                </div>
+            </div>
+            
+            <!-- Enhanced Gold Display -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold text-tavern-400 mb-3 border-b border-gray-700 pb-2 font-cinzel flex items-center">
+                    💰 Gold
+                </h2>
+                <div id="gold-amount" class="flex items-center justify-center bg-gray-700 rounded-lg p-3">
+                    <span class="text-yellow-400 text-2xl font-bold animate-pulse-gentle">10</span>
+                    <span class="ml-2 text-yellow-300">gp</span>
+                </div>
+            </div>
+            
+            <!-- Enhanced Inventory -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold text-tavern-400 mb-3 border-b border-gray-700 pb-2 font-cinzel flex items-center">
+                    🎒 Inventory
+                    <span id="inventory-count" class="ml-2 text-sm bg-gray-600 px-2 py-1 rounded-full">0</span>
+                </h2>
+                <div id="inventory-container" class="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    <ul id="inventory-list" class="space-y-1">
+                        <li class="text-gray-400 text-sm italic">Your pack is empty</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Enhanced Active Quests -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold text-tavern-400 mb-3 border-b border-gray-700 pb-2 font-cinzel flex items-center">
+                    📜 Active Quests
+                    <span id="quest-count" class="ml-2 text-sm bg-gray-600 px-2 py-1 rounded-full">0</span>
+                </h2>
+                <div id="quest-container" class="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    <ul id="quest-list" class="space-y-2">
+                        <li class="text-gray-400 text-sm italic">No active quests</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Memory Indicator -->
+            <div id="memory-indicator" class="text-center p-3 bg-gray-700 rounded-lg">
+                <div class="text-sm text-gray-400">Story Memory</div>
+                <div class="text-tavern-400 font-bold">📚 Active</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-gradient-to-b from-gray-800 to-gray-900 p-6 rounded-xl shadow-2xl max-w-md w-full border border-gray-600">
+            <h2 class="text-xl font-bold text-tavern-400 mb-6 font-cinzel">⚙️ Game Settings</h2>
+            
+            <!-- LLM Configuration -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-gray-300 mb-2 font-semibold">Ollama URL</label>
+                    <input type="text" id="ollama-url-input" 
+                           class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:border-tavern-400 focus:ring-2 focus:ring-tavern-400/20" 
+                           placeholder="http://localhost:11434" value="http://localhost:11434">
+                    <p class="text-xs text-gray-400 mt-1">URL of your Ollama server</p>
+                </div>
+                
+                <div>
+                    <label class="block text-gray-300 mb-2 font-semibold">AI Model</label>
+                    <select id="model-select" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:border-tavern-400">
+                        <option value="long-gemma:latest">long-gemma:latest</option>
+                        <option value="llama3:8b">llama3:8b</option>
+                        <option value="llama3.1:8b">llama3.1:8b</option>
+                        <option value="mistral-small:24b">mistral-small:24b</option>
+                    </select>
+                </div>
+                
+                <!-- Audio Settings -->
+                <div>
+                    <label class="block text-gray-300 mb-2 font-semibold">Audio Settings</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="ambient-sounds" class="mr-2">
+                            <span class="text-sm">Ambient tavern sounds</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="sound-effects" class="mr-2">
+                            <span class="text-sm">Sound effects</span>
+                        </label>
+                        <div class="mt-2">
+                            <label class="block text-sm text-gray-400 mb-1">Volume</label>
+                            <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Performance Settings -->
+                <div>
+                    <label class="block text-gray-300 mb-2 font-semibold">Performance</label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="performance-optimizations" class="mr-2" checked>
+                        <span class="text-sm">Enable performance optimizations</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button id="save-settings" class="flex-1 btn-primary text-white py-3 rounded-lg font-semibold">
+                    Save Settings
+                </button>
+                <button id="close-settings" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-3 rounded-lg font-semibold transition-all">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobile-sidebar-overlay" class="md:hidden fixed inset-0 bg-black bg-opacity-50 hidden z-40">
+        <div class="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-gray-800 to-gray-900 shadow-xl p-4 overflow-y-auto">
+            <!-- Mobile sidebar content (same as main sidebar) -->
+        </div>
+    </div>
+    
+    <!-- Audio Elements -->
+    <audio id="ambient-audio" loop preload="auto">
+        <source src="/static/audio/tavern-ambience.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sound-effect-audio" preload="auto">
+        <source src="/static/audio/coin-drop.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Enhanced game state management with UX improvements
+        class EnhancedGameInterface {
+            constructor() {
+                this.gameState = {
+                    time: 'Morning, Day 1',
+                    gold: 10,
+                    inventory: [],
+                    active_bounties: [],
+                    status_effects: []
+                };
+                
+                this.sessionId = localStorage.getItem('gameSessionId');
+                this.commandHistory = JSON.parse(localStorage.getItem('commandHistory') || '[]');
+                this.historyIndex = -1;
+                this.isLoading = false;
+                this.audioEnabled = localStorage.getItem('audioEnabled') === 'true';
+                this.performanceOptimized = localStorage.getItem('performanceOptimized') !== 'false';
+                
+                this.initializeInterface();
+                this.bindEvents();
+                this.loadSettings();
+                this.updateCommandHistoryDisplay();
+            }
+            
+            initializeInterface() {
+                this.elements = {
+                    commandInput: document.getElementById('command-input'),
+                    submitBtn: document.getElementById('submit-btn'),
+                    narrativeContent: document.getElementById('narrative-content'),
+                    gameTimeElement: document.getElementById('game-time'),
+                    goldAmountElement: document.getElementById('gold-amount'),
+                    inventoryListElement: document.getElementById('inventory-list'),
+                    questListElement: document.getElementById('quest-list'),
+                    memoryIndicator: document.getElementById('memory-indicator'),
+                    loadingIndicator: document.getElementById('loading-indicator'),
+                    connectionStatus: document.getElementById('connection-status'),
+                    performanceIndicator: document.getElementById('performance-indicator'),
+                    historyToggle: document.getElementById('history-toggle'),
+                    historyPanel: document.getElementById('command-history-panel'),
+                    historyList: document.getElementById('command-history-list'),
+                    inputSuggestions: document.getElementById('input-suggestions')
+                };
+                
+                // Enable submit button when there's input
+                this.elements.commandInput.addEventListener('input', () => {
+                    this.elements.submitBtn.disabled = !this.elements.commandInput.value.trim();
+                });
+                
+                // Initialize with session if available
+                if (!this.sessionId) {
+                    this.sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('gameSessionId', this.sessionId);
+                }
+            }
+            
+            bindEvents() {
+                // Command submission
+                this.elements.submitBtn.addEventListener('click', () => this.submitCommand());
+                this.elements.commandInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.submitCommand();
+                    }
+                });
+                
+                // Command history navigation
+                this.elements.commandInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        this.navigateHistory('up');
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        this.navigateHistory('down');
+                    }
+                });
+                
+                // History panel toggle
+                this.elements.historyToggle.addEventListener('click', () => {
+                    this.elements.historyPanel.classList.toggle('hidden');
+                });
+                
+                // Clear history
+                document.getElementById('clear-history').addEventListener('click', () => {
+                    this.commandHistory = [];
+                    localStorage.setItem('commandHistory', '[]');
+                    this.updateCommandHistoryDisplay();
+                });
+                
+                // Quick actions
+                document.querySelectorAll('.quick-action').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const command = btn.dataset.command;
+                        this.elements.commandInput.value = command;
+                        this.elements.submitBtn.disabled = false;
+                        this.submitCommand();
+                    });
+                });
+                
+                // Settings modal
+                document.getElementById('settings-btn').addEventListener('click', () => {
+                    document.getElementById('settings-modal').classList.remove('hidden');
+                });
+                
+                document.getElementById('close-settings').addEventListener('click', () => {
+                    document.getElementById('settings-modal').classList.add('hidden');
+                });
+                
+                document.getElementById('save-settings').addEventListener('click', () => {
+                    this.saveSettings();
+                });
+                
+                // Audio toggle
+                document.getElementById('audio-toggle').addEventListener('click', () => {
+                    this.toggleAudio();
+                });
+                
+                // Mobile menu
+                document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
+                    document.getElementById('mobile-sidebar-overlay').classList.toggle('hidden');
+                });
+            }
+            
+            async submitCommand() {
+                const command = this.elements.commandInput.value.trim();
+                if (!command) return;
+                
+                // Add to command history
+                if (this.commandHistory[this.commandHistory.length - 1] !== command) {
+                    this.commandHistory.push(command);
+                    if (this.commandHistory.length > 50) {
+                        this.commandHistory.shift();
+                    }
+                    localStorage.setItem('commandHistory', JSON.stringify(this.commandHistory));
+                    this.updateCommandHistoryDisplay();
+                }
+                
+                // Reset history navigation
+                this.historyIndex = -1;
+                
+                // Show user command
+                this.addNarrative(`> ${command}`, true);
+                
+                // Clear input and show loading
+                this.elements.commandInput.value = '';
+                this.elements.submitBtn.disabled = true;
+                this.showLoading(true);
+                
+                try {
+                    const response = await this.sendCommand(command);
+                    this.handleCommandResponse(response);
+                } catch (error) {
+                    this.handleError(error);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+            
+            async sendCommand(command) {
+                const response = await fetch('/command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        input: command,
+                        session_id: this.sessionId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            }
+            
+            handleCommandResponse(response) {
+                // Update connection status
+                this.updateConnectionStatus('online');
+                
+                // Add narrative response
+                this.addNarrative(response.output);
+                
+                // Update game state
+                if (response.game_state) {
+                    this.updateGameState(response.game_state);
+                }
+                
+                // Handle events
+                if (response.events) {
+                    this.handleEvents(response.events);
+                }
+                
+                // Play sound effects if enabled
+                if (this.audioEnabled && response.events) {
+                    this.playEventSounds(response.events);
+                }
+            }
+            
+            handleError(error) {
+                console.error('Command error:', error);
+                this.updateConnectionStatus('offline');
+                this.addNarrative(`🔧 Something went wrong: ${error.message}. The tavern's magic seems disrupted.`);
+            }
+            
+            addNarrative(text, isPlayer = false) {
+                const message = document.createElement('div');
+                message.className = `animate-fade-in ${isPlayer 
+                    ? 'text-tavern-300 font-bold bg-gray-700 p-3 rounded-lg border-l-4 border-tavern-400' 
+                    : 'text-gray-200 narrative-text'}`;
+                
+                // Handle conversation options
+                const optionsRegex = /\[options?:\s*([^\]]+)\]/i;
+                const optionsMatch = text.match(optionsRegex);
+                
+                if (!isPlayer && optionsMatch) {
+                    const narrativeText = text.replace(optionsRegex, '').trim();
+                    message.innerHTML = this.formatNarrativeText(narrativeText);
+                    this.elements.narrativeContent.appendChild(message);
+                    
+                    // Create conversation options
+                    this.createConversationOptions(optionsMatch[1]);
+                } else {
+                    message.innerHTML = this.formatNarrativeText(text);
+                    this.elements.narrativeContent.appendChild(message);
+                }
+                
+                // Auto-scroll to bottom
+                this.scrollToBottom();
+            }
+            
+            formatNarrativeText(text) {
+                // Add some text formatting enhancements
+                return text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-tavern-300">$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em class="text-gray-300">$1</em>')
+                    .replace(/`(.*?)`/g, '<code class="bg-gray-700 px-1 rounded text-tavern-300">$1</code>');
+            }
+            
+            createConversationOptions(optionsText) {
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'bg-gradient-to-r from-gray-700 to-gray-600 rounded-lg p-4 mt-3 mb-4 border border-gray-600 animate-slide-up';
+                
+                const title = document.createElement('div');
+                title.className = 'text-tavern-400 font-semibold mb-3 font-cinzel';
+                title.textContent = '💭 Conversation Options:';
+                optionsContainer.appendChild(title);
+                
+                const optionsList = document.createElement('div');
+                optionsList.className = 'space-y-2';
+                
+                // Parse options (handle both single-line and multi-line formats)
+                const options = this.parseConversationOptions(optionsText);
+                
+                options.forEach((option, index) => {
+                    const optionBtn = document.createElement('button');
+                    optionBtn.className = 'w-full text-left p-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition-all transform hover:scale-102 border border-gray-500 hover:border-tavern-400';
+                    optionBtn.innerHTML = `<span class="text-tavern-300 font-bold">${index + 1}.</span> <span class="text-gray-200">${option}</span>`;
+                    
+                    optionBtn.addEventListener('click', () => {
+                        this.elements.commandInput.value = option;
+                        this.elements.submitBtn.disabled = false;
+                        this.submitCommand();
+                    });
+                    
+                    optionsList.appendChild(optionBtn);
+                });
+                
+                optionsContainer.appendChild(optionsList);
+                this.elements.narrativeContent.appendChild(optionsContainer);
+            }
+            
+            parseConversationOptions(optionsText) {
+                // Handle numbered options
+                const numberedOptions = optionsText.match(/\d+\.\s*([^0-9]+?)(?=\s*\d+\.|$)/g);
+                if (numberedOptions) {
+                    return numberedOptions.map(opt => opt.replace(/^\d+\.\s*/, '').trim());
+                }
+                
+                // Handle simple comma/semicolon separated options
+                return optionsText.split(/[,;]/).map(opt => opt.trim()).filter(opt => opt);
+            }
+            
+            updateGameState(state) {
+                // Update time
+                if (state.time) {
+                    this.elements.gameTimeElement.textContent = state.time.formatted || state.time;
+                }
+                
+                // Update gold with animation
+                if (state.player && typeof state.player.gold !== 'undefined') {
+                    const goldElement = this.elements.goldAmountElement.querySelector('span');
+                    if (goldElement) {
+                        const currentGold = parseInt(goldElement.textContent);
+                        const newGold = state.player.gold;
+                        
+                        if (newGold !== currentGold) {
+                            goldElement.classList.add('animate-bounce-subtle');
+                            setTimeout(() => goldElement.classList.remove('animate-bounce-subtle'), 1000);
+                        }
+                        
+                        goldElement.textContent = newGold;
+                    }
+                }
+                
+                // Update inventory
+                if (state.player && state.player.inventory) {
+                    this.updateInventoryDisplay(state.player.inventory);
+                }
+                
+                // Update quests
+                if (state.active_bounties) {
+                    this.updateQuestsDisplay(state.active_bounties);
+                }
+            }
+            
+            updateInventoryDisplay(inventory) {
+                const container = this.elements.inventoryListElement;
+                const countElement = document.getElementById('inventory-count');
+                
+                if (!inventory || inventory.length === 0) {
+                    container.innerHTML = '<li class="text-gray-400 text-sm italic">Your pack is empty</li>';
+                    countElement.textContent = '0';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                countElement.textContent = inventory.length;
+                
+                inventory.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center justify-between bg-gray-700 p-2 rounded text-sm animate-fade-in';
+                    li.innerHTML = `
+                        <span class="text-gray-200">${item.name || item}</span>
+                        ${item.quantity ? `<span class="text-tavern-400 text-xs">×${item.quantity}</span>` : ''}
+                    `;
+                    container.appendChild(li);
+                });
+            }
+            
+            updateQuestsDisplay(quests) {
+                const container = this.elements.questListElement;
+                const countElement = document.getElementById('quest-count');
+                
+                if (!quests || quests.length === 0) {
+                    container.innerHTML = '<li class="text-gray-400 text-sm italic">No active quests</li>';
+                    countElement.textContent = '0';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                countElement.textContent = quests.length;
+                
+                quests.forEach(quest => {
+                    const li = document.createElement('li');
+                    li.className = 'bg-gray-700 p-3 rounded-lg border-l-4 border-tavern-400 animate-fade-in';
+                    li.innerHTML = `
+                        <div class="font-bold text-tavern-300">${quest.title || quest.name}</div>
+                        <div class="text-sm text-gray-300 mt-1">${quest.description || 'Quest in progress...'}</div>
+                        ${quest.progress ? `<div class="text-xs text-tavern-400 mt-2">Progress: ${quest.progress}</div>` : ''}
+                    `;
+                    container.appendChild(li);
+                });
+            }
+            
+            updateCommandHistoryDisplay() {
+                const historyList = this.elements.historyList;
+                const historyToggle = this.elements.historyToggle;
+                
+                historyToggle.textContent = `📜 Command History (${this.commandHistory.length})`;
+                
+                if (this.commandHistory.length === 0) {
+                    historyList.innerHTML = '<div class="text-gray-400 text-sm italic">No commands yet</div>';
+                    return;
+                }
+                
+                historyList.innerHTML = '';
+                
+                // Show last 10 commands
+                const recentHistory = this.commandHistory.slice(-10);
+                recentHistory.forEach((command, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'text-gray-300 hover:text-tavern-400 cursor-pointer p-1 rounded hover:bg-gray-600 transition-all';
+                    div.textContent = command;
+                    div.addEventListener('click', () => {
+                        this.elements.commandInput.value = command;
+                        this.elements.submitBtn.disabled = false;
+                        this.elements.historyPanel.classList.add('hidden');
+                    });
+                    historyList.appendChild(div);
+                });
+            }
+            
+            navigateHistory(direction) {
+                if (this.commandHistory.length === 0) return;
+                
+                if (direction === 'up') {
+                    if (this.historyIndex === -1) {
+                        this.historyIndex = this.commandHistory.length - 1;
+                    } else if (this.historyIndex > 0) {
+                        this.historyIndex--;
+                    }
+                } else if (direction === 'down') {
+                    if (this.historyIndex === -1) return;
+                    if (this.historyIndex < this.commandHistory.length - 1) {
+                        this.historyIndex++;
+                    } else {
+                        this.historyIndex = -1;
+                        this.elements.commandInput.value = '';
+                        return;
+                    }
+                }
+                
+                if (this.historyIndex >= 0) {
+                    this.elements.commandInput.value = this.commandHistory[this.historyIndex];
+                    this.elements.submitBtn.disabled = false;
+                }
+            }
+            
+            updateConnectionStatus(status) {
+                const statusElement = this.elements.connectionStatus;
+                statusElement.className = `w-3 h-3 rounded-full status-${status}`;
+                
+                const statusText = {
+                    'online': 'Connected',
+                    'offline': 'Disconnected', 
+                    'degraded': 'Degraded'
+                };
+                
+                statusElement.title = statusText[status] || 'Unknown';
+            }
+            
+            showLoading(show) {
+                this.isLoading = show;
+                this.elements.loadingIndicator.classList.toggle('hidden', !show);
+                this.elements.submitBtn.disabled = show || !this.elements.commandInput.value.trim();
+            }
+            
+            scrollToBottom() {
+                setTimeout(() => {
+                    this.elements.narrativeContent.scrollTop = this.elements.narrativeContent.scrollHeight;
+                }, 100);
+            }
+            
+            toggleAudio() {
+                this.audioEnabled = !this.audioEnabled;
+                localStorage.setItem('audioEnabled', this.audioEnabled);
+                
+                const audioBtn = document.getElementById('audio-toggle');
+                audioBtn.textContent = this.audioEnabled ? '🔊' : '🔇';
+                
+                const ambientAudio = document.getElementById('ambient-audio');
+                if (this.audioEnabled) {
+                    ambientAudio.play().catch(() => {});
+                } else {
+                    ambientAudio.pause();
+                }
+            }
+            
+            loadSettings() {
+                // Load audio settings
+                document.getElementById('ambient-sounds').checked = this.audioEnabled;
+                document.getElementById('sound-effects').checked = localStorage.getItem('soundEffects') === 'true';
+                document.getElementById('volume-slider').value = localStorage.getItem('audioVolume') || '50';
+                document.getElementById('performance-optimizations').checked = this.performanceOptimized;
+                
+                // Apply audio settings
+                const audioBtn = document.getElementById('audio-toggle');
+                audioBtn.textContent = this.audioEnabled ? '🔊' : '🔇';
+                
+                // Apply performance settings
+                if (this.performanceOptimized) {
+                    this.elements.performanceIndicator.textContent = '⚡ Optimized';
+                    this.elements.performanceIndicator.className = 'text-green-400';
+                } else {
+                    this.elements.performanceIndicator.textContent = '⚙️ Standard';
+                    this.elements.performanceIndicator.className = 'text-yellow-400';
+                }
+            }
+            
+            saveSettings() {
+                // Save audio settings
+                const ambientEnabled = document.getElementById('ambient-sounds').checked;
+                const soundEffectsEnabled = document.getElementById('sound-effects').checked;
+                const volume = document.getElementById('volume-slider').value;
+                const performanceEnabled = document.getElementById('performance-optimizations').checked;
+                
+                localStorage.setItem('audioEnabled', ambientEnabled);
+                localStorage.setItem('soundEffects', soundEffectsEnabled);
+                localStorage.setItem('audioVolume', volume);
+                localStorage.setItem('performanceOptimized', performanceEnabled);
+                
+                this.audioEnabled = ambientEnabled;
+                this.performanceOptimized = performanceEnabled;
+                
+                // Apply settings
+                this.loadSettings();
+                
+                // Close modal
+                document.getElementById('settings-modal').classList.add('hidden');
+                
+                // Show confirmation
+                this.addNarrative('⚙️ Settings saved successfully!');
+            }
+            
+            handleEvents(events) {
+                events.forEach(event => {
+                    if (event.type === 'memory' && event.count > 0) {
+                        this.elements.memoryIndicator.innerHTML = `
+                            <div class="text-sm text-gray-400">Story Memory</div>
+                            <div class="text-tavern-400 font-bold animate-pulse-gentle">📚 Updated (+${event.count})</div>
+                        `;
+                        
+                        setTimeout(() => {
+                            this.elements.memoryIndicator.innerHTML = `
+                                <div class="text-sm text-gray-400">Story Memory</div>
+                                <div class="text-tavern-400 font-bold">📚 Active</div>
+                            `;
+                        }, 3000);
+                    }
+                });
+            }
+            
+            playEventSounds(events) {
+                const soundEffectsEnabled = localStorage.getItem('soundEffects') === 'true';
+                if (!soundEffectsEnabled) return;
+                
+                events.forEach(event => {
+                    if (event.type === 'success' && event.message && event.message.includes('gold')) {
+                        const soundEffect = document.getElementById('sound-effect-audio');
+                        soundEffect.play().catch(() => {});
+                    }
+                });
+            }
+        }
+        
+        // Initialize the enhanced game interface
+        document.addEventListener('DOMContentLoaded', () => {
+            window.gameInterface = new EnhancedGameInterface();
+        });
+    </script>
+</body>
+</html>

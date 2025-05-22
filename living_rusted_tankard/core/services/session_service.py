@@ -5,7 +5,7 @@ from sqlmodel import select, or_
 from sqlalchemy.orm import Session
 import uuid
 
-from core.models.game_state import GameState, GameStateCreate, GameStateUpdate, GameSession
+from core.models.game_state import GameStatePersistence, GameStateCreate, GameStateUpdate, GameSession
 from core.db.session import get_session
 
 class SessionService:
@@ -17,11 +17,12 @@ class SessionService:
     
     # Game State Methods
     
-    def create_game_state(self, player_name: str, session_id: str) -> GameState:
+    def create_game_state(self, player_name: str, session_id: str, game_data: Optional[Dict[str, Any]] = None) -> GameStatePersistence:
         """Create a new game state."""
-        game_state = GameState(
+        game_state = GameStatePersistence(
             player_name=player_name,
             session_id=session_id,
+            game_data=game_data or {},
             inventory=[],
             flags={}
         )
@@ -30,29 +31,38 @@ class SessionService:
         self.session.refresh(game_state)
         return game_state
     
-    def get_game_state(self, state_id: str) -> Optional[GameState]:
+    def get_game_state(self, state_id: str) -> Optional[GameStatePersistence]:
         """Get a game state by ID."""
-        return self.session.get(GameState, state_id)
+        return self.session.get(GameStatePersistence, state_id)
     
     def update_game_state(
         self, 
         state_id: str, 
-        update_data: GameStateUpdate
-    ) -> Optional[GameState]:
-        """Update a game state."""
+        game_data: Dict[str, Any]
+    ) -> Optional[GameStatePersistence]:
+        """Update a game state with full game data."""
         game_state = self.get_game_state(state_id)
         if not game_state:
             return None
             
-        update_data_dict = update_data.dict(exclude_unset=True)
-        for key, value in update_data_dict.items():
-            setattr(game_state, key, value)
-            
+        game_state.game_data = game_data
         game_state.updated_at = datetime.utcnow()
         self.session.add(game_state)
         self.session.commit()
         self.session.refresh(game_state)
         return game_state
+    
+    def save_game_state_data(self, session_id: str, game_data: Dict[str, Any], player_name: str = "Unknown") -> Optional[GameStatePersistence]:
+        """Save or update game state data for a session."""
+        # Try to find existing state by session_id
+        existing_state = self.session.exec(
+            select(GameStatePersistence).where(GameStatePersistence.session_id == session_id)
+        ).first()
+        
+        if existing_state:
+            return self.update_game_state(existing_state.id, game_data)
+        else:
+            return self.create_game_state(player_name, session_id, game_data)
     
     # Session Management
     

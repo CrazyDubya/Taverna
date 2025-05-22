@@ -16,14 +16,20 @@ class GameStateBase(SQLModel):
         sa_column=Column(DateTime, onupdate=datetime.utcnow)
     )
 
-class GameState(GameStateBase, table=True):
-    """Game state model for the database."""
+class GameStatePersistence(GameStateBase, table=True):
+    """Game state persistence model for the database."""
+    __tablename__ = "game_states"
+    
     id: Optional[str] = Field(
         default_factory=lambda: str(uuid.uuid4()),
         primary_key=True,
         index=True
     )
     session_id: str = Field(index=True)
+    game_data: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+
+# Backwards compatibility
+GameState = GameStatePersistence
 
 class GameStateCreate(GameStateBase):
     """Model for creating a new game state."""

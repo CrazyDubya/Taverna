@@ -18,9 +18,9 @@ import requests
 from pathlib import Path
 import logging
 
-from .game_state import GameState
+from .db_game_state import DatabaseGameState as GameState
 from .event_formatter import EventFormatter
-from .llm_game_master import LLMGameMaster
+from .enhanced_llm_game_master import EnhancedLLMGameMaster as LLMGameMaster
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -402,13 +402,57 @@ async def update_llm_config(request: Request):
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """Enhanced health check endpoint with LLM service monitoring."""
     # Run cleanup to remove expired sessions
     expired_count = cleanup_sessions()
     
+    # Get LLM service status
+    llm_status = llm_gm.get_service_status()
+    
+    # Determine overall health
+    overall_status = "healthy" if llm_status["is_healthy"] else "degraded"
+    
     return {
-        "status": "healthy",
+        "status": overall_status,
         "active_sessions": len(sessions),
         "expired_sessions_removed": expired_count,
-        "llm_configured": True  # Ollama is always configured with defaults
+        "llm_service": {
+            "status": "healthy" if llm_status["is_healthy"] else "unhealthy",
+            "model": llm_status["model"],
+            "ollama_url": llm_status["ollama_url"],
+            "consecutive_failures": llm_status["consecutive_failures"],
+            "last_check": llm_status["last_check"]
+        },
+        "fallback_available": True
+    }
+
+# LLM service status endpoint
+@app.get("/llm-status")
+async def llm_status():
+    """Get detailed LLM service status."""
+    status = llm_gm.get_service_status()
+    
+    # Test connection if requested
+    try:
+        is_available = llm_gm.is_service_available()
+        connection_test = {
+            "available": is_available,
+            "test_timestamp": time.time()
+        }
+    except Exception as e:
+        connection_test = {
+            "available": False,
+            "error": str(e),
+            "test_timestamp": time.time()
+        }
+    
+    return {
+        "service_status": status,
+        "connection_test": connection_test,
+        "configuration": {
+            "model": llm_gm.model,
+            "ollama_url": llm_gm.ollama_url,
+            "max_retries": 3,
+            "timeout": 30
+        }
     }
