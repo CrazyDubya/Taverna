@@ -162,7 +162,7 @@ async def process_command(command: CommandRequest):
                 logger.info(f"New session created with {len(initial_events)} initial events")
         
         # First, pass the input through the LLM Game Master
-        narrative_response, command_to_execute = llm_gm.process_input(
+        narrative_response, command_to_execute, action_results = llm_gm.process_input(
             command.input, 
             game_state, 
             session_id
@@ -216,6 +216,17 @@ async def process_command(command: CommandRequest):
         # Include initial events for new sessions
         if is_new_session and initial_events:
             events = initial_events + (events or [])
+        
+        # Add action results as events
+        if action_results:
+            for action_result in action_results:
+                if action_result.get('success'):
+                    events.append({
+                        "type": "action_result",
+                        "action_type": action_result.get('action_type', 'unknown'),
+                        "message": action_result.get('message', 'Action completed'),
+                        "data": action_result
+                    })
         
         # Update session last activity time
         sessions[session_id]['last_activity'] = time.time()

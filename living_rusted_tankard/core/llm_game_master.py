@@ -14,6 +14,8 @@ import time
 from typing import Dict, List, Any, Optional, Tuple, Union
 from dataclasses import dataclass
 
+from .narrative_actions import NarrativeActionProcessor
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -52,6 +54,9 @@ class LLMGameMaster:
         self.conversation_histories: Dict[str, List[LLMChatMessage]] = {}
         self.current_conversations: Dict[str, Dict[str, Any]] = {}  # Track active conversations by session
         self.session_memories: Dict[str, List[Dict[str, Any]]] = {}  # Track important information by session
+        
+        # Narrative action processor
+        self.action_processor = NarrativeActionProcessor()
         
         # Default system prompt
         self.system_prompt = self._get_default_system_prompt()
@@ -98,15 +103,26 @@ Multi-line format:
 OR single-line format:
 [Options: 1. Ask about local rumors 2. Order a drink 3. Inquire about available rooms 4. Bid farewell]
 
-IMPORTANT: When conversation options involve game mechanics (buying, selling, using items, spending gold), 
-you MUST include the appropriate game command in your response using the [COMMAND: ] format.
+NARRATIVE ACTION SYSTEM:
+When story events should trigger game mechanics, use action tags to integrate narrative with gameplay.
+Place these BEFORE your narrative response so mechanics execute first.
 
-Examples:
-- If player chooses to buy a drink for 3 gold: [COMMAND: buy old_toms_surprise 3]
-- If player chooses to rent a room: [COMMAND: rent room]
-- If player chooses to use an item: [COMMAND: use health_potion]
+CORE ACTIONS:
+- [COMMAND: buy old_toms_surprise] - Direct game commands (buy, sell, use, etc.)
+- [QUEST_START: investigate_cellar description=Strange noises need investigation] - Start new quest
+- [QUEST_PROGRESS: wolf_problem completion=3/5] - Update quest progress  
+- [QUEST_COMPLETE: missing_ale reward=50_gold] - Complete quest with reward
+- [REPUTATION: old_tom +10 reason=helped_with_problem] - Change NPC reputation
+- [ITEM_GIVE: healing_potion quantity=1 reason=reward] - Give item to player
+- [EVENT_TRIGGER: tavern_celebration delay=1_hour] - Trigger world event
+- [NPC_ACTION: serena approach_player reason=overheard_conversation] - NPC takes action
 
-The command should be placed BEFORE the narrative response so the game mechanics execute first, then your narrative enhances the result.
+EXAMPLES:
+Player accepts quest: [QUEST_START: find_missing_cat description=Find Mrs. Willow's missing cat]
+Player helps NPC: [REPUTATION: old_tom +5 reason=bought_drinks] [ITEM_GIVE: discount_token reason=good_customer]
+Player completes task: [QUEST_COMPLETE: rat_extermination reward=25_gold] [REPUTATION: barkeep +15 reason=solved_problem]
+
+Use these to create meaningful consequences for player choices that go beyond just conversation.
 
 The options should be contextually appropriate based on:
 - Which NPC they're talking to (barkeep offers drinks, merchants offer goods, etc.)
@@ -407,7 +423,7 @@ These memories will be included in future conversations to maintain consistency.
         
         return cleaned_response
 
-    def process_input(self, user_input: str, game_state, session_id: str) -> Tuple[str, Optional[str]]:
+    def process_input(self, user_input: str, game_state, session_id: str) -> Tuple[str, Optional[str], List[Dict[str, Any]]]:
         """Process a user input using the Ollama LLM.
         
         Args:
@@ -416,13 +432,14 @@ These memories will be included in future conversations to maintain consistency.
             session_id: The session ID for tracking conversation
             
         Returns:
-            Tuple of (narrative_response, command_to_execute)
+            Tuple of (narrative_response, command_to_execute, action_results)
             The command_to_execute may be None if no specific command was identified
+            action_results contains the results of any narrative actions processed
         """
         # Try simple command matching for basic commands
         user_input_lower = user_input.lower().strip()
         if user_input_lower in ['help', '?']:
-            return game_state._generate_help_text(), 'help'
+            return game_state._generate_help_text(), 'help', []
         elif user_input_lower in ['look', 'l']:
             # Provide more detailed description for basic look command
             tavern_description = """
@@ -436,7 +453,7 @@ These memories will be included in future conversations to maintain consistency.
             
             The air is filled with the aroma of hearty stew, freshly baked bread, and the distinct smell of ale. The ambient noise is a pleasant mixture of conversation, occasional laughter, and the soft notes of someone strumming a lute in the corner.
             """
-            return tavern_description.strip(), 'look'
+            return tavern_description.strip(), 'look', []
         elif user_input_lower.startswith('look ') or user_input_lower.startswith('examine '):
             # Handle looking at specific things
             target = user_input_lower.replace('look ', '').replace('examine ', '').strip()
@@ -515,15 +532,15 @@ These memories will be included in future conversations to maintain consistency.
                 self.current_conversations[session_id]['object_facts'] = facts
                 
                 # Let the LLM generate the description - we'll inject the facts into its context
-                return None, None
+                return None, None, []
             
             # For other targets, just let the LLM handle it directly
-            return None, None
+            return None, None, []
             
         elif user_input_lower in ['inventory', 'i', 'inv']:
-            return "Let me check what you're carrying...", 'inventory'
+            return "Let me check what you're carrying...", 'inventory', []
         elif user_input_lower in ['status', 'stats']:
-            return "Let me tell you about your current condition...", 'status'
+            return "Let me tell you about your current condition...", 'status', []
         elif user_input_lower in ['talk', 'speak']:
             # Handle talk command with no target
             npc_list = "You look around and see who you could talk to:\n\n"
@@ -538,7 +555,7 @@ These memories will be included in future conversations to maintain consistency.
                 npc_list += "- Old Tom, the barkeep with a mysterious past\n"
                 npc_list += "- Sally, a regular patron who always seems to be here\n"
             
-            return npc_list, 'talk'
+            return npc_list, 'talk', []
         
         # Build the context object with game state
         context = self._build_game_context(game_state)
@@ -637,7 +654,15 @@ These memories will be included in future conversations to maintain consistency.
             # Extract memories from the response first
             llm_response = self._extract_memories_from_response(llm_response, session_id)
             
-            # Extract command if present
+            # Extract and process narrative actions
+            actions = self.action_processor.extract_actions(llm_response)
+            action_results = []
+            if actions:
+                action_results = self.action_processor.process_actions(actions, game_state, session_id)
+                # Clean the response of action tags
+                llm_response = self.action_processor.clean_text(llm_response)
+            
+            # Extract command if present (for backward compatibility)
             command_to_execute = None
             narrative_response = llm_response
             
@@ -667,7 +692,7 @@ These memories will be included in future conversations to maintain consistency.
                 LLMChatMessage(role="assistant", content=narrative_response)
             )
             
-            return narrative_response, command_to_execute
+            return narrative_response, command_to_execute, action_results
             
         except Exception as e:
             logger.error(f"Error generating Ollama response: {e}", exc_info=True)
@@ -677,10 +702,10 @@ These memories will be included in future conversations to maintain consistency.
             if len(user_input_lower.split()) <= 2:
                 # Check for common command patterns
                 if any(word in user_input_lower for word in ['talk', 'speak', 'chat']):
-                    return "I think you want to talk to someone. You can use 'talk' followed by the person's name.", 'talk'
+                    return "I think you want to talk to someone. You can use 'talk' followed by the person's name.", 'talk', []
                 elif any(word in user_input_lower for word in ['buy', 'purchase']):
-                    return "I think you want to buy something. You can use 'buy' followed by the item name.", 'buy'
+                    return "I think you want to buy something. You can use 'buy' followed by the item name.", 'buy', []
                 elif any(word in user_input_lower for word in ['rest', 'sleep']):
-                    return "I think you want to rest. You can use the 'rest' command.", 'rest'
+                    return "I think you want to rest. You can use the 'rest' command.", 'rest', []
             
-            return f"I'm having trouble connecting to the Ollama server at {self.ollama_url}. Please ensure it's running with the {self.model} model. Try using a direct command like 'look' or 'inventory'.", None
+            return f"I'm having trouble connecting to the Ollama server at {self.ollama_url}. Please ensure it's running with the {self.model} model. Try using a direct command like 'look' or 'inventory'.", None, []
