@@ -49,33 +49,37 @@ async def start_ai_player(config: AIPlayerConfig):
                 detail=f"Invalid personality. Must be one of: {[p.value for p in AIPlayerPersonality]}"
             )
         
-        # Configure AI player
-        set_ai_player_personality(personality, config.name)
-        ai_player = get_ai_player()
-        
-        if config.thinking_speed:
-            ai_player.thinking_delay = config.thinking_speed
-        
-        # Start game session
-        # Create game session directly
+        # Create AI player directly without any LLM calls
         import uuid
         from core.game_state import GameState
+        from core.ai_player import AIPlayer
         
         session_id = str(uuid.uuid4())
         game_state = GameState()
+        
+        # Create AI player instance directly
+        ai_player = AIPlayer(
+            name=config.name or "Gemma",
+            personality=personality,
+            model="gemma2:2b"
+        )
+        
+        if config.thinking_speed:
+            ai_player.thinking_delay = config.thinking_speed
         
         # Set up AI player
         ai_player.session_id = session_id
         ai_player.update_game_state(game_state.get_snapshot())
         ai_player.is_active = True
         
-        # Store session info
+        # Store session info including the AI player instance
         ai_player_sessions[session_id] = {
             "personality": config.personality,
             "name": ai_player.name,
             "auto_play": config.auto_play,
             "is_active": True,
-            "last_action": time.time()
+            "last_action": time.time(),
+            "ai_player": ai_player  # Store the actual AI player instance
         }
         
         return {
@@ -98,8 +102,8 @@ async def get_ai_player_status(session_id: str):
     if session_id not in ai_player_sessions:
         raise HTTPException(status_code=404, detail="AI player session not found")
     
-    ai_player = get_ai_player()
     session_info = ai_player_sessions[session_id]
+    ai_player = session_info["ai_player"]
     
     return {
         "session_id": session_id,
@@ -126,7 +130,7 @@ async def generate_ai_action(session_id: str):
     if session_id not in ai_player_sessions:
         raise HTTPException(status_code=404, detail="AI player session not found")
     
-    ai_player = get_ai_player()
+    ai_player = ai_player_sessions[session_id]["ai_player"]
     
     try:
         # Generate action based on current game state
@@ -167,7 +171,7 @@ async def stream_ai_action_generation(session_id: str):
     if session_id not in ai_player_sessions:
         raise HTTPException(status_code=404, detail="AI player session not found")
     
-    ai_player = get_ai_player()
+    ai_player = ai_player_sessions[session_id]["ai_player"]
     
     async def generate():
         try:
@@ -249,7 +253,9 @@ async def toggle_auto_play(session_id: str, background_tasks: BackgroundTasks):
 
 async def auto_play_loop(session_id: str):
     """Background task for auto-play mode."""
-    ai_player = get_ai_player()
+    if session_id not in ai_player_sessions:
+        return
+    ai_player = ai_player_sessions[session_id]["ai_player"]
     
     while (session_id in ai_player_sessions and 
            ai_player_sessions[session_id].get("auto_play", False)):
@@ -289,7 +295,7 @@ async def stop_ai_player(session_id: str):
     ai_player_sessions[session_id]["auto_play"] = False
     
     # Clean up
-    ai_player = get_ai_player()
+    ai_player = ai_player_sessions[session_id]["ai_player"]
     ai_player.is_active = False
     
     return {
@@ -297,14 +303,21 @@ async def stop_ai_player(session_id: str):
         "message": f"AI player session {session_id} stopped"
     }
 
+@router.get("/test")
+async def test_endpoint():
+    """Simple test endpoint to verify router is working."""
+    return {"status": "ok", "message": "AI Player router is working"}
+
 @router.get("/personalities")
 async def list_personalities():
     """Get available AI player personalities."""
     personalities = []
     
     for personality in AIPlayerPersonality:
-        ai_player = get_ai_player()
-        traits = ai_player.personality_traits[personality]
+        # Create temporary AI player to get personality traits
+        from core.ai_player import AIPlayer
+        temp_ai = AIPlayer(personality=personality)
+        traits = temp_ai.personality_traits[personality]
         
         personalities.append({
             "id": personality.value,
