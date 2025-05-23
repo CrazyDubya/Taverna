@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""
+AI Player Observer - Global Command
+Launch from anywhere to watch AI characters interact with The Living Rusted Tankard
+"""
+
+import os
+import sys
+from pathlib import Path
+
+# Get the directory where this script is located
+SCRIPT_DIR = Path(__file__).parent.absolute()
+GAME_DIR = SCRIPT_DIR
+
+# Add the game directory to Python path
+sys.path.insert(0, str(GAME_DIR))
+
+# Change to the game directory
+os.chdir(GAME_DIR)
+
+# Now import and run the main launcher
+try:
+    from launch_ai_observer import main
+    if __name__ == "__main__":
+        main()
+except ImportError as e:
+    print(f"❌ Error importing AI observer: {e}")
+    print(f"📁 Current directory: {os.getcwd()}")
+    print(f"📁 Script directory: {SCRIPT_DIR}")
+    print(f"🐍 Python path: {sys.path[:3]}...")
+    sys.exit(1)
+except Exception as e:
+    print(f"❌ Error running AI observer: {e}")
+    sys.exit(1)
