@@ -9,6 +9,7 @@ import time
 import random
 from typing import Dict, Any, Optional, AsyncGenerator, List
 import requests
+import aiohttp
 import logging
 from dataclasses import dataclass
 from enum import Enum
@@ -45,6 +46,7 @@ class AIPlayer:
         self.game_state = {}
         self.is_active = False
         self.thinking_delay = 2.0  # Seconds to "think" before acting
+        self._session: Optional[aiohttp.ClientSession] = None
         
         # Personality-based behavior patterns with VALID game commands
         self.personality_traits = {
@@ -155,7 +157,7 @@ Respond with ONLY ONE valid command from the list above. Choose something differ
 """
 
     async def generate_action_stream(self, game_context: str) -> AsyncGenerator[str, None]:
-        """Generate an action using LLM with streaming response."""
+        """Generate an action using LLM with streaming response and proper resource cleanup."""
         try:
             personality_context = self.get_personality_context()
             
@@ -169,8 +171,11 @@ RECENT ACTIONS:
 
 What do you want to do next?"""
 
-            # Stream the LLM response
-            response = requests.post(
+            # Get session with proper resource management
+            session = await self._get_session()
+            
+            # Stream the LLM response using aiohttp with proper cleanup
+            async with session.post(
                 f"{self.ollama_url}/api/generate",
                 json={
                     "model": self.model,
@@ -181,39 +186,38 @@ What do you want to do next?"""
                         "top_p": 0.9,
                         "max_tokens": 50
                     }
-                },
-                stream=True,
-                timeout=30
-            )
-            
-            if response.status_code != 200:
-                yield "look around"
-                return
-            
-            generated_text = ""
-            for line in response.iter_lines():
-                if line:
-                    try:
-                        chunk = json.loads(line.decode('utf-8'))
-                        if 'response' in chunk:
-                            token = chunk['response']
-                            generated_text += token
-                            yield token
-                        if chunk.get('done', False):
-                            break
-                    except json.JSONDecodeError:
-                        continue
-            
-            # Clean up the generated command
-            if not generated_text.strip():
-                yield "look around"
+                }
+            ) as response:
+                if response.status != 200:
+                    yield "look around"
+                    return
+                
+                generated_text = ""
+                async for line in response.content:
+                    if line:
+                        try:
+                            line_text = line.decode('utf-8').strip()
+                            if line_text:
+                                chunk = json.loads(line_text)
+                                if 'response' in chunk:
+                                    token = chunk['response']
+                                    generated_text += token
+                                    yield token
+                                if chunk.get('done', False):
+                                    break
+                        except (json.JSONDecodeError, UnicodeDecodeError):
+                            continue
+                
+                # Clean up the generated command
+                if not generated_text.strip():
+                    yield "look around"
                 
         except Exception as e:
             logger.error(f"Error generating AI action: {e}")
             yield "look around"
     
     async def generate_action(self, game_context: str) -> str:
-        """Generate a complete action using LLM."""
+        """Generate a complete action using LLM with proper resource cleanup."""
         try:
             personality_context = self.get_personality_context()
             
@@ -227,7 +231,10 @@ RECENT ACTIONS:
 
 What do you want to do next?"""
 
-            response = requests.post(
+            # Get session with proper resource management
+            session = await self._get_session()
+            
+            async with session.post(
                 f"{self.ollama_url}/api/generate",
                 json={
                     "model": self.model,
@@ -238,27 +245,25 @@ What do you want to do next?"""
                         "top_p": 0.9,
                         "max_tokens": 50
                     }
-                },
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                action = result.get('response', '').strip()
-                
-                # Clean up the action - remove quotes, extra text
-                action = action.replace('"', '').replace("'", '').strip()
-                
-                # Take only the first line if multiple lines
-                action = action.split('\n')[0].strip()
-                
-                if not action:
-                    action = "look around"
-                
-                return action
-            else:
-                logger.error(f"LLM request failed: {response.status_code}")
-                return "look around"
+                }
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    action = result.get('response', '').strip()
+                    
+                    # Clean up the action - remove quotes, extra text
+                    action = action.replace('"', '').replace("'", '').strip()
+                    
+                    # Take only the first line if multiple lines
+                    action = action.split('\n')[0].strip()
+                    
+                    if not action:
+                        action = "look around"
+                    
+                    return action
+                else:
+                    logger.error(f"LLM request failed: {response.status}")
+                    return "look around"
                 
         except Exception as e:
             logger.error(f"Error generating AI action: {e}")
@@ -326,25 +331,28 @@ What do you want to do next?"""
             context_parts.append(f"Notice board has {len(self.game_state['board_notes'])} notices")
         
         return "\n".join(context_parts) if context_parts else "You are in the tavern."
-
-# Global AI player instance
-_ai_player = None
-
-def get_ai_player() -> AIPlayer:
-    """Get the global AI player instance."""
-    global _ai_player
-    if _ai_player is None:
-        _ai_player = AIPlayer()
-    return _ai_player
-
-def set_ai_player_personality(personality: AIPlayerPersonality, name: str = None):
-    """Set the AI player's personality and optionally name."""
-    global _ai_player
-    if _ai_player is None:
-        _ai_player = AIPlayer()
     
-    _ai_player.personality = personality
-    if name:
-        _ai_player.name = name
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """Get or create an HTTP session with proper resource management."""
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=30)
+            )
+        return self._session
+    
+    async def close(self):
+        """Clean up HTTP session resources."""
+        if self._session and not self._session.closed:
+            await self._session.close()
+            self._session = None
+    
+    async def __aenter__(self):
+        """Async context manager entry."""
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit with cleanup."""
+        await self.close()
 
-# Removed start_ai_player_session - was causing circular dependency
+# Global state removed - use AIPlayerManager for session management
+# See ai_player_manager.py for proper session-based AI player management

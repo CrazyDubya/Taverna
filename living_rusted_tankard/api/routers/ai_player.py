@@ -12,9 +12,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import logging
 
-from core.ai_player import (
-    AIPlayerPersonality
-)
+from core.ai_player import AIPlayerPersonality
+from core.ai_player_manager import get_ai_player_manager
 
 logger = logging.getLogger(__name__)
 
@@ -50,36 +49,30 @@ async def start_ai_player(config: AIPlayerConfig):
                 detail=f"Invalid personality. Must be one of: {[p.value for p in AIPlayerPersonality]}"
             )
         
-        # Create AI player directly without any LLM calls
-        logger.info("🔍 [TRACE] Importing modules...")
-        import uuid
-        logger.info("🔍 [TRACE] Importing GameState...")
-        from core.game_state import GameState
-        logger.info("🔍 [TRACE] Importing AIPlayer...")
-        from core.ai_player import AIPlayer
+        # Create AI player session using the manager
+        logger.info("🔍 [TRACE] Creating AI player session...")
+        manager = get_ai_player_manager()
         
-        logger.info("🔍 [TRACE] Creating session ID...")
-        session_id = str(uuid.uuid4())
-        logger.info("🔍 [TRACE] Creating GameState...")
-        game_state = GameState()
-        logger.info("🔍 [TRACE] GameState created successfully")
-        
-        # Create AI player instance directly
-        ai_player = AIPlayer(
-            name=config.name or "Gemma",
+        session = manager.create_session(
             personality=personality,
+            name=config.name or "Gemma",
             model="gemma2:2b"
         )
+        
+        ai_player = session.ai_player
+        session_id = session.session_id
         
         if config.thinking_speed:
             ai_player.thinking_delay = config.thinking_speed
         
-        # Set up AI player
-        ai_player.session_id = session_id
+        # Initialize with game state
+        logger.info("🔍 [TRACE] Creating GameState...")
+        from core.game_state import GameState
+        game_state = GameState()
         ai_player.update_game_state(game_state.get_snapshot())
-        ai_player.is_active = True
+        logger.info("🔍 [TRACE] GameState created successfully")
         
-        # Store session info including the AI player instance
+        # Store session info for API compatibility
         ai_player_sessions[session_id] = {
             "personality": config.personality,
             "name": ai_player.name,
@@ -294,21 +287,21 @@ async def auto_play_loop(session_id: str):
 @router.delete("/stop/{session_id}")
 async def stop_ai_player(session_id: str):
     """Stop an AI player session."""
-    if session_id not in ai_player_sessions:
+    manager = get_ai_player_manager()
+    
+    # Deactivate in the manager
+    if await manager.deactivate_session(session_id):
+        # Also clean up from API sessions dict
+        if session_id in ai_player_sessions:
+            ai_player_sessions[session_id]["is_active"] = False
+            ai_player_sessions[session_id]["auto_play"] = False
+        
+        return {
+            "success": True,
+            "message": f"AI player session {session_id} stopped"
+        }
+    else:
         raise HTTPException(status_code=404, detail="AI player session not found")
-    
-    # Mark session as inactive
-    ai_player_sessions[session_id]["is_active"] = False
-    ai_player_sessions[session_id]["auto_play"] = False
-    
-    # Clean up
-    ai_player = ai_player_sessions[session_id]["ai_player"]
-    ai_player.is_active = False
-    
-    return {
-        "success": True,
-        "message": f"AI player session {session_id} stopped"
-    }
 
 @router.get("/test")
 async def test_endpoint():

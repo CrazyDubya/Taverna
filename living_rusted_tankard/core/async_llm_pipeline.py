@@ -18,6 +18,7 @@ import asyncio
 import logging
 import time
 import uuid
+import threading
 from typing import Dict, List, Any, Optional, Callable, Tuple
 from dataclasses import dataclass
 from enum import Enum
@@ -189,8 +190,12 @@ class AsyncLLMPipeline:
         self.active_requests: Dict[str, LLMRequest] = {}
         self.processing_task: Optional[asyncio.Task] = None
         
-        # Statistics and monitoring
-        self.stats = {
+        # Thread safety
+        self._lock = threading.RLock()
+        self._stats_lock = threading.Lock()
+        
+        # Statistics and monitoring (protected by _stats_lock)
+        self._stats = {
             "total_requests": 0,
             "cached_responses": 0,
             "fallback_responses": 0,
@@ -203,6 +208,46 @@ class AsyncLLMPipeline:
         # Background task management
         self.executor = ThreadPoolExecutor(max_workers=2)
         self.is_running = False
+    
+    def _add_active_request(self, request_id: str, request: LLMRequest) -> None:
+        """Thread-safe method to add an active request."""
+        with self._lock:
+            self.active_requests[request_id] = request
+    
+    def _remove_active_request(self, request_id: str) -> Optional[LLMRequest]:
+        """Thread-safe method to remove an active request."""
+        with self._lock:
+            return self.active_requests.pop(request_id, None)
+    
+    def _get_active_request(self, request_id: str) -> Optional[LLMRequest]:
+        """Thread-safe method to get an active request."""
+        with self._lock:
+            return self.active_requests.get(request_id)
+    
+    def _update_stats(self, **kwargs) -> None:
+        """Thread-safe method to update statistics."""
+        with self._stats_lock:
+            for key, value in kwargs.items():
+                if key in self._stats:
+                    if key == "average_processing_time":
+                        # Special handling for average
+                        old_avg = self._stats[key]
+                        total = self._stats["total_requests"]
+                        if total > 1:
+                            self._stats[key] = ((old_avg * (total - 1)) + value) / total
+                        else:
+                            self._stats[key] = value
+                    else:
+                        self._stats[key] += value if isinstance(value, (int, float)) else 1
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Thread-safe method to get current statistics."""
+        with self._stats_lock:
+            stats_copy = self._stats.copy()
+            # Add current queue size
+            if self.request_queue:
+                stats_copy["queue_size"] = self.request_queue.qsize()
+            return stats_copy
     
     async def start(self) -> None:
         """Start the async pipeline."""
@@ -217,7 +262,7 @@ class AsyncLLMPipeline:
         logger.info("Async LLM Pipeline started")
     
     async def stop(self) -> None:
-        """Stop the async pipeline."""
+        """Stop the async pipeline and clean up resources."""
         self.is_running = False
         
         if self.processing_task:
@@ -227,8 +272,19 @@ class AsyncLLMPipeline:
             except asyncio.CancelledError:
                 pass
         
+        # Clean up active requests
+        with self._lock:
+            active_count = len(self.active_requests)
+            self.active_requests.clear()
+            if active_count > 0:
+                logger.info(f"Cleaned up {active_count} active requests")
+        
+        # Close external resources
         await self.async_optimizer.close()
+        
+        # Shutdown thread pool with timeout
         self.executor.shutdown(wait=True)
+        
         logger.info("Async LLM Pipeline stopped")
     
     async def process_request_async(
@@ -259,7 +315,7 @@ class AsyncLLMPipeline:
             cached_response = self.response_cache.get(user_input, time_context)
             
             if cached_response:
-                self.stats["cached_responses"] += 1
+                self._update_stats(cached_responses=1)
                 return cached_response
         except Exception as e:
             logger.debug(f"Error checking cache: {e}")
@@ -269,9 +325,8 @@ class AsyncLLMPipeline:
         priority_value = 5 - priority.value  # Invert so URGENT=1, HIGH=2, etc.
         await self.request_queue.put((priority_value, time.time(), request))
         
-        self.active_requests[request_id] = request
-        self.stats["total_requests"] += 1
-        self.stats["queue_size"] = self.request_queue.qsize()
+        self._add_active_request(request_id, request)
+        self._update_stats(total_requests=1)
         
         return request_id
     
@@ -289,17 +344,17 @@ class AsyncLLMPipeline:
             await asyncio.sleep(0.1)
         
         # Timeout - generate fallback
-        if request_id in self.active_requests:
-            request = self.active_requests[request_id]
+        request = self._get_active_request(request_id)
+        if request:
             fallback_content = self.fallback_generator.generate_fallback(
                 request.user_input,
                 {"current_time": "evening"}  # Could get from game_state
             )
             
             # Clean up
-            del self.active_requests[request_id]
+            self._remove_active_request(request_id)
             
-            self.stats["fallback_responses"] += 1
+            self._update_stats(fallback_responses=1)
             
             return LLMResponse(
                 request_id=request_id,
@@ -325,7 +380,7 @@ class AsyncLLMPipeline:
             cached_response = self.response_cache.get(user_input, time_context)
             
             if cached_response:
-                self.stats["cached_responses"] += 1
+                self._update_stats(cached_responses=1)
                 return cached_response, None, []
             
             # Fall back to enhanced LLM for synchronous processing
@@ -337,14 +392,14 @@ class AsyncLLMPipeline:
             self.response_cache.set(user_input, time_context, response)
             
             # Update stats
-            self.stats["successful_responses"] += 1
+            self._update_stats(successful_responses=1)
             self._update_average_processing_time(processing_time)
             
             return response, command, actions
             
         except Exception as e:
             logger.error(f"Error in sync LLM processing: {e}")
-            self.stats["failed_requests"] += 1
+            self._update_stats(failed_requests=1)
             
             # Use comprehensive error recovery system
             try:
@@ -370,7 +425,7 @@ class AsyncLLMPipeline:
                     e, session_id, user_input, game_context
                 )
                 
-                self.stats["fallback_responses"] += 1
+                self._update_stats(fallback_responses=1)
                 return response, command, actions
                 
             except ImportError:
@@ -380,7 +435,7 @@ class AsyncLLMPipeline:
                     {"current_time": "evening"}
                 )
                 
-                self.stats["fallback_responses"] += 1
+                self._update_stats(fallback_responses=1)
                 return fallback_response, None, []
     
     async def _process_requests(self) -> None:
@@ -454,7 +509,7 @@ class AsyncLLMPipeline:
             if request.callback:
                 request.callback(response, command, actions or [])
             
-            self.stats["successful_responses"] += 1
+            self._update_stats(successful_responses=1)
             self._update_average_processing_time(processing_time)
             
         except Exception as e:
@@ -469,32 +524,26 @@ class AsyncLLMPipeline:
             if request.callback:
                 request.callback(fallback_response, None, [])
             
-            self.stats["failed_requests"] += 1
-            self.stats["fallback_responses"] += 1
+            self._update_stats(failed_requests=1)
+            self._update_stats(fallback_responses=1)
         
         finally:
             # Clean up
-            if request.id in self.active_requests:
-                del self.active_requests[request.id]
-            
-            self.stats["queue_size"] = self.request_queue.qsize()
+            self._remove_active_request(request.id)
     
     def _update_average_processing_time(self, processing_time: float) -> None:
-        """Update average processing time statistic."""
-        total_responses = self.stats["successful_responses"]
-        if total_responses > 1:
-            current_avg = self.stats["average_processing_time"]
-            self.stats["average_processing_time"] = (
-                (current_avg * (total_responses - 1) + processing_time) / total_responses
-            )
-        else:
-            self.stats["average_processing_time"] = processing_time
+        """Update average processing time statistic (thread-safe)."""
+        self._update_stats(average_processing_time=processing_time)
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get pipeline statistics."""
-        stats = self.stats.copy()
-        stats["queue_size"] = self.request_queue.qsize() if self.request_queue else 0
-        stats["active_requests"] = len(self.active_requests)
+        """Get pipeline statistics (thread-safe)."""
+        # Use the thread-safe method from the parent class
+        stats = super().get_stats()
+        
+        # Add additional pipeline-specific stats
+        with self._lock:
+            stats["active_requests"] = len(self.active_requests)
+        
         stats["cache_size"] = len(self.response_cache.cache)
         
         # Calculate cache hit rate
@@ -518,9 +567,10 @@ class AsyncLLMPipeline:
                 return False
             
             # Check error rate
-            total = self.stats["total_requests"]
+            stats = self.get_stats()
+            total = stats["total_requests"]
             if total > 10:  # Only check after some requests
-                error_rate = self.stats["failed_requests"] / total
+                error_rate = stats["failed_requests"] / total
                 if error_rate > 0.5:  # More than 50% errors
                     return False
             
