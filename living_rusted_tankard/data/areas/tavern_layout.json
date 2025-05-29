@@ -1,0 +1,207 @@
+{
+  "tavern_name": "The Rusted Tankard",
+  "description": "A well-worn tavern that has stood for generations, its wooden beams darkened with age and smoke.",
+  "floors": {
+    "-1": {
+      "name": "The Cellars",
+      "areas": [
+        {
+          "id": "wine_cellar",
+          "connections": ["storage_room", "main_hall"]
+        },
+        {
+          "id": "storage_room", 
+          "connections": ["wine_cellar", "deep_cellar"]
+        },
+        {
+          "id": "deep_cellar",
+          "connections": ["storage_room"],
+          "hidden": true
+        }
+      ]
+    },
+    "0": {
+      "name": "Ground Floor",
+      "areas": [
+        {
+          "id": "main_hall",
+          "connections": ["bar_area", "kitchen", "private_booth", "fireplace_nook", "wine_cellar", "guest_hallway", "courtyard"]
+        },
+        {
+          "id": "bar_area",
+          "connections": ["main_hall", "kitchen"]
+        },
+        {
+          "id": "kitchen",
+          "connections": ["main_hall", "bar_area", "back_alley"]
+        },
+        {
+          "id": "private_booth",
+          "connections": ["main_hall"]
+        },
+        {
+          "id": "fireplace_nook",
+          "connections": ["main_hall"]
+        },
+        {
+          "id": "courtyard",
+          "connections": ["main_hall", "stables"],
+          "outdoor": true
+        },
+        {
+          "id": "stables",
+          "connections": ["courtyard"],
+          "outdoor": true
+        },
+        {
+          "id": "back_alley",
+          "connections": ["kitchen"],
+          "outdoor": true
+        }
+      ]
+    },
+    "1": {
+      "name": "First Floor",
+      "areas": [
+        {
+          "id": "guest_hallway",
+          "connections": ["main_hall", "guest_room_1", "guest_room_2", "guest_room_3", "guest_room_4", "gambling_den"]
+        },
+        {
+          "id": "guest_room_1",
+          "connections": ["guest_hallway"]
+        },
+        {
+          "id": "guest_room_2",
+          "connections": ["guest_hallway"]
+        },
+        {
+          "id": "guest_room_3",
+          "connections": ["guest_hallway", "guest_room_4"]
+        },
+        {
+          "id": "guest_room_4",
+          "connections": ["guest_hallway", "guest_room_3"]
+        },
+        {
+          "id": "gambling_den",
+          "connections": ["guest_hallway", "private_stairs"]
+        },
+        {
+          "id": "balcony",
+          "connections": ["gambling_den"],
+          "outdoor": true
+        }
+      ]
+    },
+    "2": {
+      "name": "Second Floor",
+      "areas": [
+        {
+          "id": "private_stairs",
+          "connections": ["gambling_den", "owners_quarters", "premium_suite"]
+        },
+        {
+          "id": "owners_quarters",
+          "connections": ["private_stairs", "owners_study"]
+        },
+        {
+          "id": "owners_study",
+          "connections": ["owners_quarters"],
+          "hidden_connection": "attic_entrance"
+        },
+        {
+          "id": "premium_suite",
+          "connections": ["private_stairs"]
+        }
+      ]
+    },
+    "3": {
+      "name": "Attic",
+      "areas": [
+        {
+          "id": "attic_entrance",
+          "connections": ["owners_study", "storage_attic", "crows_nest"],
+          "hidden": true
+        },
+        {
+          "id": "storage_attic",
+          "connections": ["attic_entrance"]
+        },
+        {
+          "id": "crows_nest",
+          "connections": ["attic_entrance"],
+          "outdoor": true
+        }
+      ]
+    }
+  },
+  "special_features": {
+    "secret_passages": [
+      {
+        "from": "private_booth",
+        "to": "wine_cellar",
+        "description": "A hidden panel behind the booth leads to a narrow staircase",
+        "discovery_hint": "The wood paneling sounds hollow in one spot"
+      },
+      {
+        "from": "owners_study", 
+        "to": "gambling_den",
+        "description": "A concealed door allows the owner to observe the gambling without being seen",
+        "discovery_hint": "One bookshelf seems oddly placed"
+      }
+    ],
+    "atmospheric_zones": [
+      {
+        "zone": "main_floor_common",
+        "areas": ["main_hall", "bar_area", "fireplace_nook"],
+        "shared_atmosphere": true,
+        "base_noise": 0.6,
+        "base_crowd": 0.5
+      },
+      {
+        "zone": "cellar_quiet",
+        "areas": ["wine_cellar", "storage_room", "deep_cellar"],
+        "shared_atmosphere": true,
+        "base_noise": 0.1,
+        "base_crowd": 0.0
+      },
+      {
+        "zone": "guest_quarters",
+        "areas": ["guest_room_1", "guest_room_2", "guest_room_3", "guest_room_4"],
+        "shared_atmosphere": false,
+        "base_noise": 0.2,
+        "base_crowd": 0.1
+      }
+    ],
+    "time_based_changes": [
+      {
+        "area": "main_hall",
+        "time_period": "evening",
+        "changes": {
+          "crowd_density": 0.8,
+          "noise_level": 0.7,
+          "lighting": 0.5
+        }
+      },
+      {
+        "area": "gambling_den",
+        "time_period": "night",
+        "changes": {
+          "crowd_density": 0.7,
+          "noise_level": 0.6,
+          "lighting": 0.4
+        }
+      },
+      {
+        "area": "kitchen",
+        "time_period": "meal_times",
+        "changes": {
+          "crowd_density": 0.6,
+          "noise_level": 0.7,
+          "temperature": 0.85
+        }
+      }
+    ]
+  }
+}
