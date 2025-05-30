@@ -30,7 +30,7 @@ class Parser:
     def __init__(self, use_llm: bool = True, llm_endpoint: str = "http://localhost:11434"):
         self.use_llm = use_llm
         self.llm_endpoint = llm_endpoint
-        self.llm_model = "long-gemma"
+        self.llm_model = "gemma2:2b"  # Use the available model
         
         # Define basic command patterns for fallback
         self.command_patterns = {
@@ -83,6 +83,7 @@ class Parser:
         prompt = self._build_llm_prompt(text, snapshot)
         
         try:
+            logger.debug(f"Sending LLM request for: '{text}'")
             response = requests.post(
                 f"{self.llm_endpoint}/api/generate",
                 json={
@@ -91,17 +92,20 @@ class Parser:
                     "format": "json",
                     "stream": False
                 },
-                timeout=1  # Reduce timeout to fail fast and avoid blocking
+                timeout=5  # Give LLM enough time to respond
             )
             response.raise_for_status()
             result = response.json()
+            logger.debug(f"LLM raw response: {result}")
             
             # Parse the LLM response
             command_data = json.loads(result.get('response', '{}'))
+            logger.debug(f"Parsed command data: {command_data}")
             return self._validate_command(command_data)
             
         except (requests.RequestException, json.JSONDecodeError) as e:
-            logger.error(f"LLM API error: {e}")
+            logger.error(f"LLM API error for '{text}': {e}")
+            logger.error(f"Full error details: {type(e).__name__}: {str(e)}")
             raise Exception("Failed to parse with LLM") from e
     
     def _build_llm_prompt(self, text: str, snapshot: GameSnapshot) -> str:

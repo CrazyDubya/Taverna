@@ -8,6 +8,7 @@ import logging
 import re
 from sqlmodel import SQLModel, Field as SQLField, Column, JSON, DateTime
 from core.player import PlayerState
+from core.llm.parser import Parser, GameSnapshot
 
 logger = logging.getLogger(__name__)
 from .clock import GameClock, GameTime
@@ -182,6 +183,14 @@ class GameState:
             logger.info("Phase 4: Narrative Engine initialized")
         else:
             self._narrative_handler_pending = False
+        
+        # Initialize LLM Parser
+        try:
+            self.llm_parser = Parser(use_llm=True)
+            logger.info("LLM Parser initialized")
+        except Exception as e:
+            logger.warning(f"LLM Parser initialization failed: {e}, falling back to regex")
+            self.llm_parser = Parser(use_llm=False)
         
         self._initialize_game()
 
@@ -607,7 +616,60 @@ What tale will you weave in this living tapestry of stories?
     def get_gambling_stats(self) -> Dict[str, Any]: return self.gambling_manager.get_player_stats(self.player.id)
     
     def process_command(self, command: str) -> Dict[str, Any]:
-        command = command.lower().strip()
+        original_command = command
+        
+        # Try LLM parsing first if available
+        if self.llm_parser and self.llm_parser.use_llm:
+            try:
+                logger.info(f"Attempting LLM parse for: '{command}'")
+                snapshot = self._get_game_snapshot()
+                parsed = self.llm_parser.parse(command, snapshot)
+                logger.info(f"LLM parse result: {parsed}")
+                
+                # Convert parsed command to game command format
+                if parsed.get('action') and parsed.get('action') != 'unknown':
+                    # Map LLM actions to game commands
+                    action_map = {
+                        'talk': 'interact',
+                        'ask': 'interact',
+                        'go': 'move',
+                        'take': 'take',
+                        'examine': 'look',
+                        'check': 'look'
+                    }
+                    
+                    action = action_map.get(parsed['action'], parsed['action'])
+                    target = parsed.get('target', '')
+                    # Clean up target - remove articles like "the", "a", "an"
+                    target_words = target.split()
+                    if target_words and target_words[0].lower() in ['the', 'a', 'an']:
+                        target = ' '.join(target_words[1:])
+                    extras = parsed.get('extras', {})
+                    
+                    # Construct game command
+                    if action == 'interact' and target:
+                        command = f"interact {target} talk"
+                        if 'topic' in extras:
+                            command += f" {extras['topic']}"
+                    elif action == 'move' and target:
+                        command = f"move {target}"
+                    elif action == 'look' and target:
+                        command = f"look {target}"
+                    else:
+                        command = f"{action} {target}".strip()
+                    
+                    logger.info(f"LLM parsed '{original_command}' -> '{command}'")
+                    # IMPORTANT: Actually use the parsed command!
+                    command = command  # Update the command that will be processed
+                    
+            except Exception as e:
+                logger.warning(f"LLM parsing failed for '{original_command}': {e}")
+                import traceback
+                logger.debug(f"Full traceback: {traceback.format_exc()}")
+                # Fall through to normal processing
+        
+        # Preprocess command to fix common issues
+        command = self._preprocess_command(command.lower().strip())
         
         # Default result for unknown commands
         result = {'success': False, 'message': "I don't understand that command.", 'recent_events': []}
@@ -623,6 +685,20 @@ What tale will you weave in this living tapestry of stories?
         except Exception as e:
             logger.error(f"Error processing command '{command}': {e}")
             result = self._handle_command_error(command, e)
+        
+        # Smart retry on failure - only for specific error types
+        if not result.get('success', False) and not result.get('retry_attempted', False):
+            # Only retry for certain error types to avoid interference
+            error_msg = result.get('message', '').lower()
+            should_retry = any(phrase in error_msg for phrase in [
+                'available rooms:', 'not available', 'not found', 
+                'no such', "don't understand", 'invalid command'
+            ])
+            
+            if should_retry:
+                retry_result = self._attempt_smart_retry(command, result)
+                if retry_result:
+                    return retry_result
         
         return result
     
@@ -1526,3 +1602,243 @@ Type 'quit' to exit the game.
         ]
         
         return "All Available Commands:\n" + "\n".join(f"  {cmd}" for cmd in commands) + "\n\nUse 'help' for detailed descriptions."
+    
+    def _attempt_smart_retry(self, original_command: str, failed_result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Attempt intelligent retry based on failure type."""
+        
+        error_msg = failed_result.get('message', '').lower()
+        parts = original_command.split()
+        
+        if not parts:
+            return None
+            
+        main_command = parts[0]
+        
+        # Room movement failures - suggest available rooms
+        if main_command == 'move' and 'available rooms:' in error_msg:
+            # Extract available rooms from error message
+            if 'available rooms:' in failed_result['message']:
+                rooms_part = failed_result['message'].split('Available rooms:')[1].strip()
+                available_rooms = [r.strip() for r in rooms_part.split(',')]
+                
+                if available_rooms and len(parts) > 1:
+                    requested_room = parts[1]
+                    
+                    # Try fuzzy matching for common mistakes
+                    for room in available_rooms:
+                        if requested_room in room.lower() or room.lower() in requested_room:
+                            # Found a likely match, auto-correct
+                            retry_command = f"move {room}"
+                            retry_result = self._process_command_internal(retry_command)
+                            
+                            if retry_result['success']:
+                                retry_result['message'] = f"[Auto-corrected] {retry_result['message']} (corrected from '{requested_room}')"
+                                retry_result['retry_attempted'] = True
+                                return retry_result
+                    
+                    # No fuzzy match, provide helpful suggestion
+                    suggestion = f"Room '{requested_room}' not found. Available rooms: {', '.join(available_rooms[:3])}"
+                    if len(available_rooms) > 3:
+                        suggestion += f" and {len(available_rooms) - 3} more"
+                    return {'success': False, 'message': suggestion, 'recent_events': [], 'retry_attempted': True}
+        
+        # Item purchase failures - suggest checking what's available
+        elif main_command == 'buy' and 'not available' in error_msg:
+            # First check available items
+            available_items = []
+            if hasattr(self, 'economy') and hasattr(self.economy, 'get_available_items'):
+                # Get list of buyable items
+                available_items = ['ale', 'bread', 'cheese']  # Default tavern items
+            
+            suggestion = f"Item '{parts[1] if len(parts) > 1 else 'unknown'}' not available. Available items: {', '.join(available_items)}"
+            return {'success': False, 'message': suggestion, 'recent_events': [], 'retry_attempted': True}
+        
+        # Insufficient gold - suggest current balance
+        elif 'not enough gold' in error_msg or 'have' in error_msg and 'need' in error_msg:
+            # Extract current gold amount
+            gold_match = re.search(r'have (\d+)', failed_result['message'])
+            if gold_match and main_command == 'gamble':
+                current_gold = int(gold_match.group(1))
+                if current_gold >= 5:
+                    # Retry with safe amount (25% of current gold)
+                    safe_bet = max(1, min(current_gold // 4, 10))
+                    retry_command = f"gamble {safe_bet}"
+                    retry_result = self._process_command_internal(retry_command)
+                    
+                    if retry_result['success']:
+                        retry_result['message'] = f"[Auto-adjusted] {retry_result['message']} (bet reduced to {safe_bet})"
+                        retry_result['retry_attempted'] = True
+                        return retry_result
+        
+        # NPC interaction failures - check who's around
+        elif main_command == 'interact' and ('npc not' in error_msg or 'not available' in error_msg):
+            # Check present NPCs
+            present_npcs = self.npc_manager.get_present_npcs()
+            if present_npcs:
+                npc_names = [npc.name for npc in present_npcs]
+                suggestion = f"NPC '{parts[1] if len(parts) > 1 else 'unknown'}' not found. Present NPCs: {', '.join(npc_names)}"
+            else:
+                suggestion = "No NPCs are present. Try waiting or moving to a different location."
+            
+            return {'success': False, 'message': suggestion, 'recent_events': [], 'retry_attempted': True}
+        
+        # Work/job failures - suggest available jobs
+        elif main_command == 'work' and 'no such job' in error_msg:
+            # Get available jobs
+            jobs_result = self._handle_available_jobs()
+            if jobs_result['success']:
+                suggestion = f"Job '{parts[1] if len(parts) > 1 else 'unknown'}' not found. {jobs_result['message']}"
+                return {'success': False, 'message': suggestion, 'recent_events': [], 'retry_attempted': True}
+        
+        # Common command misspellings - "did you mean?"
+        if not failed_result.get('retry_attempted', False):
+            suggestion = self._suggest_similar_command(main_command)
+            if suggestion:
+                return {
+                    'success': False, 
+                    'message': f"Unknown command '{main_command}'. Did you mean '{suggestion}'? Type 'commands' for full list.",
+                    'recent_events': [],
+                    'retry_attempted': True
+                }
+        
+        # No retry strategy available
+        return None
+    
+    def _suggest_similar_command(self, command: str) -> Optional[str]:
+        """Suggest similar valid command based on edit distance."""
+        
+        valid_commands = [
+            'look', 'wait', 'status', 'inventory', 'help', 'commands',
+            'move', 'buy', 'use', 'gamble', 'games', 'jobs', 'work',
+            'npcs', 'interact', 'bounties', 'sleep', 'quit'
+        ]
+        
+        # Find commands within edit distance of 2
+        close_matches = []
+        for valid_cmd in valid_commands:
+            if self._edit_distance(command, valid_cmd) <= 2:
+                close_matches.append(valid_cmd)
+        
+        # Return best match if found
+        if close_matches:
+            # Prefer exact prefix matches
+            for match in close_matches:
+                if match.startswith(command) or command.startswith(match):
+                    return match
+            return close_matches[0]
+        
+        return None
+    
+    def _edit_distance(self, s1: str, s2: str) -> int:
+        """Calculate Levenshtein distance between two strings."""
+        if len(s1) < len(s2):
+            return self._edit_distance(s2, s1)
+        
+        if len(s2) == 0:
+            return len(s1)
+        
+        previous_row = range(len(s2) + 1)
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                # j+1 instead of j since previous_row and current_row are one character longer
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        
+        return previous_row[-1]
+    
+    def _preprocess_command(self, command: str) -> str:
+        """Preprocess command to fix common issues before processing."""
+        
+        # Quick corrections for common misspellings
+        quick_fixes = {
+            'gambl': 'gamble', 'gmable': 'gamble',
+            'inv': 'inventory', 'inven': 'inventory',
+            'stat': 'status', 'stats': 'status',
+            'hlep': 'help', 'halp': 'help',
+            'mve': 'move', 'mvoe': 'move',
+            'wiat': 'wait', 'waitt': 'wait',
+            'bounty': 'bounties', 'job': 'jobs',
+            'game': 'games', 'npc': 'npcs'
+        }
+        
+        parts = command.split()
+        if parts and parts[0] in quick_fixes:
+            parts[0] = quick_fixes[parts[0]]
+            command = ' '.join(parts)
+        
+        # Fix specific patterns
+        if command.startswith('go to '):
+            command = command.replace('go to ', 'move ')
+        elif command.startswith('go '):
+            command = command.replace('go ', 'move ')
+        elif command.startswith('talk to '):
+            npc = command.replace('talk to ', '')
+            command = f'interact {npc} talk'
+        elif command.startswith('check '):
+            if 'invent' in command:
+                command = 'inventory'
+            elif 'stat' in command:
+                command = 'status'
+        
+        # Fix room names in move commands
+        if command.startswith('move '):
+            room_fixes = {
+                'upstair': 'upstairs', 'downstair': 'downstairs',
+                'celler': 'cellar', 'seller': 'cellar',
+                'kitchen': 'tavern_main', 'bar': 'tavern_main'
+            }
+            parts = command.split()
+            if len(parts) >= 2 and parts[1] in room_fixes:
+                parts[1] = room_fixes[parts[1]]
+                command = ' '.join(parts)
+        
+        # Fix item names in buy/use commands  
+        if command.startswith(('buy ', 'use ')):
+            item_fixes = {
+                'beer': 'ale', 'drink': 'ale',
+                'food': 'bread', 'potion': 'ale'
+            }
+            parts = command.split()
+            if len(parts) >= 2 and parts[1] in item_fixes:
+                parts[1] = item_fixes[parts[1]]
+                command = ' '.join(parts)
+        
+        # Limit excessive amounts
+        if any(command.startswith(cmd + ' ') for cmd in ['gamble', 'wait', 'sleep']):
+            parts = command.split()
+            if len(parts) >= 2:
+                try:
+                    amount = float(parts[1])
+                    if parts[0] == 'gamble' and amount > self.player.gold:
+                        # Adjust to affordable amount
+                        parts[1] = str(max(1, min(self.player.gold // 4, 10)))
+                    elif parts[0] == 'wait' and amount > 12:
+                        parts[1] = '12'
+                    elif parts[0] == 'sleep' and amount > 8:
+                        parts[1] = '8'
+                    command = ' '.join(parts)
+                except ValueError:
+                    pass
+        
+        return command
+    
+    def _get_game_snapshot(self) -> GameSnapshot:
+        """Create a game snapshot for LLM context."""
+        current_room = self.room_manager.current_room
+        present_npcs = self.npc_manager.get_present_npcs()
+        
+        return GameSnapshot(
+            location=current_room.name if current_room else "Unknown",
+            time_of_day=self.clock.get_display_time() if hasattr(self.clock, 'get_display_time') else str(self.clock.get_current_time().total_hours),
+            visible_objects=[inv_item.item.name for inv_item in self.player.inventory.items.values()],
+            visible_npcs=[npc.name for npc in present_npcs],
+            player_state={
+                'gold': self.player.gold,
+                'energy': self.player.energy,
+                'tiredness': self.player.tiredness
+            }
+        )
