@@ -844,12 +844,13 @@ class GoalManager:
             # Create basic goals based on NPC type
             basic_goal = Goal(
                 id=f"{npc_id}_basic",
+                name=f"Basic Activities",
                 description=f"Basic activities for {npc_id}",
                 category=GoalCategory.SOCIAL,
                 type=GoalType.SHORT_TERM,
-                priority=0.5,
-                complexity=1,
-                estimated_duration=60.0
+                owner_id=npc_id,
+                importance=0.5,
+                urgency=0.3
             )
             self.npc_goals[npc_id] = [basic_goal]
     
@@ -857,21 +858,21 @@ class GoalManager:
         """Get the current active goal for an NPC"""
         goals = self.npc_goals.get(npc_id, [])
         if goals:
-            # Return highest priority incomplete goal
-            active_goals = [g for g in goals if not g.completed]
+            # Return highest importance incomplete goal
+            active_goals = [g for g in goals if g.status != GoalStatus.COMPLETED]
             if active_goals:
-                return max(active_goals, key=lambda g: g.priority)
+                return max(active_goals, key=lambda g: g.importance)
         return None
     
     def update_all_goals(self, elapsed_time: float) -> None:
         """Update all NPC goals with time progression"""
         for npc_id, goals in self.npc_goals.items():
             for goal in goals:
-                if not goal.completed:
+                if goal.status != GoalStatus.COMPLETED:
                     # Update goal progress (simplified)
                     goal.progress = min(1.0, goal.progress + elapsed_time / 3600)
                     if goal.progress >= 1.0:
-                        goal.completed = True
+                        goal.status = GoalStatus.COMPLETED
                         if npc_id not in self.completed_goals:
                             self.completed_goals[npc_id] = []
                         self.completed_goals[npc_id].append(goal)

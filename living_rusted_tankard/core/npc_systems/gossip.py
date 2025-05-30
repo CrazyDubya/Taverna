@@ -587,3 +587,21 @@ class GossipNetwork:
             impact["relationship_impacts"] = affected_relationships
         
         return impact
+    
+    def propagate_rumors(self, elapsed_time: float) -> None:
+        """Propagate rumors over time - simplified interface for integration"""
+        # Convert elapsed seconds to hours for gossip simulation
+        hours = elapsed_time / 3600.0
+        if hours > 0.1:  # Only propagate if significant time passed
+            self.simulate_gossip_spread(hours)
+    
+    def get_npc_gossip(self, npc_id: str) -> Optional[str]:
+        """Get a random gossip for an NPC to share"""
+        known_rumors = self.get_npc_known_rumors(npc_id)
+        if known_rumors:
+            # Return a random fresh rumor
+            fresh_rumors = [r for r in known_rumors if r.get('freshness', False)]
+            if fresh_rumors:
+                rumor = random.choice(fresh_rumors)
+                return rumor['content']
+        return None

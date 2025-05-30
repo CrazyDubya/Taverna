@@ -62,12 +62,13 @@ def test_phase_integration():
         try:
             # Create a test NPC if not present
             if 'bartender' not in game_state.npc_manager.npcs:
-                from core.npc import NPC
+                from core.npc import NPC, NPCType
                 bartender = NPC(
                     id='bartender',
+                    definition_id='bartender_tom',
                     name='Tom the Bartender',
                     description='A gruff but friendly bartender',
-                    dialogue_options={}
+                    npc_type=NPCType.BARKEEP
                 )
                 game_state.npc_manager.npcs['bartender'] = bartender
             
@@ -77,7 +78,7 @@ def test_phase_integration():
                 message = result.get('message', '')
                 print(f"   ✅ NPC interaction works: '{message[:50]}...'")
             else:
-                print("   ❌ NPC interaction failed")
+                print(f"   ❌ NPC interaction failed: {result.get('message', 'Unknown error')}")
         except Exception as e:
             print(f"   ❌ NPC interaction error: {e}")
         
@@ -93,6 +94,19 @@ def test_phase_integration():
                 print("   ❌ Look command failed")
         except Exception as e:
             print(f"   ❌ Look command error: {e}")
+            
+        # Test narrative functionality
+        print("\n7. Testing narrative functionality...")
+        try:
+            if hasattr(game_state, 'thread_manager'):
+                threads = game_state.thread_manager.get_active_threads()
+                print(f"   ✅ Active narrative threads: {len(threads)}")
+                for thread in threads[:2]:  # Show first 2
+                    print(f"     - {thread.title} (tension: {thread.tension_level})")
+            else:
+                print("   ❌ No thread manager found")
+        except Exception as e:
+            print(f"   ❌ Narrative test error: {e}")
         
         # Summary
         print("\n" + "="*50)

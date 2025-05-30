@@ -216,7 +216,7 @@ def main():
         
         # Print initial state
         print("\nType 'help' for a list of commands.")
-        look_result = game_state.process_command('look')
+        look_result = game_state_instance.process_command('look')
         print(look_result['message'])
         
         # Start the command loop

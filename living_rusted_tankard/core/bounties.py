@@ -144,7 +144,7 @@ class BountyManager(BaseModel):
                     # Make sure we return a copy of the definition if it's not already managed
                     # so that any UI display of objectives doesn't reflect another player's potential state
                     # (though for notice board, it should always be pristine)
-                    notice_board_bounties.append(definition_bounty.model_copy(deep=True))
+                    notice_board_bounties.append(definition_bounty.copy(deep=True))
         return notice_board_bounties
 
     def post_bounty(self, bounty_id: str) -> bool:

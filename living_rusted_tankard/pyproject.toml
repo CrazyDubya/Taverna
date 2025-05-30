@@ -26,6 +26,8 @@ sqlmodel = "^0.0.8"
 sqlalchemy = ">=1.4.17,<=1.4.41"  # Version range compatible with SQLModel
 uvicorn = "^0.34.2"
 fastapi = "^0.115.12"
+requests = "^2.32.3"
+aiohttp = "^3.12.4"
 
 [tool.poetry.scripts]
 tavern = "cli:main"
