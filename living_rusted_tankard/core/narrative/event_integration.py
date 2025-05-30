@@ -9,8 +9,7 @@ from typing import Dict, Any, Optional, List, Set
 import logging
 from dataclasses import dataclass
 
-from ..event_bus import EventType
-from ..event import Event
+from ..event_bus import EventType, Event
 from .story_thread import StoryThread, StoryBeat, ThreadType, ThreadStage
 from .thread_manager import ThreadManager
 from .orchestrator import NarrativeOrchestrator

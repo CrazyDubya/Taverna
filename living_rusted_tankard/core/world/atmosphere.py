@@ -1,6 +1,6 @@
 """Atmosphere system for dynamic area properties."""
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 from enum import Enum
 import math
@@ -336,6 +336,13 @@ class AtmosphereManager:
                     detail.duration -= 1.0 / 60  # Assume called every minute
             
             atmosphere.calculate_modifiers()
+    
+    def update(self, elapsed_seconds: float) -> None:
+        """Update atmosphere over time"""
+        # Convert seconds to hours for time-based changes
+        if elapsed_seconds > 3600:  # Only update if significant time has passed
+            # This would connect to the time system, but for now just pass
+            pass
     
     def get_current_atmosphere(self) -> Dict[str, float]:
         """Get current atmosphere properties for the active area"""

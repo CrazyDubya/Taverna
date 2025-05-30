@@ -7,6 +7,8 @@ import time
 import logging
 from sqlmodel import SQLModel, Field as SQLField, Column, JSON, DateTime
 from core.player import PlayerState
+
+logger = logging.getLogger(__name__)
 from .clock import GameClock, GameTime
 from .room import RoomManager
 from .npc import NPCManager, NPC 
@@ -40,14 +42,15 @@ except ImportError:
 
 # Phase 3: NPC System imports  
 try:
-    from .npc.psychology import NPCPsychologyManager
-    from .npc.secrets import SecretsManager
-    from .npc.dialogue import DialogueGenerator, DialogueContext
-    from .npc.gossip import GossipNetwork
-    from .npc.goals import GoalManager
-    from .npc.interactions import InteractionManager
+    from .npc_systems.psychology import NPCPsychologyManager
+    from .npc_systems.secrets import SecretsManager
+    from .npc_systems.dialogue import DialogueGenerator, DialogueContext
+    from .npc_systems.gossip import GossipNetwork
+    from .npc_systems.goals import GoalManager
+    from .npc_systems.interactions import InteractionManager
     PHASE3_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"Phase 3 import error: {e}")
     PHASE3_AVAILABLE = False
 
 # Phase 4: Narrative Engine imports
@@ -58,7 +61,8 @@ try:
     )
     from .narrative.event_integration import NarrativeEventHandler
     PHASE4_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"Phase 4 import error: {e}")
     PHASE4_AVAILABLE = False
 
 if TYPE_CHECKING:
@@ -146,9 +150,9 @@ class GameState:
         if PHASE2_AVAILABLE:
             self.atmosphere_manager = AtmosphereManager()
             self.area_manager = AreaManager()
-            self.floor_manager = FloorManager()
-            self.area_manager.initialize_all_areas()
-            self.floor_manager.initialize_all_floors()
+            self.floor_manager = FloorManager(self.area_manager)
+            self.area_manager._initialize_default_areas()
+            self.floor_manager._initialize_floors()
             logger.info("Phase 2: World System initialized")
         
         # Initialize Phase 3: NPC Systems
@@ -156,9 +160,12 @@ class GameState:
             self.npc_psychology = NPCPsychologyManager()
             self.secrets_manager = SecretsManager()
             self.dialogue_generator = DialogueGenerator()
-            self.gossip_network = GossipNetwork()
+            # Create a basic relationship web for gossip network
+            from .npc_systems.relationships import RelationshipWeb
+            self.relationship_web = RelationshipWeb()
+            self.gossip_network = GossipNetwork(self.relationship_web)
             self.goal_manager = GoalManager()
-            self.interaction_manager = InteractionManager()
+            self.interaction_manager = InteractionManager(self.relationship_web, self.gossip_network)
             logger.info("Phase 3: NPC Systems initialized")
         
         # Initialize Phase 4: Narrative Engine
@@ -1090,7 +1097,7 @@ A staircase leads up to the rooms for rent.
         tavern_thread = StoryThread(
             id="tavern_main_thread",
             title="The Living Rusted Tankard",
-            type=ThreadType.MAIN_QUEST,
+            type=ThreadType.MAIN,
             description="The ongoing story of the tavern and its patrons",
             primary_participants=["player", "bartender"],
             tension_level=0.2

@@ -500,3 +500,48 @@ class SecretGenerator:
             ))
         
         return consequences
+
+
+class SecretsManager:
+    """Manager for NPC secrets system"""
+    
+    def __init__(self):
+        self.npc_secrets: Dict[str, List[EnhancedSecret]] = {}
+        self.discovered_secrets: Dict[str, List[str]] = {}  # player_id -> secret_ids
+    
+    def initialize_npc_secrets(self, npc_id: str) -> None:
+        """Initialize secrets for an NPC"""
+        if npc_id not in self.npc_secrets:
+            # Create a default secret for NPCs that should have one
+            secret = EnhancedSecret(
+                id=f"{npc_id}_default_secret",
+                content=f"{npc_id} has a mysterious past",
+                type=SecretType.PERSONAL,
+                danger_level=0.5,
+                shame_level=0.3,
+                evidence_required=3
+            )
+            self.npc_secrets[npc_id] = [secret]
+    
+    def npc_has_secrets(self, npc_id: str) -> bool:
+        """Check if an NPC has any secrets"""
+        return npc_id in self.npc_secrets and len(self.npc_secrets[npc_id]) > 0
+    
+    def get_npc_secrets(self, npc_id: str) -> List[EnhancedSecret]:
+        """Get all secrets for an NPC"""
+        return self.npc_secrets.get(npc_id, [])
+    
+    def discover_secret(self, player_id: str, secret_id: str) -> bool:
+        """Record that a player discovered a secret"""
+        if player_id not in self.discovered_secrets:
+            self.discovered_secrets[player_id] = []
+        
+        if secret_id not in self.discovered_secrets[player_id]:
+            self.discovered_secrets[player_id].append(secret_id)
+            return True
+        return False
+    
+    def is_secret_discovered(self, player_id: str, secret_id: str) -> bool:
+        """Check if a player has discovered a specific secret"""
+        return (player_id in self.discovered_secrets and 
+                secret_id in self.discovered_secrets[player_id])

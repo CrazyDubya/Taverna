@@ -1,6 +1,6 @@
 """Floor-based management for the tavern layout."""
 
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Any
 from dataclasses import dataclass
 from enum import Enum
 

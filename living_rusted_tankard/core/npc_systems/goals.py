@@ -829,3 +829,59 @@ class NPCAgency:
                 new_goals.append(potential)
         
         return new_goals[:2]  # Max 2 new goals at once
+
+
+class GoalManager:
+    """Manager for NPC goals system"""
+    
+    def __init__(self):
+        self.npc_goals: Dict[str, List[Goal]] = {}
+        self.completed_goals: Dict[str, List[Goal]] = {}
+    
+    def initialize_npc_goals(self, npc_id: str, npc: Any) -> None:
+        """Initialize goals for an NPC"""
+        if npc_id not in self.npc_goals:
+            # Create basic goals based on NPC type
+            basic_goal = Goal(
+                id=f"{npc_id}_basic",
+                description=f"Basic activities for {npc_id}",
+                category=GoalCategory.SOCIAL,
+                type=GoalType.SHORT_TERM,
+                priority=0.5,
+                complexity=1,
+                estimated_duration=60.0
+            )
+            self.npc_goals[npc_id] = [basic_goal]
+    
+    def get_current_goal(self, npc_id: str) -> Optional[Goal]:
+        """Get the current active goal for an NPC"""
+        goals = self.npc_goals.get(npc_id, [])
+        if goals:
+            # Return highest priority incomplete goal
+            active_goals = [g for g in goals if not g.completed]
+            if active_goals:
+                return max(active_goals, key=lambda g: g.priority)
+        return None
+    
+    def update_all_goals(self, elapsed_time: float) -> None:
+        """Update all NPC goals with time progression"""
+        for npc_id, goals in self.npc_goals.items():
+            for goal in goals:
+                if not goal.completed:
+                    # Update goal progress (simplified)
+                    goal.progress = min(1.0, goal.progress + elapsed_time / 3600)
+                    if goal.progress >= 1.0:
+                        goal.completed = True
+                        if npc_id not in self.completed_goals:
+                            self.completed_goals[npc_id] = []
+                        self.completed_goals[npc_id].append(goal)
+    
+    def get_goal_dialogue(self, npc_id: str, goal: Goal) -> Optional[str]:
+        """Get dialogue related to an NPC's current goal"""
+        if goal.category == GoalCategory.SOCIAL:
+            return f"I've been thinking about {goal.description.lower()}"
+        elif goal.category == GoalCategory.ECONOMIC:
+            return f"Business has been on my mind lately - {goal.description.lower()}"
+        elif goal.category == GoalCategory.PERSONAL:
+            return f"There's something personal I need to take care of"
+        return None
