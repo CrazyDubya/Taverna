@@ -29,7 +29,14 @@ def list_bounties_command(game_state: 'GameState', args: List[str]) -> Dict[str,
     for bounty in available_bounties:
         message_lines.append(f"  ID: {bounty.id}\n  Title: {bounty.title}\n  Issuer: {bounty.issuer}\n  Reward: {bounty.rewards.gold or 0} gold")
         if bounty.rewards.items:
-            message_lines.append(f"    Other items: {', '.join(bounty.rewards.items)}")
+            # Handle case where items might be dicts with name/id
+            item_names = []
+            for item in bounty.rewards.items:
+                if isinstance(item, dict):
+                    item_names.append(item.get('name', item.get('id', str(item))))
+                else:
+                    item_names.append(str(item))
+            message_lines.append(f"    Other items: {', '.join(item_names)}")
         message_lines.append("-" * 20)
         
     return {"success": True, "message": "\n".join(message_lines)}

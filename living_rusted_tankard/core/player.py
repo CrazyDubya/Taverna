@@ -182,8 +182,8 @@ class PlayerState(BaseModel):
                     self.add_effect(effect_id=f"{item.id}_{effect_key}", stat_affected=effect_key, modifier=effect_value,
                                     duration_hours=item.effects.get("duration_hours", 0), current_game_time=current_game_time) # type: ignore
         
-        if item.type == "food": self.last_ate = current_game_time # type: ignore
-        elif item.type == "drink": self.last_drank = current_game_time # type: ignore
+        if item.item_type == "food": self.last_ate = current_game_time
+        elif item.item_type == "drink": self.last_drank = current_game_time
             
         success, _ = self.inventory.remove_item(item.id, 1)
         return success

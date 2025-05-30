@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 import uuid
 import time
 import logging
+import re
 from sqlmodel import SQLModel, Field as SQLField, Column, JSON, DateTime
 from core.player import PlayerState
 
@@ -611,6 +612,105 @@ What tale will you weave in this living tapestry of stories?
         # Default result for unknown commands
         result = {'success': False, 'message': "I don't understand that command.", 'recent_events': []}
         
+        # Validate command first
+        is_valid, validation_msg = self._validate_command(command)
+        if not is_valid:
+            return {'success': False, 'message': validation_msg, 'recent_events': []}
+        
+        # Wrap command processing in error handling
+        try:
+            result = self._process_command_internal(command)
+        except Exception as e:
+            logger.error(f"Error processing command '{command}': {e}")
+            result = self._handle_command_error(command, e)
+        
+        return result
+    
+    def _validate_command(self, command: str) -> tuple[bool, str]:
+        """Validate command before processing to prevent parsing errors."""
+        
+        if not command or not command.strip():
+            return False, "Please enter a command. Type 'help' for available commands."
+        
+        parts = command.strip().split()
+        if not parts:
+            return False, "No command provided"
+            
+        main_command = parts[0].lower()
+        args = parts[1:]
+        
+        # Validate specific commands that have caused issues
+        if main_command == "gamble" and args:
+            try:
+                bet = int(args[0])
+                if bet <= 0:
+                    return False, "Bet amount must be positive"
+                if bet > self.player.gold:
+                    return False, f"Not enough gold. You have {self.player.gold}, need {bet}"
+            except (ValueError, IndexError):
+                return False, "Usage: gamble <amount> (amount must be a positive number)"
+        
+        elif main_command == "wait" and args:
+            try:
+                hours = float(args[0])
+                if hours <= 0 or hours > 24:
+                    return False, "Wait time must be between 0 and 24 hours"
+            except (ValueError, IndexError):
+                return False, "Usage: wait <hours> (hours must be a number)"
+                
+        elif main_command == "buy" and args:
+            item_id = args[0].lower()
+            # Basic validation - no special characters that could cause issues
+            if not re.match(r'^[a-zA-Z0-9_-]+$', item_id):
+                return False, "Invalid item name. Use letters, numbers, underscore or dash only."
+                
+        elif main_command == "move" and args:
+            room_id = args[0]
+            if not re.match(r'^[a-zA-Z0-9_-]+$', room_id):
+                return False, "Invalid room name. Use letters, numbers, underscore or dash only."
+        
+        return True, "Valid command"
+    
+    def _handle_command_error(self, command: str, error: Exception) -> Dict[str, Any]:
+        """Handle command errors gracefully with helpful messages."""
+        
+        error_msg = str(error)
+        
+        # Common error patterns and fixes
+        if "unexpected keyword argument" in error_msg:
+            return {
+                "success": False, 
+                "message": f"Internal error with '{command}'. The command format may have changed.",
+                "recent_events": []
+            }
+        
+        elif "sequence item" in error_msg and "expected str" in error_msg:
+            return {
+                "success": False,
+                "message": f"Data formatting error with '{command}'. This has been reported for fixing.",
+                "recent_events": []
+            }
+        
+        elif "not found" in error_msg.lower():
+            return {
+                "success": False,
+                "message": f"'{command}' refers to something that doesn't exist. Try 'look' or 'help'.",
+                "recent_events": []
+            }
+        
+        else:
+            return {
+                "success": False,
+                "message": f"Error processing '{command}'. Type 'help' for available commands.",
+                "recent_events": []
+            }
+    
+    def _process_command_internal(self, command: str) -> Dict[str, Any]:
+        """Internal command processing with all the original logic."""
+        
+        # Default result for unknown commands
+        result = {'success': False, 'message': "I don't understand that command.", 'recent_events': []}
+        
         # Clear any previous events
         self.event_formatter.clear_events()
         
@@ -690,7 +790,13 @@ What tale will you weave in this living tapestry of stories?
             if self.room_manager.move_to_room(room_id_target):
                 result = {"success": True, "message": f"You moved to {room_id_target}."}
             else:
-                result = {"success": False, "message": f"Cannot move to {room_id_target}."}
+                # Provide helpful error with available rooms
+                available_rooms = list(self.room_manager.rooms.keys())
+                if available_rooms:
+                    room_list = ", ".join(available_rooms)
+                    result = {"success": False, "message": f"Cannot move to '{room_id_target}'. Available rooms: {room_list}"}
+                else:
+                    result = {"success": False, "message": f"Cannot move to '{room_id_target}'. No rooms are available."}
         else: 
             full_command_key = f"{main_command} {args[0]}" if args else main_command
             if full_command_key in BOUNTY_COMMAND_HANDLERS:
@@ -725,6 +831,8 @@ What tale will you weave in this living tapestry of stories?
             # Removed old 'rent room' command from here as it's now handled by _handle_rent_room_command
             elif main_command == 'help':
                 result = {'success': True, 'message': self._generate_help_text()}
+            elif main_command == 'commands':
+                result = {'success': True, 'message': self._generate_commands_list()}
             elif main_command == 'games':
                 games = self.get_available_games()
                 if games:
@@ -750,10 +858,26 @@ What tale will you weave in this living tapestry of stories?
                 except IndexError: result = {'success': False, 'message': "Invalid 'play' command format."}
             elif command == 'gambling stats': 
                 stats = self.get_gambling_stats()
-                if stats['total_games_played'] > 0:
-                    stats_msg = [f"Games: {s['total_games_played']}, Won: {s['total_won']}, Lost: {s['total_lost']}, Net: {s['net_profit']}" for s_type, s in stats['games'].items()] # Simplified
-                    result = {'success': True, 'message': f"Overall: {stats['total_games_played']} played, Net: {stats['net_profit']}\n" + "\n".join(stats_msg)}
-                else: result = {'success': False, 'message': "No gambling stats yet."}
+                if stats and stats.get('total_games_played', 0) > 0:
+                    total_played = stats.get('total_games_played', 0)
+                    net_profit = stats.get('net_profit', 0)
+                    games_data = stats.get('games', {})
+                    
+                    stats_msg = []
+                    for game_type, game_stats in games_data.items():
+                        if isinstance(game_stats, dict):
+                            played = game_stats.get('total_games_played', 0)
+                            won = game_stats.get('total_won', 0)
+                            lost = game_stats.get('total_lost', 0)
+                            profit = game_stats.get('net_profit', 0)
+                            stats_msg.append(f"{game_type}: {played} games, Won: {won}, Lost: {lost}, Net: {profit}")
+                    
+                    if stats_msg:
+                        result = {'success': True, 'message': f"Overall: {total_played} played, Net: {net_profit}\n" + "\n".join(stats_msg)}
+                    else:
+                        result = {'success': True, 'message': f"Overall: {total_played} games played, Net profit: {net_profit}"}
+                else: 
+                    result = {'success': True, 'message': "No gambling stats yet. Try gambling first!"}
             elif main_command == 'gamble' and args:
                 # Simple gamble command - default to dice game
                 try:
@@ -906,7 +1030,8 @@ What tale will you weave in this living tapestry of stories?
         price = self.economy.get_item_price(item_id_lower, game_state=self) 
         if price is None: return {"success": False, "message": f"Cannot price {item_to_buy.name}."}
         if not self.player.spend_gold(price): return {"success": False, "message": f"Not enough gold for {item_to_buy.name}."}
-        success, add_msg = self.player.inventory.add_item(item_id_to_add=item_to_buy.id, quantity=1)
+        success = self.player.inventory.add_item(item_to_buy.id, quantity=1)
+        add_msg = "Added successfully" if success else "Failed to add item"
         if not success: self.player.add_gold(price); return {"success": False, "message": f"Failed to add: {add_msg}"}
         self._add_event(f"Bought {item_to_buy.name} for {price} gold.", "success") 
         self.event_formatter.add_event('item_bought', item_name=item_to_buy.name, price=price) 
@@ -1368,3 +1493,36 @@ bounty/quests  - Check available bounties and quests
 Type 'quit' to exit the game.
 """
         return help_text
+    
+    def _generate_commands_list(self) -> str:
+        """Generate a comprehensive list of all available commands."""
+        commands = [
+            # Basic commands
+            "look", "wait", "wait <hours>", "status", "inventory", "help", "commands",
+            
+            # Movement
+            "move <room>",
+            
+            # Economic
+            "buy <item>", "use <item>", "gamble <amount>", "games", "gambling stats",
+            
+            # Jobs and work
+            "jobs", "work <job>",
+            
+            # Social and NPCs  
+            "npcs", "interact <npc> <action>",
+            
+            # Bounties and quests
+            "bounties", "read notice board", "accept bounty <id>",
+            
+            # Room management
+            "rent room", "rent room with chest", "store <item> <qty>", "retrieve <item> <qty>", "check storage",
+            
+            # Sleep and time
+            "sleep", "sleep <hours>", "ask about sleep",
+            
+            # System
+            "quit", "exit"
+        ]
+        
+        return "All Available Commands:\n" + "\n".join(f"  {cmd}" for cmd in commands) + "\n\nUse 'help' for detailed descriptions."
