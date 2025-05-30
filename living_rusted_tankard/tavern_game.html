@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>The Living Rusted Tankard</title>
+    <style>
+        body { background: #1a1a1a; color: #e0e0e0; font-family: Georgia, serif; padding: 20px; }
+        h1 { color: #d4af37; text-align: center; }
+        #game { background: #2a2a2a; border: 2px solid #d4af37; padding: 20px; margin: 20px auto; max-width: 800px; }
+        #output { background: #1f1f1f; padding: 15px; margin-bottom: 15px; min-height: 400px; white-space: pre-wrap; font-family: monospace; }
+        #input { width: 100%; padding: 10px; background: #1f1f1f; color: #e0e0e0; border: 1px solid #d4af37; }
+        button { background: #d4af37; color: #1a1a1a; border: none; padding: 10px 20px; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🍺 The Living Rusted Tankard</h1>
+    <div id="game">
+        <div id="output">Welcome to The Rusted Tankard!
+
+You are in the tavern's common room. The air is warm and filled with 
+the sounds of conversation and clinking mugs.
+
+Available commands:
+• look - Look around
+• talk - Talk to someone
+• drink - Order a drink
+• gamble [amount] - Try your luck
+• bounties - Check the notice board
+• help - Show commands
+
+What would you like to do?
+
+></div>
+        <input type="text" id="input" placeholder="Enter command..." autofocus>
+        <button onclick="processCommand()">Send</button>
+    </div>
+    
+    <script>
+        const output = document.getElementById('output');
+        const input = document.getElementById('input');
+        
+        // Simple command responses
+        const responses = {
+            'look': 'The tavern is bustling with activity. A large fireplace crackles in one corner, and the bar is lined with bottles of various spirits. Several patrons sit at wooden tables.',
+            'talk': 'You strike up a conversation with a grizzled patron. "Strange times," he mutters. "Folk been seeing things in the cellar."',
+            'drink': 'You order an ale. The barkeeper slides a frothy mug your way. "That'll be 2 gold," he says.',
+            'help': 'Commands: look, talk, drink, gamble [amount], bounties, inventory, wait, help',
+            'bounties': 'Notice Board:\n- Cellar Cleanup: Clear rats from cellar (25 gold)\n- Lost Locket: Find Mirabelle's locket (15 gold)',
+            'inventory': 'You have: 20 gold, basic supplies',
+            'wait': 'Time passes... An hour goes by.'
+        };
+        
+        function processCommand() {
+            const cmd = input.value.trim().toLowerCase();
+            if (!cmd) return;
+            
+            output.textContent += ' ' + cmd + '\n\n';
+            
+            // Check for gambling
+            if (cmd.startsWith('gamble')) {
+                const amount = parseInt(cmd.split(' ')[1]) || 10;
+                const won = Math.random() < 0.4;
+                if (won) {
+                    output.textContent += `You won! Gained ${amount} gold.\n\n>`;
+                } else {
+                    output.textContent += `You lost ${amount} gold. Better luck next time!\n\n>`;
+                }
+            } else if (responses[cmd]) {
+                output.textContent += responses[cmd] + '\n\n>';
+            } else {
+                output.textContent += 'I don't understand that command. Type "help" for options.\n\n>';
+            }
+            
+            input.value = '';
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') processCommand();
+        });
+    </script>
+</body>
+</html>

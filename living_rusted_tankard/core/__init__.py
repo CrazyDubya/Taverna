@@ -4,7 +4,7 @@
 from .clock import GameClock, GameTime
 from .game_state import GameState
 from .player import PlayerState
-from .npc import NPC, NPCManager
+from .npc import NPC, NPCManager, NPCType
 from .economy import Economy
 
 # Define __all__ to control what's imported with `from core import *`
@@ -15,5 +15,6 @@ __all__ = [
     'PlayerState',
     'NPC',
     'NPCManager',
+    'NPCType',
     'Economy'
 ]

@@ -67,7 +67,7 @@ class GameShell(cmd.Cmd):
         try:
             # Get the current game state
             state = {
-                'time': self.game_state.time_elapsed,
+                'time': self.game_state.clock.time.hours,
                 'player': {
                     'gold': self.game_state.player.gold,
                     'has_room': self.game_state.player.has_room,

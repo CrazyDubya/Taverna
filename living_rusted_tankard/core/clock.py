@@ -35,7 +35,13 @@ class GameTime(BaseModel):
     
     def model_dump(self, **kwargs) -> Dict[str, Any]:
         """Convert to a dictionary representation, including properties."""
-        dump = super().model_dump(**kwargs)
+        # Use dict() method for older Pydantic versions or direct field access
+        try:
+            dump = super().model_dump(**kwargs)
+        except AttributeError:
+            # Fallback for older Pydantic versions
+            dump = self.dict(**kwargs)
+        
         dump['hour_of_day'] = self.hour_of_day
         dump['day'] = self.day
         dump['formatted_time'] = self.format_time()  # Now uses natural time by default

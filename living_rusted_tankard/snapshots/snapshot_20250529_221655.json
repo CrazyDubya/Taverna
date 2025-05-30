@@ -1,0 +1,14 @@
+{
+  "timestamp": "2025-05-29T22:16:55.999972",
+  "command": "EOF",
+  "state": {
+    "player": {
+      "gold": 20,
+      "has_room": false,
+      "tiredness": 0.0
+    },
+    "time": 0.0056324573147219165,
+    "location": "The Rusted Tankard",
+    "npcs": []
+  }
+}

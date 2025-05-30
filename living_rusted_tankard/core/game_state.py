@@ -193,7 +193,7 @@ class GameState:
             "npc_manager": self.npc_manager.model_dump(mode='json'),
             "economy": self.economy.model_dump(mode='json'), 
             "gambling_manager": self.gambling_manager.model_dump(mode='json'), 
-            "bounty_manager": self.bounty_manager.model_dump(mode='json'), 
+            "bounty_manager": self.bounty_manager.dict() if hasattr(self.bounty_manager, 'dict') else self.bounty_manager.model_dump(mode='json'), 
             "news_manager": self.news_manager.model_dump(mode='json'), 
             "active_global_events": self.active_global_events, 
             "events": serialized_events,
@@ -819,7 +819,7 @@ What tale will you weave in this living tapestry of stories?
                     item_names.append(item_def.name if item_def else str(item_id)) 
                 if item_names: listing += f", Items: {', '.join(item_names)}"
             bounty_listings.append(listing)
-        return {"success": True, "message": "Available Bounties:\n" + "\n\n".join(bounty_listings), "data": {"bounties": [b.model_dump() for b in available_bounties]}}
+        return {"success": True, "message": "Available Bounties:\n" + "\n\n".join(bounty_listings), "data": {"bounties": [b.dict() if hasattr(b, 'dict') else b.model_dump() for b in available_bounties]}}
 
     def _handle_accept_bounty(self, bounty_id: str) -> Dict[str, Any]:
         if self.room_manager.current_room_id != "tavern_main":

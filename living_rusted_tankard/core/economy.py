@@ -271,12 +271,13 @@ class Economy(BaseModel):
         adjusted_odds = max(0.1, min(0.9, self.gambling_odds - npc_skill * 0.1 + event_bonus))
         
         if random.random() < adjusted_odds:
-            # Win double or nothing
-            winnings = amount * 2
-            return self.add_gold(
-                player_gold,
-                winnings,
-                message=f"You won {winnings} gold!"
+            # Win double or nothing (net gain is just the amount since you get back your bet plus winnings)
+            return TransactionResult(
+                success=True,
+                amount=amount,
+                message=f"You won {amount * 2} gold!",
+                new_balance=player_gold + amount,
+                items_gained=[]
             )
         else:
             return TransactionResult(

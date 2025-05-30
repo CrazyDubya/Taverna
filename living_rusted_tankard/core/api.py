@@ -66,8 +66,16 @@ from .async_llm_pipeline import get_pipeline, initialize_pipeline, shutdown_pipe
 async_llm_pipeline = get_pipeline()
 
 # Include AI Player routes
-from api.routers.ai_player import router as ai_player_router
-app.include_router(ai_player_router)
+try:
+    from api.routers.ai_player import router as ai_player_router
+    app.include_router(ai_player_router)
+except ImportError:
+    # Try alternative import path
+    import sys
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).parent.parent))
+    from api.routers.ai_player import router as ai_player_router
+    app.include_router(ai_player_router)
 
 # Startup and shutdown handlers for async pipeline
 @app.on_event("startup")
