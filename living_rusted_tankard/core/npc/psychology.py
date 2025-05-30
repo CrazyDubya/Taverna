@@ -465,3 +465,82 @@ class NPCPsychology:
             elif self.base_personality == Personality.AGGRESSIVE:
                 self.current_mood = Mood.ANGRY if self.stress_level > 0.5 else Mood.BORED
             # etc...
+
+
+class NPCPsychologyManager:
+    """Manager for all NPC psychological states"""
+    
+    def __init__(self):
+        self.npc_psychologies: Dict[str, NPCPsychology] = {}
+    
+    def initialize_npc(self, npc_id: str, npc: Any) -> None:
+        """Initialize psychology for an NPC"""
+        # Determine personality from NPC data
+        personality = Personality.NEUTRAL
+        if hasattr(npc, 'personality'):
+            try:
+                personality = Personality(npc.personality)
+            except ValueError:
+                personality = Personality.NEUTRAL
+        
+        # Create psychology instance
+        self.npc_psychologies[npc_id] = NPCPsychology(
+            npc_id=npc_id,
+            base_personality=personality
+        )
+        
+        # Add any secrets as psychological secrets
+        if hasattr(npc, 'has_secret') and npc.has_secret:
+            secret = Secret(
+                content="This NPC has a secret",
+                importance=0.8,
+                danger_level=0.5
+            )
+            self.npc_psychologies[npc_id].secrets.append(secret)
+    
+    def get_npc_state(self, npc_id: str) -> Dict[str, Any]:
+        """Get current psychological state of an NPC"""
+        if npc_id not in self.npc_psychologies:
+            return {
+                'mood': 'neutral',
+                'stress_level': 0.0,
+                'energy_level': 1.0,
+                'personality': 'neutral'
+            }
+        
+        psych = self.npc_psychologies[npc_id]
+        return {
+            'mood': psych.current_mood.value,
+            'stress_level': psych.stress_level,
+            'energy_level': psych.energy_level,
+            'personality': psych.base_personality.value,
+            'openness': psych.public_persona.traits.get('openness', 0.5),
+            'agreeableness': psych.public_persona.traits.get('agreeableness', 0.5),
+            'trust': psych.public_persona.traits.get('trust', 0.5)
+        }
+    
+    def update_npc_state(self, npc_id: str, elapsed_time: float) -> None:
+        """Update NPC psychology over time"""
+        if npc_id in self.npc_psychologies:
+            self.npc_psychologies[npc_id].update_psychology(elapsed_time)
+    
+    def modify_mood(self, npc_id: str, mood_modifier: str) -> None:
+        """Modify an NPC's mood"""
+        if npc_id not in self.npc_psychologies:
+            return
+        
+        psych = self.npc_psychologies[npc_id]
+        
+        # Apply mood modifier
+        if mood_modifier == 'tense':
+            psych.stress_level = min(1.0, psych.stress_level + 0.2)
+            if psych.stress_level > 0.7:
+                psych.current_mood = Mood.ANXIOUS
+        elif mood_modifier == 'calm':
+            psych.stress_level = max(0.0, psych.stress_level - 0.3)
+            psych.current_mood = Mood.CONTENT
+        elif mood_modifier == 'excited':
+            psych.current_mood = Mood.EXCITED
+        elif mood_modifier == 'mysterious':
+            psych.current_mood = Mood.ANXIOUS
+            psych.stress_level = min(1.0, psych.stress_level + 0.1)

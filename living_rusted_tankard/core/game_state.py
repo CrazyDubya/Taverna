@@ -16,6 +16,7 @@ from .items import ITEM_DEFINITIONS, load_item_definitions
 from pathlib import Path 
 from .news_manager import NewsManager 
 from .bounties import BountyManager, BountyStatus, BountyObjective 
+from .event_bus import EventBus, EventType, Event
 
 from games.gambling_manager import GamblingManager
 from .events import (
@@ -27,6 +28,38 @@ from .events import (
 from .event_formatter import EventFormatter
 from game.commands.bounty_commands import BOUNTY_COMMAND_HANDLERS 
 from game.commands.reputation_commands import REPUTATION_COMMAND_HANDLERS 
+
+# Phase 2: World System imports
+try:
+    from .world.atmosphere import AtmosphereManager
+    from .world.area_manager import AreaManager
+    from .world.floor_manager import FloorManager
+    PHASE2_AVAILABLE = True
+except ImportError:
+    PHASE2_AVAILABLE = False
+
+# Phase 3: NPC System imports  
+try:
+    from .npc.psychology import NPCPsychologyManager
+    from .npc.secrets import SecretsManager
+    from .npc.dialogue import DialogueGenerator, DialogueContext
+    from .npc.gossip import GossipNetwork
+    from .npc.goals import GoalManager
+    from .npc.interactions import InteractionManager
+    PHASE3_AVAILABLE = True
+except ImportError:
+    PHASE3_AVAILABLE = False
+
+# Phase 4: Narrative Engine imports
+try:
+    from .narrative import (
+        ThreadManager, NarrativeRulesEngine, NarrativeOrchestrator,
+        StoryThread, ThreadType
+    )
+    from .narrative.event_integration import NarrativeEventHandler
+    PHASE4_AVAILABLE = True
+except ImportError:
+    PHASE4_AVAILABLE = False
 
 if TYPE_CHECKING:
     from .snapshot import SnapshotManager
@@ -59,8 +92,9 @@ class GameState:
 
         self.clock = GameClock()
         self.player = PlayerState()
-        self.room_manager = RoomManager()  
-        self.npc_manager = NPCManager(data_dir=str(self._data_dir), event_bus=self) 
+        self.room_manager = RoomManager()
+        self.event_bus = EventBus()  # Create proper event bus
+        self.npc_manager = NPCManager(data_dir=str(self._data_dir), event_bus=self.event_bus) 
         self.economy = Economy()
         self.gambling_manager = GamblingManager()
         self.bounty_manager = BountyManager(data_dir=str(self._data_dir)) 
@@ -107,6 +141,39 @@ class GameState:
         self._event_batch: List[Dict[str, Any]] = []
         self._event_batch_size: int = 5
         self._last_event_process: float = 0.0
+        
+        # Initialize Phase 2: World System
+        if PHASE2_AVAILABLE:
+            self.atmosphere_manager = AtmosphereManager()
+            self.area_manager = AreaManager()
+            self.floor_manager = FloorManager()
+            self.area_manager.initialize_all_areas()
+            self.floor_manager.initialize_all_floors()
+            logger.info("Phase 2: World System initialized")
+        
+        # Initialize Phase 3: NPC Systems
+        if PHASE3_AVAILABLE:
+            self.npc_psychology = NPCPsychologyManager()
+            self.secrets_manager = SecretsManager()
+            self.dialogue_generator = DialogueGenerator()
+            self.gossip_network = GossipNetwork()
+            self.goal_manager = GoalManager()
+            self.interaction_manager = InteractionManager()
+            logger.info("Phase 3: NPC Systems initialized")
+        
+        # Initialize Phase 4: Narrative Engine
+        if PHASE4_AVAILABLE:
+            self.thread_manager = ThreadManager()
+            self.rules_engine = NarrativeRulesEngine()
+            self.narrative_orchestrator = NarrativeOrchestrator(
+                self.thread_manager,
+                self.rules_engine
+            )
+            # Event handler will be initialized after event_bus is set up
+            self._narrative_handler_pending = True
+            logger.info("Phase 4: Narrative Engine initialized")
+        else:
+            self._narrative_handler_pending = False
         
         self._initialize_game()
 
@@ -212,6 +279,22 @@ class GameState:
         # Give player some starting gold
         self.player.gold = 20
             
+        # Complete Phase 4 setup now that event_bus exists
+        if PHASE4_AVAILABLE and hasattr(self, '_narrative_handler_pending') and self._narrative_handler_pending:
+            self.narrative_handler = NarrativeEventHandler(self, self.narrative_orchestrator)
+            self._narrative_handler_pending = False
+            
+            # Create initial narrative threads
+            self._create_initial_narrative_threads()
+        
+        # Initialize NPC psychology for existing NPCs
+        if PHASE3_AVAILABLE:
+            for npc_id, npc in self.npc_manager.npcs.items():
+                self.npc_psychology.initialize_npc(npc_id, npc)
+                if hasattr(npc, 'has_secret') and npc.has_secret:
+                    self.secrets_manager.initialize_npc_secrets(npc_id)
+                self.goal_manager.initialize_npc_goals(npc_id, npc)
+        
         # Add a single, immersive welcome message
         welcome_message = """
 The heavy wooden door of The Living Rusted Tankard creaks open, and warm lamplight spills out to greet you. The scent of roasted meat, fresh ale, and old wood fills your nostrils as you step inside. Flickering candles cast dancing shadows on weathered walls adorned with tavern keepsakes.
@@ -289,8 +372,33 @@ What tale will you weave in this living tapestry of stories?
         self._update_present_npcs()
         self._update_player_status()
         self._check_bounty_objective_triggers() 
+        
+        # Update phase systems
+        elapsed_minutes = delta_override if delta_override else 1
+        self._update_phase_systems(elapsed_minutes)
+        
         self._last_update_time = current_time_val_float
         self._update_travelling_merchant_event(current_time_val_float)
+    
+    def _update_phase_systems(self, elapsed_minutes: float):
+        """Update all phase systems with time progression"""
+        # Update Phase 2: Atmosphere
+        if PHASE2_AVAILABLE and hasattr(self, 'atmosphere_manager'):
+            self.atmosphere_manager.update(elapsed_minutes * 60)  # Convert to seconds
+        
+        # Update Phase 3: NPC Systems
+        if PHASE3_AVAILABLE:
+            # Update NPC psychology
+            for npc_id in self.npc_manager.npcs:
+                self.npc_psychology.update_npc_state(npc_id, elapsed_minutes * 60)
+            
+            # Process NPC goals
+            self.goal_manager.update_all_goals(elapsed_minutes * 60)
+            
+            # Update gossip network
+            self.gossip_network.propagate_rumors(elapsed_minutes * 60)
+        
+        # Phase 4 narrative updates happen via events, not time
 
     def _update_travelling_merchant_event(self, current_game_hours: float):
         import random 
@@ -421,9 +529,59 @@ What tale will you weave in this living tapestry of stories?
         }
     
     def interact_with_npc(self, npc_id: str, interaction_id: str, **kwargs) -> Dict[str, Any]:
+        # Get base response from NPC manager
         response = self.npc_manager.interact_with_npc(npc_id, self.player, interaction_id, self, **kwargs)
+        
+        # Enhance with Phase 3 systems if available
+        if PHASE3_AVAILABLE and response.get("success", False) and interaction_id == "talk":
+            npc = self.npc_manager.get_npc(npc_id)
+            if npc:
+                # Get psychological state
+                psychology = self.npc_psychology.get_npc_state(npc_id)
+                
+                # Get narrative context if Phase 4 is available
+                narrative_context = None
+                if PHASE4_AVAILABLE and hasattr(self, 'narrative_handler'):
+                    narrative_context = self.narrative_handler.get_narrative_context_for_npc(npc_id)
+                
+                # Create dialogue context
+                dialogue_context = DialogueContext(
+                    npc_name=npc_id,
+                    player_name="player",
+                    location=self.player.current_room,
+                    time_of_day=self.clock.get_time_period(),
+                    relationship_level=self.reputation.get_npc_relationship(npc_id),
+                    current_mood=psychology.get('mood', 'neutral'),
+                    active_threads=narrative_context.get('active_threads', []) if narrative_context else [],
+                    recent_events=self.get_recent_events(limit=5)
+                )
+                
+                # Generate enhanced dialogue
+                base_message = response.get('message', '')
+                enhanced_message = self.dialogue_generator.generate_dialogue(
+                    npc_id,
+                    dialogue_context,
+                    base_prompt=base_message
+                )
+                
+                # Add gossip if available
+                gossip = self.gossip_network.get_npc_gossip(npc_id)
+                if gossip:
+                    enhanced_message += f"\n\n{npc.name} leans in and whispers: '{gossip}'"
+                
+                # Add goal-driven dialogue
+                current_goal = self.goal_manager.get_current_goal(npc_id)
+                if current_goal and hasattr(current_goal, 'involves_player') and current_goal.involves_player:
+                    goal_dialogue = self.goal_manager.get_goal_dialogue(npc_id, current_goal)
+                    if goal_dialogue:
+                        enhanced_message += f"\n\n{goal_dialogue}"
+                
+                response['message'] = enhanced_message
+        
+        # Check bounty objectives
         if response.get("success", False) and interaction_id == "talk": 
             self._check_bounty_objective_report_to_npc(npc_id)
+        
         return response
     
     def get_interactive_npcs(self) -> List[Dict[str, Any]]:
@@ -790,7 +948,27 @@ A staircase leads up to the rooms for rent.
             
         npc_text = "\n".join(npc_descriptions) if npc_descriptions else "There's no one of interest here at the moment."
         
-        full_description = f"It is {time_desc}.\n\n{room_desc.strip()}\n\n{npc_text}\n\nYou have {self.player.gold} gold. Tiredness: {int(self.player.tiredness*100)}%"
+        # Add atmosphere description if Phase 2 is available
+        atmosphere_desc = ""
+        if PHASE2_AVAILABLE and hasattr(self, 'atmosphere_manager'):
+            current_atmosphere = self.atmosphere_manager.get_current_atmosphere()
+            if current_atmosphere.get('tension', 0) > 0.7:
+                atmosphere_desc = "\nThe atmosphere is tense - you can feel it in the air."
+            elif current_atmosphere.get('comfort', 0) > 0.8:
+                atmosphere_desc = "\nThe atmosphere is warm and inviting."
+            elif current_atmosphere.get('mystery', 0) > 0.6:
+                atmosphere_desc = "\nThere's something mysterious in the air..."
+        
+        # Add narrative context if Phase 4 is available
+        narrative_hint = ""
+        if PHASE4_AVAILABLE and hasattr(self, 'thread_manager'):
+            active_threads = self.thread_manager.get_active_threads()
+            if active_threads:
+                high_tension_threads = [t for t in active_threads if t.tension_level > 0.6]
+                if high_tension_threads:
+                    narrative_hint = f"\n\n[Something important seems to be happening: {high_tension_threads[0].title}]"
+        
+        full_description = f"It is {time_desc}.\n\n{room_desc.strip()}{atmosphere_desc}\n\n{npc_text}\n\nYou have {self.player.gold} gold. Tiredness: {int(self.player.tiredness*100)}%{narrative_hint}"
         return {'success': True, 'message': full_description}
     
     def _handle_wait(self, hours: float = 1.0) -> Dict[str, Any]:
@@ -902,6 +1080,36 @@ A staircase leads up to the rooms for rent.
         items_in_storage = self.player.storage_inventory.list_items_for_display()
         storage_list = [f"{item_data['name']} (x{item_data['quantity']})" for item_data in items_in_storage]
         return {"success": True, "message": "Items in your storage chest:\n" + "\n".join(storage_list)}
+    
+    def _create_initial_narrative_threads(self):
+        """Create initial narrative threads based on game state"""
+        if not PHASE4_AVAILABLE or not hasattr(self, 'thread_manager'):
+            return
+        
+        # Create main tavern thread
+        tavern_thread = StoryThread(
+            id="tavern_main_thread",
+            title="The Living Rusted Tankard",
+            type=ThreadType.MAIN_QUEST,
+            description="The ongoing story of the tavern and its patrons",
+            primary_participants=["player", "bartender"],
+            tension_level=0.2
+        )
+        self.thread_manager.add_thread(tavern_thread)
+        
+        # Create threads for NPCs with secrets
+        if PHASE3_AVAILABLE:
+            for npc_id, npc in self.npc_manager.npcs.items():
+                if hasattr(npc, 'has_secret') and npc.has_secret:
+                    secret_thread = StoryThread(
+                        id=f"secret_{npc_id}",
+                        title=f"{npc.name}'s Secret",
+                        type=ThreadType.MYSTERY,
+                        description=f"Uncover the truth about {npc.name}",
+                        primary_participants=["player", npc_id],
+                        tension_level=0.4
+                    )
+                    self.thread_manager.add_thread(secret_thread)
 
 
     def save_game(self, filename: str) -> bool:

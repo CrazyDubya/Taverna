@@ -336,3 +336,70 @@ class AtmosphereManager:
                     detail.duration -= 1.0 / 60  # Assume called every minute
             
             atmosphere.calculate_modifiers()
+    
+    def get_current_atmosphere(self) -> Dict[str, float]:
+        """Get current atmosphere properties for the active area"""
+        if not self.atmospheres:
+            return {
+                'tension': 0.0,
+                'comfort': 0.5,
+                'mystery': 0.0,
+                'safety': 0.8,
+                'energy': 0.5
+            }
+        
+        # Use the first atmosphere or find main area
+        atmosphere_id = list(self.atmospheres.keys())[0]
+        atmosphere = self.atmospheres[atmosphere_id]
+        
+        return {
+            'tension': atmosphere.tension,
+            'comfort': atmosphere.comfort,
+            'mystery': atmosphere.mystery,
+            'safety': atmosphere.safety,
+            'energy': atmosphere.energy,
+            'lighting': atmosphere.lighting,
+            'noise_level': atmosphere.noise_level,
+            'temperature': atmosphere.temperature
+        }
+    
+    def apply_area_atmosphere(self, area: Any) -> None:
+        """Apply atmosphere settings for a specific area"""
+        area_id = getattr(area, 'id', 'unknown')
+        
+        if area_id not in self.atmospheres:
+            # Create default atmosphere for new area
+            self.atmospheres[area_id] = Atmosphere()
+        
+        # Apply area-specific atmosphere settings
+        atmosphere = self.atmospheres[area_id]
+        
+        # Set atmosphere based on area type
+        if 'basement' in area_id or 'cellar' in area_id:
+            atmosphere.lighting = 0.2
+            atmosphere.mystery = 0.7
+            atmosphere.safety = 0.4
+        elif 'kitchen' in area_id:
+            atmosphere.temperature = 0.8
+            atmosphere.energy = 0.8
+            atmosphere.comfort = 0.6
+        elif 'tavern' in area_id:
+            atmosphere.comfort = 0.8
+            atmosphere.energy = 0.7
+            atmosphere.safety = 0.7
+        elif 'room' in area_id:
+            atmosphere.comfort = 0.9
+            atmosphere.safety = 0.9
+        
+        atmosphere.calculate_modifiers()
+    
+    def set_atmosphere_property(self, property_name: str, value: float) -> None:
+        """Set a specific atmosphere property"""
+        if not self.atmospheres:
+            self.atmospheres['default'] = Atmosphere()
+        
+        # Apply to all atmospheres
+        for atmosphere in self.atmospheres.values():
+            if hasattr(atmosphere, property_name):
+                setattr(atmosphere, property_name, max(0.0, min(1.0, value)))
+                atmosphere.calculate_modifiers()

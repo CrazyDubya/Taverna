@@ -480,3 +480,11 @@ class ThreadManager:
             event for event in self.thread_history
             if datetime.fromisoformat(event["timestamp"]) > cutoff
         ]
+    
+    def get_active_threads(self) -> List[StoryThread]:
+        """Get all currently active threads"""
+        return list(self.active_threads.values())
+    
+    def get_thread(self, thread_id: str) -> Optional[StoryThread]:
+        """Get a specific thread by ID"""
+        return self.active_threads.get(thread_id) or self.completed_threads.get(thread_id)
