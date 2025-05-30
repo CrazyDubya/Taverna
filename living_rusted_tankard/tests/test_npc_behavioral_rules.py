@@ -4,11 +4,11 @@ import pytest
 from datetime import datetime, time
 from unittest.mock import Mock, patch
 
-from core.npc.behavioral_rules import (
+from core.npc_systems.behavioral_rules import (
     BehaviorEngine, BehaviorRule, BehaviorPriority,
     Condition, ConditionType, Action, DailySchedule
 )
-from core.npc.psychology import NPCPsychology, Personality, Mood
+from core.npc_systems.psychology import NPCPsychology, Personality, Mood
 
 
 class TestCondition:

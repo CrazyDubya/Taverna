@@ -20,7 +20,7 @@ def find_bounty_by_term(term: str, bounty_list: List[Dict[str, Any]]) -> Optiona
 def list_bounties_command(game_state: 'GameState', args: List[str]) -> Dict[str, Any]:
     """Lists all available bounties."""
     bounty_manager = game_state.bounty_manager
-    available_bounties = bounty_manager.list_available_bounties(player=game_state.player)
+    available_bounties = bounty_manager.get_available_bounties_on_notice_board(game_state.player)
     
     if not available_bounties:
         return {"success": True, "message": "There are currently no bounties posted."}

@@ -4,7 +4,7 @@ import pytest
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
-from core.npc.psychology import (
+from core.npc_systems.psychology import (
     NPCPsychology, Personality, Mood, MotivationType,
     PersonaLayer, Motivation, Secret, Memory, Relationship
 )

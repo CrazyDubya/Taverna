@@ -3,12 +3,12 @@
 import pytest
 from unittest.mock import Mock, patch
 
-from core.npc.dialogue import (
+from core.npc_systems.dialogue import (
     DialogueGenerator, DialogueContext, DialogueOption, DialogueResponse,
     DialogueType, DialogueTone
 )
-from core.npc.psychology import NPCPsychology, Personality, Mood
-from core.npc.relationships import RelationshipType
+from core.npc_systems.psychology import NPCPsychology, Personality, Mood
+from core.npc_systems.relationships import RelationshipType
 
 
 class TestDialogueOption:

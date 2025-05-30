@@ -329,3 +329,7 @@ if __name__ == "__main__":
         tavern_time = TavernCalendar.get_fantasy_time(time_hours)
         print(f"Full Info: {tavern_time.day_of_week}, {tavern_time.day_of_month} {tavern_time.month}")
         print(f"LLM Context: {get_time_context_for_llm(time_hours, 'clear')}")
+
+# Compatibility aliases for tests
+FantasyCalendar = TavernCalendar
+SeasonType = Season

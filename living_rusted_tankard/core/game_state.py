@@ -754,6 +754,27 @@ What tale will you weave in this living tapestry of stories?
                     stats_msg = [f"Games: {s['total_games_played']}, Won: {s['total_won']}, Lost: {s['total_lost']}, Net: {s['net_profit']}" for s_type, s in stats['games'].items()] # Simplified
                     result = {'success': True, 'message': f"Overall: {stats['total_games_played']} played, Net: {stats['net_profit']}\n" + "\n".join(stats_msg)}
                 else: result = {'success': False, 'message': "No gambling stats yet."}
+            elif main_command == 'gamble' and args:
+                # Simple gamble command - default to dice game
+                try:
+                    bet_amount = int(args[0])
+                    if bet_amount <= 0: raise ValueError("Bet must be a positive number!")
+                    # Default dice game with random guess
+                    import random
+                    guess = random.choice([1, 2])  # Random low/high guess
+                    result = self.play_gambling_game('dice', bet_amount, guess=guess)
+                except ValueError as e: 
+                    result = {'success': False, 'message': str(e)}
+                except IndexError: 
+                    result = {'success': False, 'message': "Usage: gamble <amount>"}
+            elif main_command == 'npcs':
+                # List NPCs in current area
+                present_npcs = self.npc_manager.get_present_npcs()
+                if present_npcs:
+                    npc_list = '\n'.join([f"- {npc.name}: {npc.description}" for npc in present_npcs])
+                    result = {'success': True, 'message': f"NPCs present:\n{npc_list}"}
+                else:
+                    result = {'success': True, 'message': "There are no NPCs around right now."}
         
         # Only update if not awaiting confirmation
         if not self.pending_command:

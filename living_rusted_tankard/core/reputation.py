@@ -171,3 +171,18 @@ def get_reputation_tier_v2(score: int) -> str:
 
 # Overwrite the previous function with the refined one for use.
 get_reputation_tier = get_reputation_tier_v2
+
+class ReputationManager:
+    """Manager class for handling reputation operations."""
+    
+    def __init__(self):
+        pass
+    
+    def get_reputation(self, player_state: 'PlayerState', entity_id: str) -> int:
+        return get_reputation(player_state, entity_id)
+    
+    def update_reputation(self, player_state: 'PlayerState', entity_id: str, change: int) -> int:
+        return update_reputation(player_state, entity_id, change)
+    
+    def get_reputation_tier(self, score: int) -> str:
+        return get_reputation_tier(score)

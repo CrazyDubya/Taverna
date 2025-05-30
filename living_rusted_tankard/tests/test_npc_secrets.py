@@ -4,7 +4,7 @@ import pytest
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
-from core.npc.secrets import (
+from core.npc_systems.secrets import (
     EnhancedSecret, SecretType, SecretState, Evidence, EvidenceType,
     SecretConsequence, SecretProtection, SecretGenerator
 )

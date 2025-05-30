@@ -194,3 +194,6 @@ class PlayerState(BaseModel):
 
     def has_completed_bounty(self, bounty_id: str) -> bool:
         return bounty_id in self.completed_bounty_ids
+
+# Compatibility alias for tests
+Player = PlayerState

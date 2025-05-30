@@ -34,3 +34,17 @@ def get_session() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+class DatabaseSession:
+    """Database session manager class."""
+    
+    def __init__(self):
+        self.session_factory = SessionLocal
+    
+    def get_session(self) -> Generator[Session, None, None]:
+        """Get a database session."""
+        return get_session()
+    
+    def create_all(self):
+        """Create all database tables."""
+        SQLModel.metadata.create_all(engine)

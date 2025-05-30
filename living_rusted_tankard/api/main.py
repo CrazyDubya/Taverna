@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 
 from core.db.session import engine, init_db
-from .routers import sessions
+from .routers import sessions, game
 from .deps import get_db
 
 def create_app() -> FastAPI:
@@ -29,6 +29,7 @@ def create_app() -> FastAPI:
     
     # Include routers
     app.include_router(sessions.router, prefix="/api", tags=["sessions"])
+    app.include_router(game.router, prefix="/api", tags=["integrated-game"])
     
     # Health check endpoint
     @app.get("/api/health")
