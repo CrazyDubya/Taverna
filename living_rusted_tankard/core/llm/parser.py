@@ -92,7 +92,7 @@ class Parser:
                     "format": "json",
                     "stream": False
                 },
-                timeout=30  # Give LLM proper time to think
+                timeout=45  # Enhanced prompt needs more processing time
             )
             response.raise_for_status()
             result = response.json()
@@ -133,21 +133,78 @@ Player Status:
   Energy: {snapshot.player_state.get('energy', 100)}%
   Tiredness: {snapshot.player_state.get('tiredness', 0)}%"""
 
-        return f"""Parse this tavern game command: "{text}"
+        return f"""You are the command parser for "The Living Rusted Tankard" medieval fantasy tavern game.
 
-Location: {snapshot.location}
-Time: {snapshot.time_of_day}{npc_context}
-Gold: {snapshot.player_state.get('gold', 0)}
+CURRENT GAME CONTEXT:
+📍 Location: {snapshot.location}
+🕰️ Time: {snapshot.time_of_day}
+💰 Player Gold: {snapshot.player_state.get('gold', 0)}
+⚡ Player Energy: {snapshot.player_state.get('energy', 100)}%{npc_context}{inventory_context}
 
-Common patterns:
-- "talk to X" → "interact X talk"
-- "go to X" → "move X" 
-- "check my X" → "status" or "inventory"
-- "buy X" → "buy X"
-- "what time" → "status"
+PLAYER INPUT TO PARSE: "{text}"
 
-JSON response:
-{{"action": "verb", "target": "noun", "extras": {{}}}}"""
+COMMAND UNDERSTANDING RULES:
+Your job is to translate natural language into precise game commands that the engine understands.
+
+CORE COMMAND MAPPINGS:
+🗣️ Social/Communication:
+- "talk to [person]" / "speak with [person]" / "hey [person]" → "interact [person] talk"
+- "ask [person] about [topic]" → "interact [person] talk" (with topic in extras)
+
+🚶 Movement/Exploration:
+- "go to [place]" / "move to [place]" / "head to [place]" / "walk to [place]" → "move [place]"
+- "go [direction]" / "head [direction]" → "move [direction]"
+
+👁️ Observation/Information:
+- "look around" / "look" / "examine room" / "tell me about this place" → "look"
+- "look at [object]" / "examine [object]" → "look [object]"
+- "what time is it" / "check time" / "current time" → "status"
+- "where am I" / "what's my location" → "look"
+
+🎒 Inventory/Status:
+- "check my inventory" / "what do I have" / "show inventory" → "inventory"
+- "check my status" / "how am I doing" / "my condition" → "status"
+
+💰 Commerce/Economics:
+- "buy [item]" / "purchase [item]" / "I want to buy [item]" / "get me [item]" → "buy [item]"
+- "what can I buy" / "show items" / "what's for sale" → "look" (contextual)
+
+💼 Work/Jobs:
+- "jobs" / "what work is available" / "show me jobs" / "I'm looking for work" → "jobs"
+- "work [job_name]" / "do [job_name]" → "work [job_name]"
+
+📋 Information Systems:
+- "read notice board" / "check board" / "what's on the board" → "read notice board"
+- "bounties" / "quests" / "missions" → "read notice board"
+
+⏰ Time Management:
+- "wait" / "pass time" / "rest a bit" → "wait"
+- "wait [number]" / "wait [number] hours" → "wait [number]"
+- "sleep" / "rest" / "take a nap" → "sleep"
+
+❓ Help/Assistance:
+- "help" / "commands" / "what can I do" / "how do I play" → "help"
+
+CONTEXT-AWARE PARSING:
+{f"🚫 No NPCs present - suggest 'wait' or 'move' for social commands" if not snapshot.visible_npcs else f"👥 NPCs available: {', '.join(snapshot.visible_npcs)}"}
+
+RESPONSE FORMAT:
+Return ONLY valid JSON in this exact format:
+{{
+    "action": "command_verb",
+    "target": "target_object_or_person",
+    "extras": {{"additional_parameters": "if_needed"}}
+}}
+
+CRITICAL EXAMPLES:
+Input: "talk to the bartender" → {{"action": "interact", "target": "bartender", "extras": {{"interaction": "talk"}}}}
+Input: "I want to buy some ale" → {{"action": "buy", "target": "ale", "extras": {{}}}}
+Input: "what time is it?" → {{"action": "status", "target": "", "extras": {{}}}}
+Input: "go upstairs" → {{"action": "move", "target": "upstairs", "extras": {{}}}}
+Input: "check my inventory" → {{"action": "inventory", "target": "", "extras": {{}}}}
+Input: "hey there, what's going on?" → {{"action": "look", "target": "", "extras": {{}}}}
+
+Parse the player input with full understanding of context and intent."""
     
     def _parse_with_regex(self, text: str) -> Command:
         """Fallback to regex-based command parsing."""
