@@ -73,6 +73,21 @@ except ImportError as e:
     print(f"Phase 4 import error: {e}")
     PHASE4_AVAILABLE = False
 
+# Narrative Systems imports (complete Phase 1 implementation)
+try:
+    from .narrative.character_memory import CharacterMemoryManager
+    from .narrative.character_state import CharacterStateManager
+    from .narrative.personality_traits import PersonalityManager
+    from .narrative.npc_schedules import ScheduleManager, create_schedule_for_profession
+    from .narrative.reputation_network import ReputationNetwork, setup_reputation_network_for_profession
+    from .narrative.conversation_continuity import ConversationManager
+    from .narrative.story_orchestrator import StoryOrchestrator
+    from .narrative.narrative_persistence import NarrativePersistenceManager
+    NARRATIVE_SYSTEMS_AVAILABLE = True
+except ImportError as e:
+    print(f"Narrative systems import error: {e}")
+    NARRATIVE_SYSTEMS_AVAILABLE = False
+
 if TYPE_CHECKING:
     from .snapshot import SnapshotManager
     from .reputation import get_reputation, get_reputation_tier 
@@ -198,7 +213,67 @@ class GameState:
             logger.warning(f"LLM Parser initialization failed: {e}, falling back to regex")
             self.llm_parser = Parser(use_llm=False, model="long-gemma")
         
+        # Initialize Narrative Systems: Complete Phase 1 integration
+        if NARRATIVE_SYSTEMS_AVAILABLE:
+            # Week 1-2: Character depth systems
+            self.character_memory_manager = CharacterMemoryManager()
+            self.character_state_manager = CharacterStateManager()
+            self.personality_manager = PersonalityManager()
+            self.schedule_manager = ScheduleManager()
+            self.reputation_network = ReputationNetwork()
+            self.conversation_manager = ConversationManager()
+            
+            # Week 3-4: Story threading & consequences
+            self.story_orchestrator = StoryOrchestrator()
+            self.narrative_persistence = NarrativePersistenceManager()
+            
+            # Initialize reputation network with default connections
+            self._initialize_social_network()
+            
+            # Register all components for persistence
+            self._register_narrative_components()
+            
+            logger.info("Narrative Systems: Complete Phase 1 implementation initialized")
+        
         self._initialize_game()
+    
+    def _initialize_social_network(self):
+        """Initialize the social network between NPCs."""
+        if not NARRATIVE_SYSTEMS_AVAILABLE:
+            return
+        
+        # Get all NPC IDs for network creation
+        npc_ids = []
+        if hasattr(self.npc_manager, 'npcs'):
+            npc_ids = list(self.npc_manager.npcs.keys())
+        else:
+            # Default NPCs that are likely to exist
+            npc_ids = ["grim_bartender", "mira_merchant", "jonas_blacksmith", "elara_healer"]
+        
+        # Create default social network
+        self.reputation_network.create_default_social_network(npc_ids)
+        
+        # Setup profession-specific reputation preferences
+        for npc_id in npc_ids:
+            npc = self.npc_manager.get_npc(npc_id)
+            if npc:
+                profession = getattr(npc, 'profession', 'common_folk')
+                setup_reputation_network_for_profession(
+                    self.reputation_network, npc_id, npc.name, profession
+                )
+    
+    def _register_narrative_components(self):
+        """Register all narrative components for automatic persistence."""
+        if not NARRATIVE_SYSTEMS_AVAILABLE:
+            return
+        
+        self.narrative_persistence.register_component('character_memory_manager', self.character_memory_manager)
+        self.narrative_persistence.register_component('character_state_manager', self.character_state_manager)
+        self.narrative_persistence.register_component('personality_manager', self.personality_manager)
+        self.narrative_persistence.register_component('schedule_manager', self.schedule_manager)
+        self.narrative_persistence.register_component('reputation_network', self.reputation_network)
+        self.narrative_persistence.register_component('conversation_manager', self.conversation_manager)
+        self.narrative_persistence.register_component('story_orchestrator', self.story_orchestrator)
 
     def to_dict(self) -> Dict[str, Any]:
         serialized_events = [event.model_dump(mode='json') for event in self.events]
@@ -400,8 +475,49 @@ What tale will you weave in this living tapestry of stories?
         elapsed_minutes = delta_override if delta_override else 1
         self._update_phase_systems(elapsed_minutes)
         
+        # Update narrative systems
+        if NARRATIVE_SYSTEMS_AVAILABLE:
+            self._update_narrative_systems()
+        
         self._last_update_time = current_time_val_float
         self._update_travelling_merchant_event(current_time_val_float)
+    
+    def _update_narrative_systems(self):
+        """Update all narrative systems periodically."""
+        if not NARRATIVE_SYSTEMS_AVAILABLE:
+            return
+        
+        current_hour = self.clock.get_current_time().total_hours % 24
+        
+        # Update character states (mood, stress, energy)
+        self.character_state_manager.tick_all()
+        
+        # Update schedules and availability
+        schedule_statuses = self.schedule_manager.update_all_schedules(current_hour)
+        
+        # Periodic gossip spreading (every ~30 minutes game time)
+        if hasattr(self, '_last_gossip_update'):
+            time_since_gossip = current_hour - self._last_gossip_update
+            if abs(time_since_gossip) > 0.5 or time_since_gossip < 0:  # Handle day rollover
+                self.reputation_network.simulate_gossip_round()
+                self._last_gossip_update = current_hour
+        else:
+            self._last_gossip_update = current_hour
+        
+        # Update story orchestrator (handles all Week 3-4 systems)
+        if hasattr(self, 'story_orchestrator'):
+            story_notifications = self.story_orchestrator.update(self)
+            
+            # Add story notifications to events
+            for notification in story_notifications:
+                self._add_event(notification, "story", {"source": "story_orchestrator"})
+        
+        # Auto-save narrative state periodically
+        if hasattr(self, 'narrative_persistence') and self.narrative_persistence.should_auto_save():
+            session_id = getattr(self, '_session_id', 'default_session')
+            if self.narrative_persistence.save_all_narrative_state(session_id):
+                logger.info("Auto-saved narrative state")
+                self.narrative_persistence.last_auto_save = time.time()
     
     def _update_phase_systems(self, elapsed_minutes: float):
         """Update all phase systems with time progression"""
@@ -555,6 +671,93 @@ What tale will you weave in this living tapestry of stories?
         # Get base response from NPC manager
         response = self.npc_manager.interact_with_npc(npc_id, self.player, interaction_id, self, **kwargs)
         
+        # Enhanced narrative systems integration
+        if NARRATIVE_SYSTEMS_AVAILABLE and response.get("success", False):
+            npc = self.npc_manager.get_npc(npc_id)
+            if npc:
+                # Get current game time for schedule checks
+                current_hour = self.clock.get_current_time().total_hours % 24
+                
+                # 1. Character Memory System
+                char_memory = self.character_memory_manager.get_or_create_memory(npc_id, npc.name)
+                
+                # 2. Character State System
+                profession = getattr(npc, 'profession', 'common_folk')
+                char_state = self.character_state_manager.get_or_create_state(npc_id, npc.name)
+                
+                # 3. Personality System
+                personality = self.personality_manager.get_or_create_personality(npc_id, npc.name, profession)
+                
+                # 4. Schedule System
+                schedule = self.schedule_manager.get_or_create_schedule(npc_id, npc.name, profession)
+                
+                # 5. Conversation Continuity System
+                relationship_level = char_memory.get_relationship_level().value
+                
+                # Create detailed interaction memory
+                interaction_type = interaction_id
+                details = {"type": interaction_type, "time": current_hour}
+                
+                if interaction_id == "talk":
+                    # Handle conversation continuity
+                    if interaction_id == "talk":
+                        time_since_last = char_memory._time_since_last_interaction() or 24
+                        
+                        # Start or continue conversation
+                        greeting, conv_context = self.conversation_manager.start_conversation(
+                            npc_id, npc.name, relationship_level, time_since_last
+                        )
+                        
+                        # Apply personality modifications to dialogue
+                        situation = f"conversation with {relationship_level} player"
+                        greeting = personality.modify_dialogue(greeting, situation)
+                        
+                        # Update response message with enhanced greeting
+                        response['message'] = greeting
+                        
+                        details["topic"] = kwargs.get("topic", "general conversation")
+                        details["conversation_context"] = conv_context
+                    
+                    char_memory.add_interaction_memory(f"Had a conversation with player", details)
+                    
+                elif interaction_id == "buy":
+                    item = kwargs.get("item", "something")
+                    price = kwargs.get("price", 0)
+                    details.update({"item": item, "gold_spent": price})
+                    char_memory.add_interaction_memory(f"Player bought {item} for {price} gold", details)
+                    
+                    # Record reputation action
+                    self.reputation_network.record_player_action(
+                        "successful_trade", "completed", [npc_id],
+                        {"item": item, "price": price, "witnessed_directly": True}
+                    )
+                    
+                elif interaction_id == "sell":
+                    item = kwargs.get("item", "something")
+                    price = kwargs.get("price", 0)
+                    details.update({"item": item, "gold_earned": price})
+                    char_memory.add_interaction_memory(f"Player sold {item} for {price} gold", details)
+                
+                # Update relationship and state
+                if response.get("success"):
+                    char_memory.improve_relationship(0.1)
+                    char_state.stress = max(0, char_state.stress - 0.1)
+                
+                # Check schedule availability for future interactions
+                available, availability_reason = schedule.is_available_for_interaction(current_hour)
+                if not available:
+                    # Add schedule information to response
+                    original_message = response.get('message', '')
+                    schedule_info = f"\n\n({npc.name} is currently {availability_reason})"
+                    response['message'] = original_message + schedule_info
+                
+                # Store personal facts
+                if "personal_fact" in kwargs:
+                    char_memory.add_personal_fact(
+                        kwargs["personal_fact"]["category"],
+                        kwargs["personal_fact"]["fact"]
+                    )
+        
         # Enhance with Phase 3 systems if available
         if PHASE3_AVAILABLE and response.get("success", False) and interaction_id == "talk":
             npc = self.npc_manager.get_npc(npc_id)
@@ -578,6 +781,20 @@ What tale will you weave in this living tapestry of stories?
                     active_threads=narrative_context.get('active_threads', []) if narrative_context else [],
                     recent_events=self.get_recent_events(limit=5)
                 )
+                
+                # Enhance with character memory and state if available
+                if NARRATIVE_SYSTEMS_AVAILABLE:
+                    char_memory = self.character_memory_manager.get_or_create_memory(npc_id, npc.name)
+                    char_state = self.character_state_manager.get_or_create_state(npc_id, npc.name)
+                    
+                    # Override mood with dynamic state
+                    dialogue_context.current_mood = char_state.mood.value
+                    
+                    # Add memory-based greeting if this is first interaction
+                    if not char_memory.memories:
+                        base_message = response.get('message', '')
+                        greeting = char_memory.get_contextual_greeting()
+                        response['message'] = f"{greeting} {base_message}"
                 
                 # Generate enhanced dialogue
                 base_message = response.get('message', '')
@@ -620,6 +837,69 @@ What tale will you weave in this living tapestry of stories?
         return result
         
     def get_gambling_stats(self) -> Dict[str, Any]: return self.gambling_manager.get_player_stats(self.player.id)
+    
+    # ==================== NARRATIVE SYSTEM ACCESS ====================
+    
+    def get_narrative_status(self) -> Dict[str, Any]:
+        """Get comprehensive status of all narrative systems."""
+        if not NARRATIVE_SYSTEMS_AVAILABLE:
+            return {"available": False, "message": "Narrative systems not initialized"}
+        
+        status = {"available": True}
+        
+        # Story orchestrator status (includes tension, pacing, threads, etc.)
+        if hasattr(self, 'story_orchestrator'):
+            status.update(self.story_orchestrator.get_story_status())
+        
+        # Character relationship summary
+        if hasattr(self, 'character_memory_manager'):
+            status['relationships'] = self.character_memory_manager.get_relationship_summary()
+        
+        # Reputation network summary
+        if hasattr(self, 'reputation_network'):
+            status['reputation'] = self.reputation_network.get_overall_reputation_summary()
+        
+        # Schedule status
+        if hasattr(self, 'schedule_manager'):
+            current_hour = self.clock.get_current_time().total_hours % 24
+            status['schedules'] = self.schedule_manager.get_schedule_summary(current_hour)
+        
+        return status
+    
+    def get_available_quests(self) -> List[Dict[str, Any]]:
+        """Get all available quests."""
+        if NARRATIVE_SYSTEMS_AVAILABLE and hasattr(self, 'story_orchestrator'):
+            return self.story_orchestrator.quest_generator.get_available_quests()
+        return []
+    
+    def get_active_quests(self) -> List[Dict[str, Any]]:
+        """Get all active quests."""
+        if NARRATIVE_SYSTEMS_AVAILABLE and hasattr(self, 'story_orchestrator'):
+            return self.story_orchestrator.quest_generator.get_active_quests()
+        return []
+    
+    def accept_quest(self, quest_id: str) -> bool:
+        """Accept a quest by ID."""
+        if NARRATIVE_SYSTEMS_AVAILABLE and hasattr(self, 'story_orchestrator'):
+            success = self.story_orchestrator.quest_generator.accept_quest(quest_id)
+            if success:
+                self._add_event(f"Accepted quest: {quest_id}", "quest_accepted", {"quest_id": quest_id})
+            return success
+        return False
+    
+    def save_narrative_state(self, force: bool = False) -> bool:
+        """Manually save narrative state."""
+        if NARRATIVE_SYSTEMS_AVAILABLE and hasattr(self, 'narrative_persistence'):
+            session_id = getattr(self, '_session_id', 'manual_save')
+            return self.narrative_persistence.save_all_narrative_state(session_id)
+        return False
+    
+    def load_narrative_state(self, timestamp: Optional[int] = None) -> bool:
+        """Load narrative state from save."""
+        if NARRATIVE_SYSTEMS_AVAILABLE and hasattr(self, 'narrative_persistence'):
+            session_id = getattr(self, '_session_id', 'manual_save')
+            return self.narrative_persistence.load_narrative_state(session_id, timestamp)
+        return False
     
     def process_command(self, command: str) -> Dict[str, Any]:
         original_command = command
@@ -706,6 +986,24 @@ What tale will you weave in this living tapestry of stories?
                 retry_result = self._attempt_smart_retry(command, result)
                 if retry_result:
                     return retry_result
+        
+        # Process command through story orchestrator for narrative consequences
+        if NARRATIVE_SYSTEMS_AVAILABLE and hasattr(self, 'story_orchestrator'):
+            story_notifications = self.story_orchestrator.process_player_action(original_command, result, self)
+            
+            # Add any story notifications to the result
+            if story_notifications:
+                existing_message = result.get('message', '')
+                story_text = '\n'.join(story_notifications)
+                
+                if existing_message:
+                    result['message'] = f"{existing_message}\n\n{story_text}"
+                else:
+                    result['message'] = story_text
+                
+                # Also add as events for the event formatter
+                for notification in story_notifications:
+                    self._add_event(notification, "story_consequence", {"command": original_command})
         
         return result
     
