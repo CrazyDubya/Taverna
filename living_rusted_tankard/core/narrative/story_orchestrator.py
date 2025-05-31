@@ -320,10 +320,10 @@ class StoryOrchestrator:
         notifications = []
         current_time = time.time()
         
-        # Check if tension has been too low for too long
-        if self.overall_tension < 0.2 and len(self.story_threads) < 2:
+        # Check if tension has been too low for too long (lowered thresholds for Phase 1)
+        if self.overall_tension < 0.5 and len(self.story_threads) < 3:
             time_since_last_event = current_time - self.last_major_event
-            if time_since_last_event > 7200:  # 2 hours
+            if time_since_last_event > 600:  # 10 minutes
                 # Generate a new story thread to add interest
                 new_thread = self._generate_tension_building_thread(game_state)
                 if new_thread:
@@ -331,8 +331,8 @@ class StoryOrchestrator:
                     notifications.append(f"Something interesting is developing: {new_thread.title}")
                     self.last_major_event = current_time
         
-        # Check if player seems disengaged
-        if self.player_engagement_score < 0.3:
+        # Check if player seems disengaged (lowered threshold for Phase 1)
+        if self.player_engagement_score < 0.8:
             time_since_action = current_time - self.last_player_action
             if time_since_action > 1800:  # 30 minutes of inactivity
                 # Create an attention-grabbing event

@@ -197,7 +197,7 @@ class ConsequenceEngine:
                 r"assist.*",
                 r"volunteer.*"
             ],
-            minimum_occurrences=3,
+            minimum_occurrences=1,
             time_window_hours=48.0,
             consequence_type=ConsequenceType.MEDIUM_TERM,
             consequence_scope=ConsequenceScope.COMMUNITY,
@@ -244,7 +244,7 @@ class ConsequenceEngine:
                 r"negotiate.*success",
                 r"trade.*advantage"
             ],
-            minimum_occurrences=5,
+            minimum_occurrences=2,
             time_window_hours=72.0,
             consequence_type=ConsequenceType.MEDIUM_TERM,
             consequence_scope=ConsequenceScope.LOCAL,
@@ -312,7 +312,7 @@ class ConsequenceEngine:
                 r"purchase.*multiple",
                 r"spend.*gold"
             ],
-            minimum_occurrences=4,
+            minimum_occurrences=2,
             time_window_hours=48.0,
             required_gold_min=200,
             consequence_type=ConsequenceType.MEDIUM_TERM,

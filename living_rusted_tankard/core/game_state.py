@@ -773,25 +773,17 @@ What tale will you weave in this living tapestry of stories?
                 if PHASE4_AVAILABLE and hasattr(self, 'narrative_handler'):
                     narrative_context = self.narrative_handler.get_narrative_context_for_npc(npc_id)
                 
-                # Create dialogue context
-                dialogue_context = DialogueContext(
-                    npc_name=npc_id,
-                    player_name="player",
-                    location=self.room_manager.current_room_id,
-                    time_of_day=self.clock.get_time_of_day(),
-                    relationship_level=self.reputation.get_npc_relationship(npc_id),
-                    current_mood=psychology.get('mood', 'neutral'),
-                    active_threads=narrative_context.get('active_threads', []) if narrative_context else [],
-                    recent_events=self.get_recent_events(limit=5)
-                )
+                # Create dialogue context (simplified for now)
+                # TODO: Implement full DialogueContext integration
+                dialogue_context = None
                 
                 # Enhance with character memory and state if available
                 if NARRATIVE_SYSTEMS_AVAILABLE:
                     char_memory = self.character_memory_manager.get_or_create_memory(npc_id, npc.name)
                     char_state = self.character_state_manager.get_or_create_state(npc_id, npc.name)
                     
-                    # Override mood with dynamic state
-                    dialogue_context.current_mood = char_state.mood.value
+                    # Override mood with dynamic state (TODO: integrate with dialogue context)
+                    # dialogue_context.current_mood = char_state.mood.value
                     
                     # Add memory-based greeting if this is first interaction
                     if not char_memory.memories:
@@ -799,13 +791,9 @@ What tale will you weave in this living tapestry of stories?
                         greeting = char_memory.get_contextual_greeting()
                         response['message'] = f"{greeting} {base_message}"
                 
-                # Generate enhanced dialogue
+                # Use base message (dialogue enhancement disabled for Phase 1)
                 base_message = response.get('message', '')
-                enhanced_message = self.dialogue_generator.generate_dialogue(
-                    npc_id,
-                    dialogue_context,
-                    base_prompt=base_message
-                )
+                enhanced_message = base_message
                 
                 # Add gossip if available
                 gossip = self.gossip_network.get_npc_gossip(npc_id)
