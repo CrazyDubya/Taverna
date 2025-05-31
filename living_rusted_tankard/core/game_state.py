@@ -393,6 +393,9 @@ class GameState:
                     self.secrets_manager.initialize_npc_secrets(npc_id)
                 self.goal_manager.initialize_npc_goals(npc_id, npc)
         
+        # Update NPCs to ensure they spawn on game start
+        self.npc_manager.update_all_npcs(self.clock.current_time_hours)
+        
         # Add a single, immersive welcome message
         welcome_message = """
 The heavy wooden door of The Living Rusted Tankard creaks open, and warm lamplight spills out to greet you. The scent of roasted meat, fresh ale, and old wood fills your nostrils as you step inside. Flickering candles cast dancing shadows on weathered walls adorned with tavern keepsakes.
@@ -774,8 +777,8 @@ What tale will you weave in this living tapestry of stories?
                 dialogue_context = DialogueContext(
                     npc_name=npc_id,
                     player_name="player",
-                    location=self.player.current_room,
-                    time_of_day=self.clock.get_time_period(),
+                    location=self.room_manager.current_room_id,
+                    time_of_day=self.clock.get_time_of_day(),
                     relationship_level=self.reputation.get_npc_relationship(npc_id),
                     current_mood=psychology.get('mood', 'neutral'),
                     active_threads=narrative_context.get('active_threads', []) if narrative_context else [],

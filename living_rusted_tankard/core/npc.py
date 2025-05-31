@@ -91,7 +91,17 @@ class NPC(BaseModel):
         if not scheduled_now:
             if self.is_present: self.is_present = False
         else:
-            if self.last_visit_day < current_day:
+            # First time initialization (never visited)
+            if self.last_visit_day == -1:
+                self.last_visit_day = current_day
+                # Essential NPCs like bartenders should always spawn initially
+                if self.npc_type.name == "BARKEEP":
+                    self.is_present = True
+                else:
+                    self.is_present = random.random() < self.visit_frequency
+                if self.is_present:
+                    self.shared_news_ids = []
+            elif self.last_visit_day < current_day:
                 self.last_visit_day = current_day
                 self.is_present = random.random() < self.visit_frequency
                 if self.is_present: # Reset shared news for a new visit day
@@ -111,9 +121,9 @@ class NPC(BaseModel):
             if self.is_present:
                 if self.id == "travelling_merchant_elara": 
                     self._update_elara_inventory(npc_definitions)
-                event_bus.dispatch(NPCSpawnEvent(npc_id=self.id, data={'location': self.current_room or 'unknown'}))
+                event_bus.dispatch(NPCSpawnEvent(npc=self, location=self.current_room or 'unknown'))
             else:
-                event_bus.dispatch(NPCDepartEvent(npc_id=self.id, data={'reason': 'schedule_change'}))
+                event_bus.dispatch(NPCDepartEvent(npc=self, reason='schedule_change'))
         return state_changed
 
     def _update_elara_inventory(self, npc_definitions: Optional[Dict[str, Any]] = None):
@@ -185,7 +195,7 @@ class NPC(BaseModel):
 
         # News Sharing Logic
         news_manager = game_state.news_manager
-        current_day = game_state.clock.get_current_day() 
+        current_day = int(game_state.clock.current_time_hours // 24) 
         # Assuming active_global_events is a list of strings on GameState
         active_events = getattr(game_state, 'active_global_events', []) 
         

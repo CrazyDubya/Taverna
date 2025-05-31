@@ -184,7 +184,8 @@ class ConversationMemory:
             npc_name=self.npc_name,
             start_time=time.time(),
             last_interaction=time.time(),
-            current_state=ConversationState.GREETING
+            current_state=ConversationState.GREETING,
+            current_topic=None  # Will be set when first topic is discussed
         )
         
         return self.current_conversation
