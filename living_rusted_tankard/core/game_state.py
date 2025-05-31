@@ -645,11 +645,12 @@ What tale will you weave in this living tapestry of stories?
                     }
                     
                     action = action_map.get(parsed['action'], parsed['action'])
-                    target = parsed.get('target', '')
+                    target = parsed.get('target', '') or ''  # Handle None targets
                     # Clean up target - remove articles like "the", "a", "an"
-                    target_words = target.split()
-                    if target_words and target_words[0].lower() in ['the', 'a', 'an']:
-                        target = ' '.join(target_words[1:])
+                    if target:  # Only process if target exists
+                        target_words = target.split()
+                        if target_words and target_words[0].lower() in ['the', 'a', 'an']:
+                            target = ' '.join(target_words[1:])
                     extras = parsed.get('extras', {})
                     
                     # Construct game command

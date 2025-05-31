@@ -92,7 +92,7 @@ class Parser:
                     "format": "json",
                     "stream": False
                 },
-                timeout=15  # Long-gemma needs more time for complex prompts
+                timeout=30  # Give LLM proper time to think
             )
             response.raise_for_status()
             result = response.json()
@@ -133,51 +133,21 @@ Player Status:
   Energy: {snapshot.player_state.get('energy', 100)}%
   Tiredness: {snapshot.player_state.get('tiredness', 0)}%"""
 
-        return f"""You are a command parser for "The Living Rusted Tankard" fantasy tavern game.
+        return f"""Parse this tavern game command: "{text}"
 
-CURRENT GAME STATE:
-📍 Location: {snapshot.location}
-🕰️ Time: {snapshot.time_of_day}{npc_context}{inventory_context}{player_context}
+Location: {snapshot.location}
+Time: {snapshot.time_of_day}{npc_context}
+Gold: {snapshot.player_state.get('gold', 0)}
 
-🎮 VALID GAME COMMANDS:
-- "look" / "look around" → look at current room
-- "status" → check player status  
-- "inventory" → check items
-- "read notice board" → read bounty/job postings
-- "interact <npc_name> talk" → talk to NPCs (if present)
-- "jobs" → see available work
-- "work <job_name>" → do work (clean_tables, wash_dishes)
-- "buy <item>" → purchase items  
-- "move <location>" → travel to new areas
-- "accept bounty <id>" → take on bounties
-- "wait" / "wait <hours>" → pass time (spawns NPCs)
-- "sleep" / "sleep <hours>" → rest and recover
-- "help" → get command list
+Common patterns:
+- "talk to X" → "interact X talk"
+- "go to X" → "move X" 
+- "check my X" → "status" or "inventory"
+- "buy X" → "buy X"
+- "what time" → "status"
 
-🧠 PARSING RULES:
-1. Map natural language to exact game commands
-2. "talk to X" → "interact X talk" 
-3. "go to X" → "move X"
-4. "check my X" → based on X (inventory, status, etc.)
-5. Time-related: "what time" → "status" 
-6. If no NPCs present, suggest "wait" or "move"
-
-📝 INPUT TO PARSE: "{text}"
-
-Respond with JSON only:
-{{
-  "action": "command_verb",
-  "target": "target_noun", 
-  "extras": {{"additional": "parameters"}}
-}}
-
-EXAMPLES:
-• "talk to the bartender" → {{"action": "interact", "target": "bartender", "extras": {{"interaction": "talk"}}}}
-• "go upstairs" → {{"action": "move", "target": "upstairs", "extras": {{}}}}
-• "check my status" → {{"action": "status", "target": "", "extras": {{}}}}
-• "I want to buy ale" → {{"action": "buy", "target": "ale", "extras": {{}}}}
-• "what jobs are available" → {{"action": "jobs", "target": "", "extras": {{}}}}
-• "tell me about this place" → {{"action": "look", "target": "", "extras": {{}}}}"""
+JSON response:
+{{"action": "verb", "target": "noun", "extras": {{}}}}"""
     
     def _parse_with_regex(self, text: str) -> Command:
         """Fallback to regex-based command parsing."""
