@@ -27,10 +27,10 @@ class GameSnapshot:
     player_state: Dict[str, Any]
 
 class Parser:
-    def __init__(self, use_llm: bool = True, llm_endpoint: str = "http://localhost:11434"):
+    def __init__(self, use_llm: bool = True, llm_endpoint: str = "http://localhost:11434", model: str = "long-gemma"):
         self.use_llm = use_llm
         self.llm_endpoint = llm_endpoint
-        self.llm_model = "gemma2:2b"  # Use the available model
+        self.llm_model = model  # Engine uses long-gemma by default
         
         # Define basic command patterns for fallback
         self.command_patterns = {
@@ -92,7 +92,7 @@ class Parser:
                     "format": "json",
                     "stream": False
                 },
-                timeout=5  # Give LLM enough time to respond
+                timeout=15  # Long-gemma needs more time for complex prompts
             )
             response.raise_for_status()
             result = response.json()
@@ -109,40 +109,75 @@ class Parser:
             raise Exception("Failed to parse with LLM") from e
     
     def _build_llm_prompt(self, text: str, snapshot: GameSnapshot) -> str:
-        """Construct the prompt for the LLM."""
-        return f"""
-        Parse the following player input into a structured command.
+        """Construct the enhanced prompt for the long-Gemma LLM with comprehensive context."""
         
-        Current Location: {snapshot.location}
-        Time: {snapshot.time_of_day}
-        Visible Objects: {', '.join(snapshot.visible_objects)}
-        Visible NPCs: {', '.join(snapshot.visible_npcs)}
-        Player State: {json.dumps(snapshot.player_state, indent=2)}
+        # Build NPC context
+        npc_context = ""
+        if snapshot.visible_npcs:
+            npc_context = f"\nNPCs Present: {', '.join(snapshot.visible_npcs)}"
+            npc_context += "\n  Available interactions: 'interact <npc_name> talk'"
+        else:
+            npc_context = "\nNPCs Present: None (try 'wait' or 'move' to find NPCs)"
         
-        Input: "{text}"
+        # Build inventory context 
+        inventory_context = ""
+        if snapshot.visible_objects:
+            inventory_context = f"\nPlayer Inventory: {', '.join(snapshot.visible_objects)}"
+        else:
+            inventory_context = "\nPlayer Inventory: Empty"
         
-        Respond with a JSON object containing:
-        {{
-            "action": "verb",  // one of: look, go, take, use, talk, ask, etc.
-            "target": "noun",  // the primary target of the action
-            "extras": {{}}      // any additional parameters
-        }}
-        
-        Example 1:
-        Input: "look at the bar"
-        Response: {{"action": "look", "target": "bar", "extras": {{}}}}
-        
-        Example 2:
-        Input: "ask the bartender about rumors"
-        Response: {{"action": "ask", "target": "bartender", "extras": {{"topic": "rumors"}}}}
-        
-        Example 3:
-        Input: "go to the door"
-        Response: {{"action": "go", "target": "door", "extras": {{}}}}
-        
-        Now parse this input:
-        "{text}"
-        """
+        # Build player state context
+        player_context = f"""
+Player Status:
+  Gold: {snapshot.player_state.get('gold', 0)}
+  Energy: {snapshot.player_state.get('energy', 100)}%
+  Tiredness: {snapshot.player_state.get('tiredness', 0)}%"""
+
+        return f"""You are a command parser for "The Living Rusted Tankard" fantasy tavern game.
+
+CURRENT GAME STATE:
+📍 Location: {snapshot.location}
+🕰️ Time: {snapshot.time_of_day}{npc_context}{inventory_context}{player_context}
+
+🎮 VALID GAME COMMANDS:
+- "look" / "look around" → look at current room
+- "status" → check player status  
+- "inventory" → check items
+- "read notice board" → read bounty/job postings
+- "interact <npc_name> talk" → talk to NPCs (if present)
+- "jobs" → see available work
+- "work <job_name>" → do work (clean_tables, wash_dishes)
+- "buy <item>" → purchase items  
+- "move <location>" → travel to new areas
+- "accept bounty <id>" → take on bounties
+- "wait" / "wait <hours>" → pass time (spawns NPCs)
+- "sleep" / "sleep <hours>" → rest and recover
+- "help" → get command list
+
+🧠 PARSING RULES:
+1. Map natural language to exact game commands
+2. "talk to X" → "interact X talk" 
+3. "go to X" → "move X"
+4. "check my X" → based on X (inventory, status, etc.)
+5. Time-related: "what time" → "status" 
+6. If no NPCs present, suggest "wait" or "move"
+
+📝 INPUT TO PARSE: "{text}"
+
+Respond with JSON only:
+{{
+  "action": "command_verb",
+  "target": "target_noun", 
+  "extras": {{"additional": "parameters"}}
+}}
+
+EXAMPLES:
+• "talk to the bartender" → {{"action": "interact", "target": "bartender", "extras": {{"interaction": "talk"}}}}
+• "go upstairs" → {{"action": "move", "target": "upstairs", "extras": {{}}}}
+• "check my status" → {{"action": "status", "target": "", "extras": {{}}}}
+• "I want to buy ale" → {{"action": "buy", "target": "ale", "extras": {{}}}}
+• "what jobs are available" → {{"action": "jobs", "target": "", "extras": {{}}}}
+• "tell me about this place" → {{"action": "look", "target": "", "extras": {{}}}}"""
     
     def _parse_with_regex(self, text: str) -> Command:
         """Fallback to regex-based command parsing."""

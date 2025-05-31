@@ -16,6 +16,17 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
+def get_available_ollama_models(ollama_url: str = "http://localhost:11434") -> List[str]:
+    """Get list of available models from Ollama."""
+    try:
+        response = requests.get(f"{ollama_url}/api/tags", timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        return [model['name'] for model in data.get('models', [])]
+    except Exception as e:
+        logger.warning(f"Failed to get Ollama models: {e}")
+        return ["gemma2:2b", "long-gemma"]  # Fallback defaults
+
 class AIPlayerPersonality(Enum):
     CURIOUS_EXPLORER = "curious_explorer"
     CAUTIOUS_MERCHANT = "cautious_merchant" 
@@ -40,7 +51,20 @@ class AIPlayer:
         self.name = name
         self.personality = personality
         self.ollama_url = ollama_url
-        self.model = model
+        
+        # Validate model availability and set defaults
+        available_models = get_available_ollama_models(ollama_url)
+        if model in available_models:
+            self.model = model
+        elif "gemma2:2b" in available_models:
+            self.model = "gemma2:2b"  # Default fallback
+            logger.info(f"Requested model '{model}' not available, using gemma2:2b")
+        elif available_models:
+            self.model = available_models[0]  # Use first available
+            logger.info(f"Using first available model: {self.model}")
+        else:
+            self.model = model  # Keep original if can't check
+            logger.warning(f"Could not verify model availability, using: {model}")
         self.session_id = None
         self.action_history: List[AIPlayerAction] = []
         self.game_state = {}

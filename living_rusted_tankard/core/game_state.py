@@ -8,7 +8,13 @@ import logging
 import re
 from sqlmodel import SQLModel, Field as SQLField, Column, JSON, DateTime
 from core.player import PlayerState
-from core.llm.parser import Parser, GameSnapshot
+# Import directly from the parser file that supports model parameter
+import importlib.util
+spec = importlib.util.spec_from_file_location("direct_parser", "core/llm/parser.py")
+direct_parser = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(direct_parser)
+Parser = direct_parser.Parser
+GameSnapshot = direct_parser.GameSnapshot
 
 logger = logging.getLogger(__name__)
 from .clock import GameClock, GameTime
@@ -184,13 +190,13 @@ class GameState:
         else:
             self._narrative_handler_pending = False
         
-        # Initialize LLM Parser
+        # Initialize LLM Parser with long-gemma engine
         try:
-            self.llm_parser = Parser(use_llm=True)
-            logger.info("LLM Parser initialized")
+            self.llm_parser = Parser(use_llm=True, model="long-gemma")
+            logger.info("LLM Parser initialized with long-gemma engine")
         except Exception as e:
             logger.warning(f"LLM Parser initialization failed: {e}, falling back to regex")
-            self.llm_parser = Parser(use_llm=False)
+            self.llm_parser = Parser(use_llm=False, model="long-gemma")
         
         self._initialize_game()
 
