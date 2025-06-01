@@ -671,28 +671,39 @@ What tale will you weave in this living tapestry of stories?
         }
     
     def interact_with_npc(self, npc_id: str, interaction_id: str, **kwargs) -> Dict[str, Any]:
+        # Map short NPC names to full IDs for convenience
+        npc_id_map = {
+            "gene": "gene_bartender",
+            "grim": "gene_bartender", 
+            "serena": "serena_waitress",
+            "mira": "serena_waitress",  # fallback
+            "jenkins": "old_man_jenkins",
+            "elara": "travelling_merchant_elara"
+        }
+        actual_npc_id = npc_id_map.get(npc_id.lower(), npc_id)
+        
         # Get base response from NPC manager
-        response = self.npc_manager.interact_with_npc(npc_id, self.player, interaction_id, self, **kwargs)
+        response = self.npc_manager.interact_with_npc(actual_npc_id, self.player, interaction_id, self, **kwargs)
         
         # Enhanced narrative systems integration
         if NARRATIVE_SYSTEMS_AVAILABLE and response.get("success", False):
-            npc = self.npc_manager.get_npc(npc_id)
+            npc = self.npc_manager.get_npc(actual_npc_id)
             if npc:
                 # Get current game time for schedule checks
                 current_hour = self.clock.get_current_time().total_hours % 24
                 
                 # 1. Character Memory System
-                char_memory = self.character_memory_manager.get_or_create_memory(npc_id, npc.name)
+                char_memory = self.character_memory_manager.get_or_create_memory(actual_npc_id, npc.name)
                 
                 # 2. Character State System
                 profession = getattr(npc, 'profession', 'common_folk')
-                char_state = self.character_state_manager.get_or_create_state(npc_id, npc.name)
+                char_state = self.character_state_manager.get_or_create_state(actual_npc_id, npc.name)
                 
                 # 3. Personality System
-                personality = self.personality_manager.get_or_create_personality(npc_id, npc.name, profession)
+                personality = self.personality_manager.get_or_create_personality(actual_npc_id, npc.name, profession)
                 
                 # 4. Schedule System
-                schedule = self.schedule_manager.get_or_create_schedule(npc_id, npc.name, profession)
+                schedule = self.schedule_manager.get_or_create_schedule(actual_npc_id, npc.name, profession)
                 
                 # 5. Conversation Continuity System
                 relationship_level = char_memory.get_relationship_level().value
@@ -708,7 +719,7 @@ What tale will you weave in this living tapestry of stories?
                         
                         # Start or continue conversation
                         greeting, conv_context = self.conversation_manager.start_conversation(
-                            npc_id, npc.name, relationship_level, time_since_last
+                            actual_npc_id, npc.name, relationship_level, time_since_last
                         )
                         
                         # Apply personality modifications to dialogue
@@ -731,7 +742,7 @@ What tale will you weave in this living tapestry of stories?
                     
                     # Record reputation action
                     self.reputation_network.record_player_action(
-                        "successful_trade", "completed", [npc_id],
+                        "successful_trade", "completed", [actual_npc_id],
                         {"item": item, "price": price, "witnessed_directly": True}
                     )
                     
@@ -763,15 +774,15 @@ What tale will you weave in this living tapestry of stories?
         
         # Enhance with Phase 3 systems if available
         if PHASE3_AVAILABLE and response.get("success", False) and interaction_id == "talk":
-            npc = self.npc_manager.get_npc(npc_id)
+            npc = self.npc_manager.get_npc(actual_npc_id)
             if npc:
                 # Get psychological state
-                psychology = self.npc_psychology.get_npc_state(npc_id)
+                psychology = self.npc_psychology.get_npc_state(actual_npc_id)
                 
                 # Get narrative context if Phase 4 is available
                 narrative_context = None
                 if PHASE4_AVAILABLE and hasattr(self, 'narrative_handler'):
-                    narrative_context = self.narrative_handler.get_narrative_context_for_npc(npc_id)
+                    narrative_context = self.narrative_handler.get_narrative_context_for_npc(actual_npc_id)
                 
                 # Create dialogue context (simplified for now)
                 # TODO: Implement full DialogueContext integration
@@ -779,8 +790,8 @@ What tale will you weave in this living tapestry of stories?
                 
                 # Enhance with character memory and state if available
                 if NARRATIVE_SYSTEMS_AVAILABLE:
-                    char_memory = self.character_memory_manager.get_or_create_memory(npc_id, npc.name)
-                    char_state = self.character_state_manager.get_or_create_state(npc_id, npc.name)
+                    char_memory = self.character_memory_manager.get_or_create_memory(actual_npc_id, npc.name)
+                    char_state = self.character_state_manager.get_or_create_state(actual_npc_id, npc.name)
                     
                     # Override mood with dynamic state (TODO: integrate with dialogue context)
                     # dialogue_context.current_mood = char_state.mood.value
@@ -796,14 +807,14 @@ What tale will you weave in this living tapestry of stories?
                 enhanced_message = base_message
                 
                 # Add gossip if available
-                gossip = self.gossip_network.get_npc_gossip(npc_id)
+                gossip = self.gossip_network.get_npc_gossip(actual_npc_id)
                 if gossip:
                     enhanced_message += f"\n\n{npc.name} leans in and whispers: '{gossip}'"
                 
                 # Add goal-driven dialogue
-                current_goal = self.goal_manager.get_current_goal(npc_id)
+                current_goal = self.goal_manager.get_current_goal(actual_npc_id)
                 if current_goal and hasattr(current_goal, 'involves_player') and current_goal.involves_player:
-                    goal_dialogue = self.goal_manager.get_goal_dialogue(npc_id, current_goal)
+                    goal_dialogue = self.goal_manager.get_goal_dialogue(actual_npc_id, current_goal)
                     if goal_dialogue:
                         enhanced_message += f"\n\n{goal_dialogue}"
                 
@@ -811,7 +822,7 @@ What tale will you weave in this living tapestry of stories?
         
         # Check bounty objectives
         if response.get("success", False) and interaction_id == "talk": 
-            self._check_bounty_objective_report_to_npc(npc_id)
+            self._check_bounty_objective_report_to_npc(actual_npc_id)
         
         return response
     

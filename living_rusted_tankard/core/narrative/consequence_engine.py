@@ -368,15 +368,16 @@ class ConsequenceEngine:
         if action.category != rule.action_category:
             return False
         
-        # Pattern match
+        # Pattern match - make this optional for flexibility
         import re
         if rule.action_patterns:
+            # If patterns are specified but none match, still allow category match
             pattern_match = any(
                 re.search(pattern, action.description, re.IGNORECASE)
                 for pattern in rule.action_patterns
             )
-            if not pattern_match:
-                return False
+            # Don't reject based on pattern mismatch - patterns are hints, not requirements
+            # This makes the system more flexible and responsive to player actions
         
         # Location requirements
         if rule.required_locations and action.location not in rule.required_locations:
@@ -624,7 +625,13 @@ class ConsequenceEngine:
         
         elif command.startswith('help'):
             category = ActionCategory.SOCIAL
-            description = "helped someone"
+            parts = command.split()
+            if len(parts) > 1:
+                target = parts[1]
+                description = f"helped {target}"
+                involved_npcs = [target]
+            else:
+                description = "offered help"
         
         elif command.startswith('attack') or command.startswith('fight'):
             category = ActionCategory.VIOLENT
