@@ -67,8 +67,8 @@ class PlayerState(BaseModel):
         
     # Private attributes
     no_sleep_quest_unlocked_internal: bool = Field(default=False)
-    npc_state_internal: Optional['NPCState'] = Field(default=None, exclude=True)
-    npc_state_internal_cls: Optional[Type['NPCState']] = Field(default=None, exclude=True)
+    npc_state_internal: Optional[Any] = Field(default=None, exclude=True)
+    npc_state_internal_cls: Optional[Type] = Field(default=None, exclude=True)
     
     def __init__(self, **data):
         super().__init__(**data)

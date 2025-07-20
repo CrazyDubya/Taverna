@@ -69,11 +69,11 @@ def check_npc_psychology():
     print("\n🧠 CHECKING NPC PSYCHOLOGY SYSTEM:")
     
     checks = [
-        ("core/npc/__init__.py", "NPC Package Init"),
-        ("core/npc/psychology.py", "Psychology System"),
-        ("core/npc/behavioral_rules.py", "Behavioral Rules"),
-        ("core/npc/schedules.py", "NPC Schedules"),
-        ("core/npc/relationships.py", "Relationship System")
+        ("core/npc_modules/__init__.py", "NPC Package Init"),
+        ("core/npc_modules/psychology.py", "Psychology System"),
+        ("core/npc_modules/behavioral_rules.py", "Behavioral Rules"),
+        ("core/npc_modules/schedules.py", "NPC Schedules"),
+        ("core/npc_modules/relationships.py", "Relationship System")
     ]
     
     success = all(check_file_exists(path, desc) for path, desc in checks)
@@ -104,9 +104,9 @@ def check_feature_coverage():
     checks = [
         ("core/world/atmosphere.py", ["AtmosphereState", "SensoryDetail", "AtmosphereManager"]),
         ("core/world/area.py", ["TavernArea", "Feature", "Connection", "hidden", "discovered"]),
-        ("core/npc/schedules.py", ["NPCSchedule", "ScheduleBlock", "DayType"]),
-        ("core/npc/behavioral_rules.py", ["BehaviorEngine", "BehaviorRule", "Condition"]),
-        ("core/npc/relationships.py", ["RelationshipWeb", "Conflict", "Alliance"]),
+        ("core/npc_modules/schedules.py", ["NPCSchedule", "ScheduleBlock", "DayType"]),
+        ("core/npc_modules/behavioral_rules.py", ["BehaviorEngine", "BehaviorRule", "Condition"]),
+        ("core/npc_modules/relationships.py", ["RelationshipWeb", "Conflict", "Alliance"]),
         ("core/world/floor_manager.py", ["FloorManager", "FloorInfo", "vertical_sound"])
     ]
     
@@ -173,7 +173,7 @@ def check_code_quality():
     
     # Check file counts
     world_files = count_files_in_directory("core/world")
-    npc_files = count_files_in_directory("core/npc")
+    npc_files = count_files_in_directory("core/npc_modules")
     test_files = count_files_in_directory("tests")
     
     print(f"  📁 World System Files: {world_files}")
