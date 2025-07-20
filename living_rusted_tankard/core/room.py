@@ -8,11 +8,12 @@ if TYPE_CHECKING:
     from core.player import PlayerState # Assuming PlayerState is in core.player
 
 from core.clock import GameClock # Assuming GameClock is in core.clock
+from core.config import CONFIG
 # using validator instead of model_validator for compatibility with v1
 
-# Cost to rent a room for one night
-ROOM_COST = 10
-STORAGE_CHEST_COST_MODIFIER = 5 # Added
+# Constants from configuration
+ROOM_COST = CONFIG.ROOM_COST
+STORAGE_CHEST_COST_MODIFIER = CONFIG.STORAGE_CHEST_COST_MODIFIER
 
 
 class Room(BaseModel):

@@ -108,9 +108,10 @@ async def main():
         else:
             print("❌ Game server not responding")
             return
-    except:
+    except (requests.exceptions.RequestException, ConnectionError) as e:
         print("❌ Cannot connect to game server at localhost:8888")
         print("   Make sure the game server is running first")
+        print(f"   Error: {e}")
         return
     
     # Create AI player

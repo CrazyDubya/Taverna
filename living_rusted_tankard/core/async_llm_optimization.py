@@ -58,7 +58,8 @@ class AsyncContextCache:
                 try:
                     present_npcs = game_state.npc_manager.get_present_npcs()
                     state_elements.extend([npc.id for npc in present_npcs])
-                except:
+                except (AttributeError, TypeError) as e:
+                    logger.debug(f"Could not get NPC states for hashing: {e}")
                     pass
             
             combined = "|".join(state_elements)
