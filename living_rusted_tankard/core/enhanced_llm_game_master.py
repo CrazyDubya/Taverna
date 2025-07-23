@@ -344,7 +344,8 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
         
         try:
             time_str = game_state.clock.get_formatted_time()
-        except:
+        except (AttributeError, TypeError) as e:
+            logger.debug(f"Could not get formatted time: {e}")
             time_str = "Unknown time"
         
         context = {

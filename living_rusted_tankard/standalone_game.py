@@ -163,7 +163,7 @@ the low murmur of conversation, punctuated by occasional laughter or the clink o
         parts = cmd.split()
         try:
             amount = int(parts[1]) if len(parts) > 1 else 10
-        except:
+        except (ValueError, IndexError):
             amount = 10
             
         if amount > self.gold:
@@ -267,7 +267,7 @@ Active Bounties: {len(self.active_bounties)}"""
     def wait(self, cmd):
         try:
             hours = float(cmd.split()[1]) if len(cmd.split()) > 1 else 1
-        except:
+        except (ValueError, IndexError):
             hours = 1
             
         self.advance_time(hours)

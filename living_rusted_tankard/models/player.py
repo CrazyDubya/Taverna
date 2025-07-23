@@ -1,10 +1,25 @@
-from typing import List, Dict, Any, Optional, TYPE_CHECKING, Type, TypeVar
+from typing import List, Dict, Any, Optional, TYPE_CHECKING, Type, TypeVar, Tuple
 from pydantic import BaseModel, Field
 import uuid
+import sys
+import os
+
+# Add the parent directory to the path to allow import
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 if TYPE_CHECKING:
     from ..core.clock import GameClock
     from .npc_state import NPCState
+
+# Import configuration
+try:
+    from core.config import CONFIG
+except ImportError:
+    # Fallback if config not available
+    class FallbackConfig:
+        STARTING_GOLD = 40
+        MAX_TIREDNESS = 100
+    CONFIG = FallbackConfig()
 
 T = TypeVar('T')
 
@@ -33,11 +48,11 @@ class PlayerState(BaseModel):
     """Tracks all player-specific state."""
     player_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = "Traveler"
-    gold: int = 40
+    gold: int = Field(default_factory=lambda: CONFIG.STARTING_GOLD)
     inventory: Inventory = Field(default_factory=Inventory)
     has_room: bool = False
     room_number: Optional[str] = None
-    tiredness: float = 0.0  # 0-100 scale
+    tiredness: float = 0.0  # 0-CONFIG.MAX_TIREDNESS scale
     rest_immune: bool = False  # For the no-sleep meta-quest
     flags: Dict[str, Any] = Field(default_factory=dict)  # For tracking quest states, etc.
     energy: float = 1.0  # 0.0 to 1.0 scale
@@ -51,16 +66,16 @@ class PlayerState(BaseModel):
         return self.player_id
         
     # Private attributes
-    _no_sleep_quest_unlocked: bool = Field(default=False, exclude=True)
-    _npc_state: Optional['NPCState'] = Field(default=None, exclude=True)
-    _npc_state_cls: Optional[Type['NPCState']] = Field(default=None, exclude=True)
+    no_sleep_quest_unlocked_internal: bool = Field(default=False)
+    npc_state_internal: Optional[Any] = Field(default=None, exclude=True)
+    npc_state_internal_cls: Optional[Type] = Field(default=None, exclude=True)
     
     def __init__(self, **data):
         super().__init__(**data)
         # Initialize NPC state class
-        if '_npc_state_cls' not in self.__dict__:
+        if 'npc_state_internal_cls' not in self.__dict__:
             from .npc_state import NPCState
-            self._npc_state_cls = NPCState
+            self.npc_state_internal_cls = NPCState
     
     # Removed __post_init__ since we're using Pydantic's __init__
     
@@ -70,7 +85,7 @@ class PlayerState(BaseModel):
         
         Once unlocked, the quest remains unlocked even if the player gets a room.
         """
-        return self._no_sleep_quest_unlocked
+        return self.no_sleep_quest_unlocked_internal
     
     @no_sleep_quest_unlocked.setter
     def no_sleep_quest_unlocked(self, value: bool) -> None:
@@ -79,30 +94,30 @@ class PlayerState(BaseModel):
         Once unlocked, the quest remains unlocked even if the player gets a room.
         """
         # Once unlocked, it stays unlocked
-        if value or self._no_sleep_quest_unlocked:
-            self._no_sleep_quest_unlocked = True
+        if value or self.no_sleep_quest_unlocked_internal:
+            self.no_sleep_quest_unlocked_internal = True
         else:
-            self._no_sleep_quest_unlocked = value
+            self.no_sleep_quest_unlocked_internal = value
         
     def model_dump(self) -> Dict[str, Any]:
         """Convert model to dictionary, including private attributes."""
         data = super().model_dump()
-        data['_no_sleep_quest_unlocked'] = self._no_sleep_quest_unlocked
+        data['no_sleep_quest_unlocked_internal'] = self.no_sleep_quest_unlocked_internal
         return data
     
     @classmethod
     def model_validate(cls, data: Dict[str, Any]) -> 'PlayerState':
         """Create model from dictionary, handling private attributes."""
-        no_sleep_quest = data.pop('_no_sleep_quest_unlocked', False)
+        no_sleep_quest = data.pop('no_sleep_quest_unlocked_internal', False)
         instance = super().model_validate(data)
-        instance._no_sleep_quest_unlocked = no_sleep_quest
+        instance.no_sleep_quest_unlocked_internal = no_sleep_quest
         return instance
     
     @property
     def npc_state(self) -> 'NPCState':
-        if self._npc_state is None:
-            self._npc_state = self._npc_state_cls()
-        return self._npc_state
+        if self.npc_state_internal is None:
+            self.npc_state_internal = self.npc_state_internal_cls()
+        return self.npc_state_internal
     
     def add_gold(self, amount: int) -> bool:
         """Add gold to player's purse. Returns True if successful."""
@@ -132,23 +147,23 @@ class PlayerState(BaseModel):
     def update_tiredness(self, delta: float, game_clock: 'GameClock') -> None:
         """Update tiredness based on time passed and game state."""
         # Store current game time for quest tracking
-        self._current_game_time = game_clock.time.hours
+        self.current_game_time_internal = game_clock.time.hours
         
         # Track when player was last awake for the no-sleep quest
-        if not hasattr(self, '_last_awake_time'):
-            self._last_awake_time = self._current_game_time
+        if not hasattr(self, 'last_awake_time_internal'):
+            self.last_awake_time_internal = self.current_game_time_internal
             
         # Base tiredness increase
-        self.tiredness = min(100, self.tiredness + delta * 0.5)
+        self.tiredness = min(CONFIG.MAX_TIREDNESS, self.tiredness + delta * 0.5)
         
         # If player has a room, they can rest and recover
         if self.has_room and not self.rest_immune:
             self.tiredness = max(0, self.tiredness - delta * 0.2)
             # Reset awake time when player rests in a room
-            self._last_awake_time = self._current_game_time
+            self.last_awake_time_internal = self.current_game_time_internal
         
         # Check for exhaustion effects
-        if self.tiredness >= 100 and not self.rest_immune:
+        if self.tiredness >= CONFIG.MAX_TIREDNESS and not self.rest_immune:
             self._handle_exhaustion(game_clock)
     
     def _handle_exhaustion(self, game_clock: 'GameClock') -> None:
@@ -187,12 +202,12 @@ class PlayerState(BaseModel):
             str: Response to the player's question
         """
         # Check if player has been awake for 48+ hours and doesn't have a room
-        if not self.has_room and not self._no_sleep_quest_unlocked:
+        if not self.has_room and not self.no_sleep_quest_unlocked_internal:
             # Check if 48 hours have passed in game time
-            if hasattr(self, '_current_game_time') and hasattr(self, '_last_awake_time'):
-                time_awake = self._current_game_time - self._last_awake_time
+            if hasattr(self, 'current_game_time_internal') and hasattr(self, 'last_awake_time_internal'):
+                time_awake = self.current_game_time_internal - self.last_awake_time_internal
                 if time_awake >= 48:
-                    self._no_sleep_quest_unlocked = True
+                    self.no_sleep_quest_unlocked_internal = True
                     return ("You feel a strange energy coursing through you. "
                            "You no longer feel the need for sleep...")
                 else:
@@ -224,7 +239,7 @@ class PlayerState(BaseModel):
         player = cls(
             player_id=data.get('player_id', str(uuid.uuid4())),
             name=data.get('name', 'Traveler'),
-            gold=data.get('gold', 40),
+            gold=data.get('gold', CONFIG.STARTING_GOLD),
             has_room=data.get('has_room', False),
             room_number=data.get('room_number'),
             tiredness=data.get('tiredness', 0.0),
@@ -234,3 +249,7 @@ class PlayerState(BaseModel):
         )
         player.inventory = Inventory(data.get('inventory', {}))
         return player
+
+
+# Alias for backward compatibility
+Player = PlayerState
