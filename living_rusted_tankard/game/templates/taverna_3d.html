@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Living Rusted Tankard - 3D Enhanced</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        .medieval-font {
+            font-family: 'MedievalSharp', cursive;
+        }
+        .narrative-feed {
+            height: calc(100vh - 250px);
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .interactive-tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: #fbbf24;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -100%);
+            white-space: nowrap;
+        }
+        .click-indicator {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fbbf24;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+            pointer-events: none;
+            z-index: 999;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .atmosphere-controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0,0,0,0.7);
+            padding: 1rem;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+        }
+        .mood-indicator {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(0,0,0,0.7);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            color: #fbbf24;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+    <div class="flex h-screen p-4 gap-4">
+        <!-- 3D Visualization Panel -->
+        <div class="w-1/2 flex flex-col">
+            <div class="bg-gray-800 p-2 rounded-t-lg">
+                <h2 class="text-xl font-bold text-amber-500 medieval-font text-center">The Tavern</h2>
+            </div>
+            <div class="flex-1 bg-gray-800 rounded-b-lg p-2 relative">
+                <div id="canvas-container" class="canvas-container">
+                    <canvas id="tavern-canvas"></canvas>
+                    <div id="interactive-tooltip" class="interactive-tooltip hidden"></div>
+                    <div id="click-indicator" class="click-indicator hidden"></div>
+                    
+                    <!-- Atmosphere Controls -->
+                    <div class="atmosphere-controls">
+                        <div class="mb-2">
+                            <label class="block text-xs mb-1">Time of Day</label>
+                            <input type="range" id="time-slider" min="0" max="24" value="18" class="w-full">
+                            <span id="time-display" class="text-xs">6:00 PM</span>
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-xs mb-1">Crowd Level</label>
+                            <input type="range" id="crowd-slider" min="0" max="10" value="5" class="w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs mb-1">Weather</label>
+                            <select id="weather-select" class="bg-gray-700 text-white text-xs p-1 rounded">
+                                <option value="clear">Clear</option>
+                                <option value="rain">Rain</option>
+                                <option value="storm">Storm</option>
+                                <option value="fog">Fog</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Mood Indicator -->
+                    <div id="mood-indicator" class="mood-indicator">
+                        🍺 Cozy Evening
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Interface Panel -->
+        <div class="w-1/2 flex flex-col">
+            <header class="bg-gray-800 p-4 rounded-lg shadow-lg mb-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-amber-500 medieval-font">Living Rusted Tankard</h1>
+                <div class="flex gap-2">
+                    <button id="3d-settings-btn" class="bg-purple-700 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm">
+                        🎮 3D
+                    </button>
+                    <button id="settings-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1 rounded text-sm">
+                        ⚙️ Settings
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Game Status Bar -->
+            <div class="bg-gray-800 p-3 rounded-lg mb-4 flex justify-between items-center text-sm">
+                <div class="flex gap-4">
+                    <span id="gold-display" class="text-yellow-400">💰 Gold: 0</span>
+                    <span id="health-display" class="text-red-400">❤️ Health: 100</span>
+                    <span id="time-display-text" class="text-blue-400">🕰️ Evening</span>
+                </div>
+                <div id="present-npcs" class="text-green-400">
+                    👥 NPCs: 0
+                </div>
+            </div>
+            
+            <!-- Narrative Feed -->
+            <div class="narrative-feed bg-gray-800 p-4 rounded-lg shadow-lg overflow-y-auto mb-4">
+                <div id="narrative-content" class="space-y-4">
+                    <div class="text-amber-100 italic text-center py-4">
+                        🍺 Welcome to the mystical tavern where time flows differently...
+                        <br><br>
+                        <span class="text-green-400">✨ Enhanced with 3D visualization! Click on objects in the 3D view to interact.</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="bg-gray-800 p-3 rounded-lg mb-4">
+                <div class="flex gap-2 flex-wrap">
+                    <button class="quick-action bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded text-sm" data-command="status">
+                        📊 Status
+                    </button>
+                    <button class="quick-action bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm" data-command="look around">
+                        👁️ Look
+                    </button>
+                    <button class="quick-action bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm" data-command="inventory">
+                        🎒 Inventory
+                    </button>
+                    <button class="quick-action bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm" data-command="talk to bartender">
+                        💬 Talk
+                    </button>
+                    <button class="quick-action bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm" data-command="gamble 5">
+                        🎲 Gamble
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
+                <div class="flex gap-2">
+                    <input 
+                        type="text" 
+                        id="command-input" 
+                        class="flex-1 bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="What would you like to do?"
+                        autofocus
+                    >
+                    <button 
+                        id="submit-btn"
+                        class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                        ⚡
+                    </button>
+                </div>
+                <div class="mt-2 text-xs text-gray-400 text-center">
+                    Try: "look around", "talk to bartender", "gamble 10", or click objects in 3D view
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D Settings Modal -->
+    <div id="3d-settings-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
+            <h2 class="text-xl font-bold text-amber-500 mb-4">3D Visualization Settings</h2>
+            
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" id="enable-particles" checked class="mr-2">
+                    <span class="text-gray-300">Enable Particle Effects</span>
+                </label>
+            </div>
+            
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" id="enable-shadows" checked class="mr-2">
+                    <span class="text-gray-300">Enable Shadows</span>
+                </label>
+            </div>
+            
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" id="enable-sound" checked class="mr-2">
+                    <span class="text-gray-300">Enable Ambient Sounds</span>
+                </label>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-300 mb-2">Graphics Quality</label>
+                <select id="quality-select" class="w-full bg-gray-700 text-white p-2 rounded-lg">
+                    <option value="low">Low (Better Performance)</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High (Better Quality)</option>
+                </select>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="close-3d-settings-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-4 py-2 rounded">
+                    Cancel
+                </button>
+                <button id="save-3d-settings-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                    Save 3D Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced 3D Tavern Visualization
+        class TavernVisualization {
+            constructor() {
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({ 
+                    canvas: document.getElementById('tavern-canvas'),
+                    antialias: true,
+                    alpha: true
+                });
+                
+                this.interactiveObjects = [];
+                this.particles = null;
+                this.ambientSound = null;
+                this.currentWeather = 'clear';
+                this.timeOfDay = 18; // 6 PM
+                this.crowdLevel = 5;
+                
+                this.init();
+                this.setupEventListeners();
+                this.animate();
+            }
+            
+            init() {
+                // Setup renderer
+                const container = document.getElementById('canvas-container');
+                const rect = container.getBoundingClientRect();
+                this.camera.aspect = rect.width / rect.height;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(rect.width, rect.height);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.setClearColor(0x1a1a1a, 1);
+                
+                // Setup camera position
+                this.camera.position.set(5, 3, 8);
+                this.camera.lookAt(0, 0, 0);
+                
+                // Add orbit controls
+                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.maxPolarAngle = Math.PI / 2;
+                
+                this.createTavernEnvironment();
+                this.setupLighting();
+                this.createParticleSystem();
+                this.setupInteractiveObjects();
+            }
+            
+            createTavernEnvironment() {
+                // Floor
+                const floorGeometry = new THREE.PlaneGeometry(20, 20);
+                const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+                const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+                floor.rotation.x = -Math.PI / 2;
+                floor.receiveShadow = true;
+                this.scene.add(floor);
+                
+                // Walls
+                this.createWalls();
+                
+                // Bar counter
+                this.createBarCounter();
+                
+                // Tables and chairs
+                this.createFurniture();
+                
+                // Fireplace
+                this.createFireplace();
+                
+                // Decorations
+                this.createDecorations();
+            }
+            
+            createWalls() {
+                const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x654321 });
+                
+                // Back wall
+                const backWallGeometry = new THREE.PlaneGeometry(20, 8);
+                const backWall = new THREE.Mesh(backWallGeometry, wallMaterial);
+                backWall.position.set(0, 4, -10);
+                this.scene.add(backWall);
+                
+                // Side walls
+                const sideWallGeometry = new THREE.PlaneGeometry(20, 8);
+                const leftWall = new THREE.Mesh(sideWallGeometry, wallMaterial);
+                leftWall.position.set(-10, 4, 0);
+                leftWall.rotation.y = Math.PI / 2;
+                this.scene.add(leftWall);
+                
+                const rightWall = new THREE.Mesh(sideWallGeometry, wallMaterial);
+                rightWall.position.set(10, 4, 0);
+                rightWall.rotation.y = -Math.PI / 2;
+                this.scene.add(rightWall);
+            }
+            
+            createBarCounter() {
+                const barGeometry = new THREE.BoxGeometry(6, 1, 2);
+                const barMaterial = new THREE.MeshLambertMaterial({ color: 0x4A4A4A });
+                const bar = new THREE.Mesh(barGeometry, barMaterial);
+                bar.position.set(-3, 0.5, -8);
+                bar.castShadow = true;
+                bar.userData = { type: 'bar', name: 'Bar Counter', action: 'talk to bartender' };
+                this.scene.add(bar);
+                this.interactiveObjects.push(bar);
+                
+                // Bartender (simple representation)
+                const bartenderGeometry = new THREE.CapsuleGeometry(0.5, 2);
+                const bartenderMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+                const bartender = new THREE.Mesh(bartenderGeometry, bartenderMaterial);
+                bartender.position.set(-3, 1.5, -9);
+                bartender.userData = { type: 'npc', name: 'Bartender', action: 'talk to bartender' };
+                this.scene.add(bartender);
+                this.interactiveObjects.push(bartender);
+            }
+            
+            createFurniture() {
+                // Tables
+                for (let i = 0; i < 4; i++) {
+                    const tableGeometry = new THREE.CylinderGeometry(1, 1, 0.1);
+                    const tableMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+                    const table = new THREE.Mesh(tableGeometry, tableMaterial);
+                    
+                    const x = (i % 2) * 4 - 2;
+                    const z = Math.floor(i / 2) * 4 - 2;
+                    table.position.set(x, 0.5, z);
+                    table.castShadow = true;
+                    table.userData = { type: 'table', name: `Table ${i + 1}`, action: 'sit at table' };
+                    this.scene.add(table);
+                    this.interactiveObjects.push(table);
+                    
+                    // Chairs around table
+                    for (let j = 0; j < 4; j++) {
+                        const chairGeometry = new THREE.BoxGeometry(0.5, 1, 0.5);
+                        const chairMaterial = new THREE.MeshLambertMaterial({ color: 0x654321 });
+                        const chair = new THREE.Mesh(chairGeometry, chairMaterial);
+                        
+                        const angle = (j / 4) * Math.PI * 2;
+                        const chairX = x + Math.cos(angle) * 1.5;
+                        const chairZ = z + Math.sin(angle) * 1.5;
+                        chair.position.set(chairX, 0.5, chairZ);
+                        chair.rotation.y = angle;
+                        chair.castShadow = true;
+                        this.scene.add(chair);
+                    }
+                }
+            }
+            
+            createFireplace() {
+                const fireplaceGeometry = new THREE.BoxGeometry(3, 2, 1);
+                const fireplaceMaterial = new THREE.MeshLambertMaterial({ color: 0x2F2F2F });
+                const fireplace = new THREE.Mesh(fireplaceGeometry, fireplaceMaterial);
+                fireplace.position.set(8, 1, -9);
+                fireplace.userData = { type: 'fireplace', name: 'Fireplace', action: 'warm yourself by the fire' };
+                this.scene.add(fireplace);
+                this.interactiveObjects.push(fireplace);
+                
+                // Fire effect (simple)
+                const fireGeometry = new THREE.ConeGeometry(0.5, 1.5, 8);
+                const fireMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0xFF4500,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const fire = new THREE.Mesh(fireGeometry, fireMaterial);
+                fire.position.set(8, 1.5, -8.5);
+                this.scene.add(fire);
+                
+                // Animate fire
+                this.fireAnimation = () => {
+                    fire.rotation.y += 0.05;
+                    fire.scale.y = 1 + 0.1 * Math.sin(Date.now() * 0.01);
+                };
+            }
+            
+            createDecorations() {
+                // Hanging lanterns
+                for (let i = 0; i < 3; i++) {
+                    const lanternGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8);
+                    const lanternMaterial = new THREE.MeshLambertMaterial({ color: 0xFFD700 });
+                    const lantern = new THREE.Mesh(lanternGeometry, lanternMaterial);
+                    lantern.position.set(-6 + i * 6, 5, 0);
+                    this.scene.add(lantern);
+                    
+                    // Lantern light
+                    const light = new THREE.PointLight(0xFFAA00, 0.5, 10);
+                    light.position.copy(lantern.position);
+                    this.scene.add(light);
+                }
+            }
+            
+            setupLighting() {
+                // Ambient light
+                this.ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+                this.scene.add(this.ambientLight);
+                
+                // Main tavern light
+                this.mainLight = new THREE.DirectionalLight(0xFFAA00, 0.8);
+                this.mainLight.position.set(0, 10, 5);
+                this.mainLight.castShadow = true;
+                this.mainLight.shadow.mapSize.width = 2048;
+                this.mainLight.shadow.mapSize.height = 2048;
+                this.scene.add(this.mainLight);
+                
+                // Fireplace light
+                this.fireLight = new THREE.PointLight(0xFF4500, 1, 10);
+                this.fireLight.position.set(8, 2, -8);
+                this.scene.add(this.fireLight);
+            }
+            
+            createParticleSystem() {
+                const particleCount = 200;
+                const positions = new Float32Array(particleCount * 3);
+                const velocities = new Float32Array(particleCount * 3);
+                
+                for (let i = 0; i < particleCount * 3; i += 3) {
+                    positions[i] = (Math.random() - 0.5) * 20;
+                    positions[i + 1] = Math.random() * 8;
+                    positions[i + 2] = (Math.random() - 0.5) * 20;
+                    
+                    velocities[i] = (Math.random() - 0.5) * 0.02;
+                    velocities[i + 1] = Math.random() * 0.02;
+                    velocities[i + 2] = (Math.random() - 0.5) * 0.02;
+                }
+                
+                const particleGeometry = new THREE.BufferGeometry();
+                particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                
+                const particleMaterial = new THREE.PointsMaterial({
+                    color: 0xFFFFFF,
+                    size: 0.05,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                
+                this.particles = new THREE.Points(particleGeometry, particleMaterial);
+                this.particles.userData = { velocities };
+                this.scene.add(this.particles);
+            }
+            
+            setupInteractiveObjects() {
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+                
+                this.renderer.domElement.addEventListener('mousemove', (event) => {
+                    const rect = this.renderer.domElement.getBoundingClientRect();
+                    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                    
+                    this.handleMouseOver();
+                });
+                
+                this.renderer.domElement.addEventListener('click', (event) => {
+                    this.handleClick();
+                });
+            }
+            
+            handleMouseOver() {
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.interactiveObjects);
+                
+                const tooltip = document.getElementById('interactive-tooltip');
+                
+                if (intersects.length > 0) {
+                    const object = intersects[0].object;
+                    tooltip.textContent = `Click to ${object.userData.action}`;
+                    tooltip.style.display = 'block';
+                    
+                    const rect = this.renderer.domElement.getBoundingClientRect();
+                    tooltip.style.left = (event.clientX - rect.left) + 'px';
+                    tooltip.style.top = (event.clientY - rect.top) + 'px';
+                    
+                    this.renderer.domElement.style.cursor = 'pointer';
+                } else {
+                    tooltip.style.display = 'none';
+                    this.renderer.domElement.style.cursor = 'default';
+                }
+            }
+            
+            handleClick() {
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.interactiveObjects);
+                
+                if (intersects.length > 0) {
+                    const object = intersects[0].object;
+                    const command = object.userData.action;
+                    
+                    // Show click indicator
+                    this.showClickIndicator(intersects[0].point);
+                    
+                    // Execute command
+                    document.getElementById('command-input').value = command;
+                    document.getElementById('submit-btn').click();
+                }
+            }
+            
+            showClickIndicator(position) {
+                const indicator = document.getElementById('click-indicator');
+                const vector = position.clone().project(this.camera);
+                
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                const x = (vector.x * 0.5 + 0.5) * rect.width;
+                const y = (vector.y * -0.5 + 0.5) * rect.height;
+                
+                indicator.style.left = x + 'px';
+                indicator.style.top = y + 'px';
+                indicator.style.display = 'block';
+                
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 1000);
+            }
+            
+            updateAtmosphere() {
+                const hour = this.timeOfDay;
+                const crowdLevel = this.crowdLevel;
+                
+                // Update lighting based on time
+                const dayIntensity = Math.max(0, Math.sin((hour - 6) * Math.PI / 12));
+                const nightIntensity = 1 - dayIntensity;
+                
+                this.ambientLight.intensity = 0.2 + nightIntensity * 0.3;
+                this.mainLight.intensity = 0.5 + nightIntensity * 0.5;
+                
+                // Update mood indicator
+                let mood = '';
+                if (hour < 6 || hour > 22) mood = '🌙 Quiet Night';
+                else if (hour < 12) mood = '☀️ Peaceful Morning';
+                else if (hour < 18) mood = '🌤️ Lazy Afternoon';
+                else mood = '🍺 Lively Evening';
+                
+                if (crowdLevel > 7) mood += ' (Bustling)';
+                else if (crowdLevel < 3) mood += ' (Empty)';
+                
+                document.getElementById('mood-indicator').textContent = mood;
+                
+                // Update weather effects
+                this.updateWeatherEffects();
+            }
+            
+            updateWeatherEffects() {
+                if (!this.particles) return;
+                
+                const positions = this.particles.geometry.attributes.position.array;
+                const velocities = this.particles.userData.velocities;
+                
+                for (let i = 0; i < positions.length; i += 3) {
+                    switch (this.currentWeather) {
+                        case 'rain':
+                            velocities[i + 1] = -0.05; // Downward motion
+                            break;
+                        case 'storm':
+                            velocities[i] = (Math.random() - 0.5) * 0.1;
+                            velocities[i + 1] = -0.08;
+                            break;
+                        case 'fog':
+                            velocities[i] = (Math.random() - 0.5) * 0.01;
+                            velocities[i + 1] = (Math.random() - 0.5) * 0.01;
+                            break;
+                        default: // clear
+                            velocities[i] = (Math.random() - 0.5) * 0.02;
+                            velocities[i + 1] = Math.random() * 0.02;
+                            break;
+                    }
+                    
+                    positions[i] += velocities[i];
+                    positions[i + 1] += velocities[i + 1];
+                    positions[i + 2] += velocities[i + 2];
+                    
+                    // Reset particles that go out of bounds
+                    if (positions[i + 1] < 0 || positions[i + 1] > 8) {
+                        positions[i] = (Math.random() - 0.5) * 20;
+                        positions[i + 1] = Math.random() * 8;
+                        positions[i + 2] = (Math.random() - 0.5) * 20;
+                    }
+                }
+                
+                this.particles.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            setupEventListeners() {
+                // Time slider
+                document.getElementById('time-slider').addEventListener('input', (e) => {
+                    this.timeOfDay = parseInt(e.target.value);
+                    const hour = this.timeOfDay % 24;
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                    document.getElementById('time-display').textContent = `${displayHour}:00 ${ampm}`;
+                    this.updateAtmosphere();
+                });
+                
+                // Crowd slider
+                document.getElementById('crowd-slider').addEventListener('input', (e) => {
+                    this.crowdLevel = parseInt(e.target.value);
+                    this.updateAtmosphere();
+                });
+                
+                // Weather selector
+                document.getElementById('weather-select').addEventListener('change', (e) => {
+                    this.currentWeather = e.target.value;
+                    this.updateAtmosphere();
+                });
+            }
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                this.controls.update();
+                
+                if (this.fireAnimation) {
+                    this.fireAnimation();
+                }
+                
+                this.updateWeatherEffects();
+                
+                this.renderer.render(this.scene, this.camera);
+            }
+            
+            resize() {
+                const container = document.getElementById('canvas-container');
+                const rect = container.getBoundingClientRect();
+                this.camera.aspect = rect.width / rect.height;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(rect.width, rect.height);
+            }
+        }
+        
+        // Game Interface Logic
+        class GameInterface {
+            constructor() {
+                this.sessionId = this.generateSessionId();
+                this.gameState = {
+                    gold: 50,
+                    health: 100,
+                    npcs: []
+                };
+                
+                this.setupEventListeners();
+                this.addMessage("system", "Welcome to The Living Rusted Tankard! This enhanced 3D version allows you to click on objects in the tavern to interact with them.");
+                this.addMessage("system", "Try clicking on the bartender, tables, or fireplace in the 3D view, or use the quick action buttons below.");
+            }
+            
+            generateSessionId() {
+                return 'session_' + Math.random().toString(36).substr(2, 9);
+            }
+            
+            setupEventListeners() {
+                // Command input
+                document.getElementById('command-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.submitCommand();
+                    }
+                });
+                
+                document.getElementById('submit-btn').addEventListener('click', () => {
+                    this.submitCommand();
+                });
+                
+                // Quick action buttons
+                document.querySelectorAll('.quick-action').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const command = button.getAttribute('data-command');
+                        document.getElementById('command-input').value = command;
+                        this.submitCommand();
+                    });
+                });
+                
+                // Settings modals
+                document.getElementById('3d-settings-btn').addEventListener('click', () => {
+                    document.getElementById('3d-settings-modal').classList.remove('hidden');
+                });
+                
+                document.getElementById('close-3d-settings-btn').addEventListener('click', () => {
+                    document.getElementById('3d-settings-modal').classList.add('hidden');
+                });
+                
+                document.getElementById('save-3d-settings-btn').addEventListener('click', () => {
+                    this.save3DSettings();
+                    document.getElementById('3d-settings-modal').classList.add('hidden');
+                });
+                
+                // Window resize
+                window.addEventListener('resize', () => {
+                    if (window.tavernViz) {
+                        window.tavernViz.resize();
+                    }
+                });
+            }
+            
+            async submitCommand() {
+                const input = document.getElementById('command-input');
+                const command = input.value.trim();
+                
+                if (!command) return;
+                
+                input.value = '';
+                
+                // Add user message
+                this.addMessage("user", command);
+                
+                // Simulate game response (in real implementation, this would call the API)
+                await this.processCommand(command);
+            }
+            
+            async processCommand(command) {
+                // Simulate processing delay
+                await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+                
+                let response = '';
+                let updateState = false;
+                
+                // Simple command processing simulation
+                const lowerCommand = command.toLowerCase();
+                
+                if (lowerCommand.includes('status')) {
+                    response = `You currently have ${this.gameState.gold} gold coins and ${this.gameState.health} health. You feel the warmth of the tavern around you.`;
+                } else if (lowerCommand.includes('look')) {
+                    response = "The tavern bustles with activity. You see a sturdy bar counter where the bartender serves drinks, several round tables with chairs, and a cozy fireplace crackling in the corner. Lanterns cast a warm golden glow throughout the room.";
+                } else if (lowerCommand.includes('inventory')) {
+                    response = "Your inventory contains: A worn leather pouch with some coins, a small dagger, and a mysterious key you found earlier.";
+                } else if (lowerCommand.includes('talk to bartender') || lowerCommand.includes('bartender')) {
+                    response = "The gruff bartender looks up from cleaning a mug. 'Welcome to The Rusted Tankard, stranger. What'll it be? We've got ale, wine, and stories aplenty. Or perhaps you'd fancy a game of dice?'";
+                } else if (lowerCommand.includes('gamble') || lowerCommand.includes('dice')) {
+                    const amount = this.extractNumber(command) || 5;
+                    const win = Math.random() > 0.5;
+                    if (win) {
+                        this.gameState.gold += amount;
+                        response = `🎲 Lucky! You won ${amount} gold coins! The dice gods smile upon you.`;
+                    } else {
+                        this.gameState.gold = Math.max(0, this.gameState.gold - amount);
+                        response = `🎲 The dice clatter to a stop... You lost ${amount} gold coins. Better luck next time!`;
+                    }
+                    updateState = true;
+                } else if (lowerCommand.includes('fireplace') || lowerCommand.includes('warm')) {
+                    response = "You approach the crackling fireplace. The warmth seeps into your bones, and you feel a sense of peace. The dancing flames seem to whisper ancient secrets.";
+                    this.gameState.health = Math.min(100, this.gameState.health + 5);
+                    updateState = true;
+                } else if (lowerCommand.includes('sit at table') || lowerCommand.includes('table')) {
+                    response = "You pull out a chair and sit at the worn wooden table. From here, you can observe the other patrons and plan your next move. A serving wench approaches with a knowing smile.";
+                } else if (lowerCommand.includes('help')) {
+                    response = "Available commands: status, look around, inventory, talk to bartender, gamble [amount], sit at table, warm yourself by the fire. You can also click on objects in the 3D view to interact with them!";
+                } else {
+                    const responses = [
+                        "That's an interesting idea, but perhaps try something else.",
+                        "The tavern keeper looks at you curiously. Maybe try a different approach?",
+                        "You ponder that action, but decide against it for now.",
+                        "The mysterious atmosphere of the tavern makes you reconsider that choice."
+                    ];
+                    response = responses[Math.floor(Math.random() * responses.length)];
+                }
+                
+                this.addMessage("game", response);
+                
+                if (updateState) {
+                    this.updateGameDisplay();
+                }
+            }
+            
+            extractNumber(text) {
+                const match = text.match(/\d+/);
+                return match ? parseInt(match[0]) : null;
+            }
+            
+            addMessage(type, content) {
+                const narrativeContent = document.getElementById('narrative-content');
+                const messageDiv = document.createElement('div');
+                
+                if (type === 'user') {
+                    messageDiv.className = 'bg-blue-900 border-l-4 border-blue-500 p-3 rounded';
+                    messageDiv.innerHTML = `<span class="text-blue-300 font-semibold">You:</span> ${content}`;
+                } else if (type === 'game') {
+                    messageDiv.className = 'bg-gray-700 border-l-4 border-amber-500 p-3 rounded';
+                    messageDiv.innerHTML = `<span class="text-amber-400 font-semibold">⚡</span> ${content}`;
+                } else {
+                    messageDiv.className = 'text-center text-gray-400 italic';
+                    messageDiv.textContent = content;
+                }
+                
+                narrativeContent.appendChild(messageDiv);
+                narrativeContent.scrollTop = narrativeContent.scrollHeight;
+            }
+            
+            updateGameDisplay() {
+                document.getElementById('gold-display').textContent = `💰 Gold: ${this.gameState.gold}`;
+                document.getElementById('health-display').textContent = `❤️ Health: ${this.gameState.health}`;
+                document.getElementById('present-npcs').textContent = `👥 NPCs: ${this.gameState.npcs.length}`;
+            }
+            
+            save3DSettings() {
+                const settings = {
+                    particles: document.getElementById('enable-particles').checked,
+                    shadows: document.getElementById('enable-shadows').checked,
+                    sound: document.getElementById('enable-sound').checked,
+                    quality: document.getElementById('quality-select').value
+                };
+                
+                localStorage.setItem('tavern3d_settings', JSON.stringify(settings));
+                this.addMessage("system", "3D settings saved successfully!");
+                
+                // Apply settings to 3D visualization
+                if (window.tavernViz) {
+                    this.apply3DSettings(settings);
+                }
+            }
+            
+            apply3DSettings(settings) {
+                if (window.tavernViz.particles) {
+                    window.tavernViz.particles.visible = settings.particles;
+                }
+                
+                if (window.tavernViz.renderer) {
+                    window.tavernViz.renderer.shadowMap.enabled = settings.shadows;
+                }
+                
+                // Quality settings could adjust renderer pixel ratio, shadow map size, etc.
+                const qualityMultiplier = settings.quality === 'high' ? 1.5 : settings.quality === 'low' ? 0.5 : 1;
+                if (window.tavernViz.renderer) {
+                    window.tavernViz.renderer.setPixelRatio(window.devicePixelRatio * qualityMultiplier);
+                }
+            }
+        }
+        
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.tavernViz = new TavernVisualization();
+            window.gameInterface = new GameInterface();
+            
+            // Load saved 3D settings
+            const savedSettings = localStorage.getItem('tavern3d_settings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                document.getElementById('enable-particles').checked = settings.particles;
+                document.getElementById('enable-shadows').checked = settings.shadows;
+                document.getElementById('enable-sound').checked = settings.sound;
+                document.getElementById('quality-select').value = settings.quality;
+                window.gameInterface.apply3DSettings(settings);
+            }
+        });
+    </script>
+</body>
+</html>

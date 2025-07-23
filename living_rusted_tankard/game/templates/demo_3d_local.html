@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Living Rusted Tankard - 3D Enhanced Demo</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #111827;
+            color: #e5e7eb;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            padding: 1rem;
+            gap: 1rem;
+        }
+        
+        .visualization-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .game-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            background: #1f2937;
+            padding: 1rem;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+            color: #fbbf24;
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            background: #1f2937;
+            border-radius: 0 0 8px 8px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #374151;
+        }
+        
+        .pseudo-3d-scene {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #4b5563 0%, #1f2937 50%, #111827 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tavern-floor {
+            position: absolute;
+            bottom: 20%;
+            left: 10%;
+            right: 10%;
+            height: 30%;
+            background: #8b4513;
+            border-radius: 50px;
+            transform: perspective(500px) rotateX(60deg);
+        }
+        
+        .bar-counter {
+            position: absolute;
+            bottom: 35%;
+            left: 20%;
+            width: 25%;
+            height: 15%;
+            background: #654321;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #8b4513;
+        }
+        
+        .bar-counter:hover {
+            background: #7d5a2d;
+            transform: scale(1.05);
+        }
+        
+        .bartender {
+            position: absolute;
+            bottom: 42%;
+            left: 22%;
+            width: 3%;
+            height: 12%;
+            background: #8b4513;
+            border-radius: 50% 50% 0 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .bartender:hover {
+            background: #a0652e;
+            transform: scale(1.1);
+        }
+        
+        .table {
+            position: absolute;
+            background: #8b4513;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #654321;
+        }
+        
+        .table:hover {
+            background: #a0652e;
+            transform: scale(1.1);
+        }
+        
+        .table1 {
+            bottom: 45%;
+            left: 45%;
+            width: 8%;
+            height: 6%;
+        }
+        
+        .table2 {
+            bottom: 45%;
+            right: 35%;
+            width: 8%;
+            height: 6%;
+        }
+        
+        .fireplace {
+            position: absolute;
+            bottom: 40%;
+            right: 15%;
+            width: 12%;
+            height: 20%;
+            background: #2f2f2f;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .fireplace:hover {
+            background: #404040;
+            transform: scale(1.05);
+        }
+        
+        .fire {
+            position: absolute;
+            top: 20%;
+            left: 20%;
+            right: 20%;
+            height: 60%;
+            background: radial-gradient(circle, #ff4500 0%, #ff6500 50%, #ff8500 100%);
+            border-radius: 50% 50% 0 0;
+            animation: flicker 1.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes flicker {
+            0% { transform: scaleY(1) scaleX(1); opacity: 0.8; }
+            100% { transform: scaleY(1.2) scaleX(0.9); opacity: 1; }
+        }
+        
+        .lantern {
+            position: absolute;
+            background: #ffd700;
+            border-radius: 50%;
+            width: 3%;
+            height: 4%;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        .lantern1 {
+            top: 15%;
+            left: 30%;
+        }
+        
+        .lantern2 {
+            top: 15%;
+            left: 50%;
+        }
+        
+        .lantern3 {
+            top: 15%;
+            left: 70%;
+        }
+        
+        @keyframes glow {
+            0% { box-shadow: 0 0 5px #ffd700; opacity: 0.8; }
+            100% { box-shadow: 0 0 20px #ffd700; opacity: 1; }
+        }
+        
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #ffffff;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float 3s linear infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) translateX(10px); opacity: 0; }
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: #fbbf24;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0,0,0,0.7);
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+        }
+        
+        .mood-indicator {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(0,0,0,0.7);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            color: #fbbf24;
+            font-weight: bold;
+        }
+        
+        .game-header {
+            background: #1f2937;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .game-title {
+            color: #fbbf24;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .status-bar {
+            background: #1f2937;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+        }
+        
+        .narrative-feed {
+            flex: 1;
+            background: #1f2937;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+        
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border-left: 4px solid;
+        }
+        
+        .message.user {
+            background: #1e3a8a;
+            border-color: #3b82f6;
+        }
+        
+        .message.game {
+            background: #374151;
+            border-color: #fbbf24;
+        }
+        
+        .message.system {
+            background: #065f46;
+            border-color: #10b981;
+        }
+        
+        .quick-actions {
+            background: #1f2937;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .quick-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background 0.3s;
+        }
+        
+        .quick-btn:hover {
+            background: #6366f1;
+        }
+        
+        .quick-btn.amber { background: #d97706; }
+        .quick-btn.amber:hover { background: #f59e0b; }
+        
+        .quick-btn.green { background: #059669; }
+        .quick-btn.green:hover { background: #10b981; }
+        
+        .quick-btn.purple { background: #7c3aed; }
+        .quick-btn.purple:hover { background: #8b5cf6; }
+        
+        .quick-btn.red { background: #dc2626; }
+        .quick-btn.red:hover { background: #ef4444; }
+        
+        .input-area {
+            background: #1f2937;
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .command-input {
+            flex: 1;
+            background: #374151;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 6px;
+            outline: none;
+        }
+        
+        .command-input:focus {
+            box-shadow: 0 0 0 2px #fbbf24;
+        }
+        
+        .submit-btn {
+            background: #d97706;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background: #f59e0b;
+        }
+        
+        .settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .modal-content {
+            background: #1f2937;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .modal-title {
+            color: #fbbf24;
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #d1d5db;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            background: #374151;
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-gray {
+            background: #374151;
+            color: #d1d5db;
+        }
+        
+        .btn-gray:hover {
+            background: #4b5563;
+        }
+        
+        .btn-purple {
+            background: #7c3aed;
+            color: white;
+        }
+        
+        .btn-purple:hover {
+            background: #8b5cf6;
+        }
+        
+        .instruction-text {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 3D Visualization Panel -->
+        <div class="visualization-panel">
+            <div class="panel-header">🏰 The Rusted Tankard - 3D View</div>
+            <div class="canvas-container">
+                <div class="pseudo-3d-scene">
+                    <!-- Tavern Floor -->
+                    <div class="tavern-floor"></div>
+                    
+                    <!-- Bar Counter -->
+                    <div class="bar-counter" data-action="talk to bartender" data-name="Bar Counter"></div>
+                    
+                    <!-- Bartender -->
+                    <div class="bartender" data-action="talk to bartender" data-name="Bartender"></div>
+                    
+                    <!-- Tables -->
+                    <div class="table table1" data-action="sit at table" data-name="Round Table"></div>
+                    <div class="table table2" data-action="sit at table" data-name="Corner Table"></div>
+                    
+                    <!-- Fireplace -->
+                    <div class="fireplace" data-action="warm yourself by the fire" data-name="Fireplace">
+                        <div class="fire"></div>
+                    </div>
+                    
+                    <!-- Hanging Lanterns -->
+                    <div class="lantern lantern1"></div>
+                    <div class="lantern lantern2"></div>
+                    <div class="lantern lantern3"></div>
+                    
+                    <!-- Particle System -->
+                    <div class="particles" id="particles"></div>
+                    
+                    <!-- Controls -->
+                    <div class="controls">
+                        <div style="margin-bottom: 0.5rem;">
+                            <label>Time: <input type="range" id="time-slider" min="0" max="24" value="18" style="width: 100px;"></label>
+                            <span id="time-display">6:00 PM</span>
+                        </div>
+                        <div style="margin-bottom: 0.5rem;">
+                            <label>Crowd: <input type="range" id="crowd-slider" min="0" max="10" value="5" style="width: 100px;"></label>
+                        </div>
+                        <div>
+                            <label>Weather:</label>
+                            <select id="weather-select" style="width: 100px; background: #374151; color: white; border: none; padding: 2px;">
+                                <option value="clear">Clear</option>
+                                <option value="rain">Rain</option>
+                                <option value="storm">Storm</option>
+                                <option value="fog">Fog</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Mood Indicator -->
+                    <div class="mood-indicator" id="mood-indicator">🍺 Cozy Evening</div>
+                    
+                    <!-- Tooltip -->
+                    <div class="tooltip" id="tooltip"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Interface Panel -->
+        <div class="game-panel">
+            <div class="game-header">
+                <div class="game-title">Living Rusted Tankard</div>
+                <div>
+                    <button class="btn btn-purple" id="settings-btn">⚙️ 3D Settings</button>
+                </div>
+            </div>
+            
+            <!-- Game Status -->
+            <div class="status-bar">
+                <div>
+                    <span id="gold-display" style="color: #fbbf24;">💰 Gold: 50</span>
+                    <span id="health-display" style="color: #ef4444; margin-left: 1rem;">❤️ Health: 100</span>
+                </div>
+                <div id="npc-display" style="color: #10b981;">👥 NPCs: 3</div>
+            </div>
+            
+            <!-- Narrative Feed -->
+            <div class="narrative-feed" id="narrative-feed">
+                <div class="message system">
+                    🍺 Welcome to The Living Rusted Tankard - Enhanced 3D Demo!
+                    <br><br>
+                    ✨ This demonstrates how the text-based tavern game could be enhanced with 3D visualization.
+                    <br><br>
+                    🎮 <strong>Try clicking on objects in the 3D view:</strong>
+                    <br>• Click the bartender to talk
+                    <br>• Click tables to sit down  
+                    <br>• Click the fireplace to warm up
+                    <br>• Use the quick action buttons below
+                    <br><br>
+                    🎨 The atmospheric controls let you change time of day, weather, and crowd level to see how it affects the mood.
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="quick-btn amber" data-command="status">📊 Status</button>
+                <button class="quick-btn green" data-command="look around">👁️ Look</button>
+                <button class="quick-btn blue" data-command="inventory">🎒 Inventory</button>
+                <button class="quick-btn purple" data-command="talk to bartender">💬 Talk</button>
+                <button class="quick-btn red" data-command="gamble 10">🎲 Gamble</button>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="input-area">
+                <input type="text" class="command-input" id="command-input" placeholder="What would you like to do?" autofocus>
+                <button class="submit-btn" id="submit-btn">⚡ Submit</button>
+            </div>
+            <div class="instruction-text">
+                Try: "look around", "talk to bartender", "gamble 10", or click objects in 3D view
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-title">3D Visualization Settings</div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enable-particles" checked>
+                    <label class="form-label">Enable Floating Particles</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enable-animations" checked>
+                    <label class="form-label">Enable Animations</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enable-sound" checked>
+                    <label class="form-label">Enable Ambient Sounds</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Graphics Quality</label>
+                <select class="form-select" id="quality-select">
+                    <option value="low">Low (Better Performance)</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High (Better Quality)</option>
+                </select>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="btn btn-gray" id="close-settings-btn">Cancel</button>
+                <button class="btn btn-purple" id="save-settings-btn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced 3D Demo Logic
+        class TavernDemo {
+            constructor() {
+                this.gameState = {
+                    gold: 50,
+                    health: 100,
+                    npcs: 3,
+                    timeOfDay: 18,
+                    crowdLevel: 5,
+                    weather: 'clear'
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.createParticles();
+                this.updateAtmosphere();
+                this.addMessage('system', 'Demo initialized! Click around to explore the enhanced 3D tavern.');
+            }
+            
+            setupEventListeners() {
+                // Interactive objects
+                document.querySelectorAll('[data-action]').forEach(element => {
+                    element.addEventListener('mouseenter', this.showTooltip.bind(this));
+                    element.addEventListener('mouseleave', this.hideTooltip.bind(this));
+                    element.addEventListener('click', this.handleObjectClick.bind(this));
+                });
+                
+                // Quick action buttons
+                document.querySelectorAll('.quick-btn').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const command = button.getAttribute('data-command');
+                        this.executeCommand(command);
+                    });
+                });
+                
+                // Command input
+                document.getElementById('command-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.submitCommand();
+                    }
+                });
+                
+                document.getElementById('submit-btn').addEventListener('click', () => {
+                    this.submitCommand();
+                });
+                
+                // Atmospheric controls
+                document.getElementById('time-slider').addEventListener('input', this.updateTime.bind(this));
+                document.getElementById('crowd-slider').addEventListener('input', this.updateCrowd.bind(this));
+                document.getElementById('weather-select').addEventListener('change', this.updateWeather.bind(this));
+                
+                // Settings modal
+                document.getElementById('settings-btn').addEventListener('click', () => {
+                    document.getElementById('settings-modal').style.display = 'flex';
+                });
+                
+                document.getElementById('close-settings-btn').addEventListener('click', () => {
+                    document.getElementById('settings-modal').style.display = 'none';
+                });
+                
+                document.getElementById('save-settings-btn').addEventListener('click', () => {
+                    this.saveSettings();
+                    document.getElementById('settings-modal').style.display = 'none';
+                });
+            }
+            
+            showTooltip(event) {
+                const tooltip = document.getElementById('tooltip');
+                const action = event.target.getAttribute('data-action');
+                const name = event.target.getAttribute('data-name');
+                
+                tooltip.textContent = `${name} - Click to ${action}`;
+                tooltip.style.display = 'block';
+                tooltip.style.left = event.pageX + 'px';
+                tooltip.style.top = (event.pageY - 30) + 'px';
+            }
+            
+            hideTooltip() {
+                document.getElementById('tooltip').style.display = 'none';
+            }
+            
+            handleObjectClick(event) {
+                const action = event.target.getAttribute('data-action');
+                const name = event.target.getAttribute('data-name');
+                
+                // Visual feedback
+                event.target.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    event.target.style.transform = '';
+                }, 200);
+                
+                this.executeCommand(action);
+            }
+            
+            submitCommand() {
+                const input = document.getElementById('command-input');
+                const command = input.value.trim();
+                
+                if (!command) return;
+                
+                input.value = '';
+                this.executeCommand(command);
+            }
+            
+            executeCommand(command) {
+                this.addMessage('user', command);
+                
+                // Simulate processing delay
+                setTimeout(() => {
+                    this.processCommand(command);
+                }, 500 + Math.random() * 1000);
+            }
+            
+            processCommand(command) {
+                const lowerCommand = command.toLowerCase();
+                let response = '';
+                let updateState = false;
+                
+                if (lowerCommand.includes('status')) {
+                    response = `You have ${this.gameState.gold} gold coins and ${this.gameState.health} health. The tavern feels alive around you with ${this.gameState.npcs} NPCs present.`;
+                } else if (lowerCommand.includes('look')) {
+                    response = "The 3D tavern stretches before you in atmospheric detail. Warm light from hanging lanterns illuminates the wooden furniture. You can see the bar counter where the bartender works, several tables for patrons, and a crackling fireplace casting dancing shadows on the walls.";
+                } else if (lowerCommand.includes('inventory')) {
+                    response = "Your inventory contains: A worn leather pouch with coins, a rusty dagger, a mysterious glowing crystal, and a folded piece of parchment with strange symbols.";
+                } else if (lowerCommand.includes('talk') && lowerCommand.includes('bartender')) {
+                    response = "The gruff bartender looks up from polishing a tankard. 'Welcome, traveler! This here's The Rusted Tankard, finest establishment in three realms. We've got ales that'll warm your bones and tales that'll chill your soul. What brings you to our humble tavern?'";
+                } else if (lowerCommand.includes('sit') && lowerCommand.includes('table')) {
+                    response = "You pull out a sturdy wooden chair and settle at the table. From this vantage point, you can observe the other patrons and soak in the tavern's atmosphere. The wood is worn smooth by countless previous visitors.";
+                } else if (lowerCommand.includes('warm') || lowerCommand.includes('fire')) {
+                    response = "You approach the crackling fireplace and extend your hands toward the dancing flames. The warmth seeps into your bones, and you feel your health restored. Ancient runes carved into the mantelpiece seem to glow faintly in the firelight.";
+                    this.gameState.health = Math.min(100, this.gameState.health + 10);
+                    updateState = true;
+                } else if (lowerCommand.includes('gamble')) {
+                    const amount = this.extractNumber(command) || 10;
+                    const win = Math.random() > 0.5;
+                    if (win) {
+                        this.gameState.gold += amount;
+                        response = `🎲 The dice tumble across the table... Success! You won ${amount} gold coins! The other patrons raise their tankards in salute.`;
+                    } else {
+                        this.gameState.gold = Math.max(0, this.gameState.gold - amount);
+                        response = `🎲 The dice clatter to a stop... Fortune was not with you. You lost ${amount} gold coins, but the bartender offers you a consoling pat on the shoulder.`;
+                    }
+                    updateState = true;
+                } else {
+                    const responses = [
+                        "The mystical atmosphere of the tavern makes you reconsider that action.",
+                        "That's an intriguing idea, but perhaps try something else in this magical place.",
+                        "The tavern's ancient magic seems to discourage that particular action.",
+                        "You sense that the tavern itself has other plans for you. Try a different approach."
+                    ];
+                    response = responses[Math.floor(Math.random() * responses.length)];
+                }
+                
+                this.addMessage('game', response);
+                
+                if (updateState) {
+                    this.updateGameDisplay();
+                }
+            }
+            
+            extractNumber(text) {
+                const match = text.match(/\d+/);
+                return match ? parseInt(match[0]) : null;
+            }
+            
+            addMessage(type, content) {
+                const feed = document.getElementById('narrative-feed');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                
+                if (type === 'user') {
+                    messageDiv.innerHTML = `<strong>You:</strong> ${content}`;
+                } else if (type === 'game') {
+                    messageDiv.innerHTML = `<strong>⚡</strong> ${content}`;
+                } else {
+                    messageDiv.innerHTML = content;
+                }
+                
+                feed.appendChild(messageDiv);
+                feed.scrollTop = feed.scrollHeight;
+            }
+            
+            updateGameDisplay() {
+                document.getElementById('gold-display').textContent = `💰 Gold: ${this.gameState.gold}`;
+                document.getElementById('health-display').textContent = `❤️ Health: ${this.gameState.health}`;
+                document.getElementById('npc-display').textContent = `👥 NPCs: ${this.gameState.npcs}`;
+            }
+            
+            updateTime(event) {
+                this.gameState.timeOfDay = parseInt(event.target.value);
+                const hour = this.gameState.timeOfDay;
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                document.getElementById('time-display').textContent = `${displayHour}:00 ${ampm}`;
+                this.updateAtmosphere();
+            }
+            
+            updateCrowd(event) {
+                this.gameState.crowdLevel = parseInt(event.target.value);
+                this.updateAtmosphere();
+            }
+            
+            updateWeather(event) {
+                this.gameState.weather = event.target.value;
+                this.updateAtmosphere();
+            }
+            
+            updateAtmosphere() {
+                const { timeOfDay, crowdLevel, weather } = this.gameState;
+                
+                // Update scene lighting
+                const scene = document.querySelector('.pseudo-3d-scene');
+                const hour = timeOfDay;
+                
+                if (hour < 6 || hour > 22) {
+                    scene.style.background = 'linear-gradient(to bottom, #1f2937 0%, #111827 50%, #000000 100%)';
+                } else if (hour < 12) {
+                    scene.style.background = 'linear-gradient(to bottom, #6b7280 0%, #4b5563 50%, #1f2937 100%)';
+                } else if (hour < 18) {
+                    scene.style.background = 'linear-gradient(to bottom, #9ca3af 0%, #6b7280 50%, #374151 100%)';
+                } else {
+                    scene.style.background = 'linear-gradient(to bottom, #4b5563 0%, #1f2937 50%, #111827 100%)';
+                }
+                
+                // Update mood indicator
+                let mood = '';
+                if (hour < 6 || hour > 22) mood = '🌙 Quiet Night';
+                else if (hour < 12) mood = '☀️ Peaceful Morning';
+                else if (hour < 18) mood = '🌤️ Lazy Afternoon';
+                else mood = '🍺 Lively Evening';
+                
+                if (crowdLevel > 7) mood += ' (Bustling)';
+                else if (crowdLevel < 3) mood += ' (Empty)';
+                
+                document.getElementById('mood-indicator').textContent = mood;
+                
+                // Update weather effects
+                this.updateWeatherEffects();
+            }
+            
+            updateWeatherEffects() {
+                const particles = document.getElementById('particles');
+                particles.innerHTML = '';
+                
+                const particleCount = this.gameState.weather === 'storm' ? 50 : 
+                                     this.gameState.weather === 'rain' ? 30 : 
+                                     this.gameState.weather === 'fog' ? 20 : 10;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 3 + 's';
+                    
+                    if (this.gameState.weather === 'rain' || this.gameState.weather === 'storm') {
+                        particle.style.width = '1px';
+                        particle.style.height = '10px';
+                        particle.style.background = '#60a5fa';
+                    } else if (this.gameState.weather === 'fog') {
+                        particle.style.width = '20px';
+                        particle.style.height = '20px';
+                        particle.style.background = 'rgba(156, 163, 175, 0.3)';
+                        particle.style.borderRadius = '50%';
+                    }
+                    
+                    particles.appendChild(particle);
+                }
+            }
+            
+            createParticles() {
+                this.updateWeatherEffects();
+            }
+            
+            saveSettings() {
+                const settings = {
+                    particles: document.getElementById('enable-particles').checked,
+                    animations: document.getElementById('enable-animations').checked,
+                    sound: document.getElementById('enable-sound').checked,
+                    quality: document.getElementById('quality-select').value
+                };
+                
+                localStorage.setItem('tavern_demo_settings', JSON.stringify(settings));
+                this.addMessage('system', '3D settings saved! In a full implementation, these would control particle density, animation quality, and audio settings.');
+            }
+        }
+        
+        // Initialize the demo when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.tavernDemo = new TavernDemo();
+        });
+    </script>
+</body>
+</html>
