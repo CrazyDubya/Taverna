@@ -168,6 +168,20 @@ source scripts/wait_for_server.sh
 wait_for_server && echo "Server is ready!"
 ```
 
+### Testing
+
+A test script is provided to verify the reliability improvements:
+
+```bash
+# Run the test suite
+./scripts/test_observer_reliability.sh
+```
+
+This test creates a mock server that simulates:
+- Delayed server startup (health endpoint returns 503 initially)
+- Transient 5xx errors on AI session startup
+- Proper retry and backoff behavior
+
 ## Integration
 
 The observer integrates with:
