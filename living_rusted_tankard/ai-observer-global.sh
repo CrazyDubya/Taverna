@@ -138,7 +138,7 @@ start_ai_session_with_retries() {
             
             if [ $attempt -lt "$AI_SESSION_RETRIES" ]; then
                 log_message "Retrying in ${backoff}s with exponential backoff..."
-                sleep $backoff
+                sleep "$backoff"
                 backoff=$((backoff * 2))
                 attempt=$((attempt + 1))
                 continue
@@ -212,10 +212,8 @@ main() {
         esac
     done
     
-    # Start AI session with retries and capture response
-    local session_response
-    session_response=$(start_ai_session_with_retries "$personality" "$name")
-    if [ $? -ne 0 ]; then
+    # Start AI session with retries
+    if ! start_ai_session_with_retries "$personality" "$name" > /dev/null; then
         log_error "Failed to start AI session"
         exit 1
     fi
