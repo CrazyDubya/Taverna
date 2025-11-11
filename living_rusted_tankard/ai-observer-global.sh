@@ -72,10 +72,10 @@ wait_for_server() {
             return 0
         fi
         
-        # Show progress
-        elapsed=$((elapsed + interval))
+        # Show progress and sleep
         log_message "⏳ Server not ready yet... (${elapsed}/${MAX_WAIT_SECONDS}s)"
         sleep $interval
+        elapsed=$((elapsed + interval))
     done
     
     log_error "❌ Server did not become healthy within ${MAX_WAIT_SECONDS} seconds"
@@ -126,6 +126,8 @@ start_ai_session_with_retries() {
         if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
             log_message "✅ AI session started successfully!"
             log_message "Response: $response_body"
+            # Export the response for the caller to parse
+            echo "$response_body"
             return 0
         fi
         
@@ -210,37 +212,32 @@ main() {
         esac
     done
     
-    # Start AI session with retries
-    if ! start_ai_session_with_retries "$personality" "$name"; then
+    # Start AI session with retries and capture response
+    local session_response
+    session_response=$(start_ai_session_with_retries "$personality" "$name")
+    if [ $? -ne 0 ]; then
         log_error "Failed to start AI session"
         exit 1
     fi
     
-    # Hand off to Python observer for streaming
-    log_message "Handing off to Python observer for streaming..."
-    python3 -c "
-import asyncio
-import sys
-from pathlib import Path
-sys.path.append('$SCRIPT_DIR')
-from launch_ai_observer import AIObserver
-
-async def observe():
-    observer = AIObserver()
-    observer.server_process = type('obj', (object,), {'terminate': lambda: None, 'wait': lambda: None})()  # Mock process
-    # Get latest session from server
-    import requests
-    response = requests.get('${SERVER_URL}/ai-player/sessions')
-    if response.status_code == 200:
-        sessions = response.json().get('sessions', [])
-        if sessions:
-            session = sessions[0]
-            observer.session_id = session['session_id']
-            observer.ai_name = session['ai_player']['name']
-            await observer.observe_ai_stream()
-
-asyncio.run(observe())
-"
+    log_message "✅ AI session started successfully!"
+    log_message "Server is running at: ${SERVER_URL}"
+    log_message "Health endpoint: ${SERVER_URL}${HEALTH_ENDPOINT}"
+    log_message ""
+    log_message "To observe the AI session, visit:"
+    log_message "  ${SERVER_URL}/ai-demo"
+    log_message ""
+    log_message "Or use the Python observer to watch AI actions in terminal:"
+    log_message "  python3 launch_ai_observer.py --web"
+    log_message ""
+    log_message "Logs:"
+    log_message "  Server: $SERVER_LOG"
+    log_message "  Diagnostics: $DIAGNOSTICS_LOG"
+    log_message ""
+    log_message "Press Ctrl+C to stop the server"
+    
+    # Keep the script running to keep server alive
+    wait "$SERVER_PID"
 }
 
 main "$@"

@@ -38,10 +38,10 @@ wait_for_server() {
             return 0
         fi
         
-        # Show progress
-        elapsed=$((elapsed + interval))
+        # Show progress and sleep
         log_message "⏳ Server not ready yet... (${elapsed}/${MAX_WAIT_SECONDS}s)"
         sleep $interval
+        elapsed=$((elapsed + interval))
     done
     
     log_error "❌ Server did not become healthy within ${MAX_WAIT_SECONDS} seconds"
