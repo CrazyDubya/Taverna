@@ -4,6 +4,46 @@ Launch and passively observe the AI character interact with The Living Rusted Ta
 
 ## Quick Start
 
+### Using the Enhanced Shell Script (Recommended)
+
+The `ai-observer-global.sh` script provides robust startup with health checks and automatic retries:
+
+```bash
+# Start new AI session with automatic server health checks
+./ai-observer-global.sh --new
+
+# Continue existing session
+./ai-observer-global.sh --continue SESSION_ID
+
+# Launch web interface only
+./ai-observer-global.sh --web
+
+# Run simple terminal demo (no server needed)
+./ai-observer-global.sh --demo
+```
+
+#### Configuration via Environment Variables
+
+```bash
+# Custom timeouts and retries
+SERVER_URL=http://localhost:8000 \
+MAX_WAIT_SECONDS=120 \
+AI_SESSION_RETRIES=5 \
+AI_SESSION_RETRY_INTERVAL=10 \
+./ai-observer-global.sh --new
+
+# All available options with defaults:
+# SERVER_URL (default: http://localhost:8000)
+# HEALTH_ENDPOINT (default: /health)
+# MAX_WAIT_SECONDS (default: 60)
+# AI_SESSION_RETRIES (default: 3)
+# AI_SESSION_RETRY_INTERVAL (default: 5)
+```
+
+See `docs/OBSERVERS.md` for complete documentation on the enhanced script.
+
+### Using Python Directly
+
 ```bash
 # Start new AI session and observe
 python launch_ai_observer.py --new
@@ -98,6 +138,24 @@ The Living Rusted Tankard is alive with activity...
 - `tavern_regular`: Comfortable hanging around the tavern
 
 ## Troubleshooting
+
+### Using the Shell Script
+
+1. **Server won't become ready**: 
+   - Increase `MAX_WAIT_SECONDS` environment variable
+   - Check `logs/server.log` for errors
+   - Verify dependencies are installed
+
+2. **AI session fails with 500 errors**:
+   - Check `logs/ai-session-diagnostics.log` for details
+   - Increase `AI_SESSION_RETRIES` and `AI_SESSION_RETRY_INTERVAL`
+   - Verify Ollama is running with gemma2:2b model
+
+3. **Port already in use**:
+   - Kill existing processes: `lsof -ti:8000 | xargs kill -9`
+   - Use different port via `SERVER_URL` environment variable
+
+### Using Python Directly
 
 1. **Server won't start**: Check if port 8000 is available
 2. **AI not responding**: Ensure Ollama is running with gemma2:2b model
