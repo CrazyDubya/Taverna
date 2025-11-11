@@ -2,8 +2,6 @@
 # Global AI Observer Command
 # Run this from anywhere to launch the AI player observer with reliable startup
 
-set -e  # Exit on error (disabled for retry logic where needed)
-
 # Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd "$SCRIPT_DIR"
@@ -14,6 +12,8 @@ HEALTH_ENDPOINT="${HEALTH_ENDPOINT:-/health}"
 MAX_WAIT_SECONDS="${MAX_WAIT_SECONDS:-60}"
 AI_SESSION_RETRIES="${AI_SESSION_RETRIES:-3}"
 AI_SESSION_RETRY_INTERVAL="${AI_SESSION_RETRY_INTERVAL:-5}"
+AI_SESSION_CMD="${AI_SESSION_CMD:-}"
+AI_SESSION_PAYLOAD="${AI_SESSION_PAYLOAD:-}"
 
 # Ensure logs directory exists
 mkdir -p logs
@@ -46,6 +46,7 @@ wait_for_server() {
         elapsed=$((elapsed + interval))
     done
     
+    echo ""
     log "❌ Server did not become ready within ${MAX_WAIT_SECONDS} seconds"
     log "Please check server logs for details"
     return 1
@@ -135,7 +136,7 @@ main() {
     log ""
     
     # Check if we should use Python directly for certain flags
-    if [[ "$*" == *"--demo"* ]] || [[ "$*" == *"--web"* ]] || [[ "$*" == *"--list-personalities"* ]]; then
+    if [[ "$*" == *"--demo"* ]] || [[ "$*" == *"--web"* ]] || [[ "$*" == *"--list-personalities"* ]] || [[ "$*" == *"--continue-session"* ]]; then
         log "Running Python script directly for special mode..."
         exec python3 launch_ai_observer.py "$@"
     fi
@@ -151,10 +152,10 @@ main() {
         if ! wait_for_server; then
             log "❌ Server failed to start properly"
             log "Server logs (last 20 lines):"
-            tail -20 logs/server.log | tee -a "$DIAGNOSTICS_LOG"
+            tail -20 logs/server.log 2>/dev/null | tee -a "$DIAGNOSTICS_LOG"
             
             # Clean up
-            if [ -n "$SERVER_PID" ]; then
+            if [ -n "$SERVER_PID" ] && kill -0 $SERVER_PID 2>/dev/null; then
                 kill $SERVER_PID 2>/dev/null || true
             fi
             exit 1
@@ -177,8 +178,8 @@ main() {
                 name="$2"
                 shift 2
                 ;;
-            --new|--continue-session)
-                # These are handled by Python script
+            --new)
+                # Skip this flag
                 shift
                 ;;
             *)
@@ -188,7 +189,10 @@ main() {
     done
     
     # Start AI session with retries
-    if ! start_ai_session_with_retries "$personality" "$name"; then
+    ai_response=$(start_ai_session_with_retries "$personality" "$name")
+    session_start_result=$?
+    
+    if [ $session_start_result -ne 0 ]; then
         log "❌ Could not start AI session"
         log "Check diagnostics log: ${DIAGNOSTICS_LOG}"
         
@@ -199,9 +203,20 @@ main() {
         exit 1
     fi
     
+    # Extract session ID from response
+    session_id=$(echo "$ai_response" | grep -o '"session_id":"[^"]*"' | cut -d'"' -f4)
+    
+    if [ -z "$session_id" ]; then
+        log "❌ Could not extract session ID from response"
+        log "Response: $ai_response" >> "$DIAGNOSTICS_LOG"
+        exit 1
+    fi
+    
+    log "Session ID: $session_id"
+    
     # Hand off to Python for observation
     log "Handing off to Python observer for streaming..."
-    python3 launch_ai_observer.py --continue-session "$(echo "$response" | grep -o '"session_id":"[^"]*"' | cut -d'"' -f4)" || {
+    python3 launch_ai_observer.py --continue-session "$session_id" || {
         log "Python observer exited with error"
         exit 1
     }
