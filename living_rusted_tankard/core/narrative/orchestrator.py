@@ -82,7 +82,7 @@ class ClimaticSequencer:
                 return None
             target_time = alternative_time
         
-        climax = ClimateMoment(
+        climax = ClimaticMoment(
             id=f"climax_{thread.id}_{int(target_time)}",
             timestamp=target_time,
             primary_thread_id=thread.id,
@@ -121,7 +121,7 @@ class ClimaticSequencer:
                     # Calculate optimal convergence time
                     convergence_time = self._calculate_convergence_timing(thread1, thread2)
                     
-                    convergence = ClimateMoment(
+                    convergence = ClimaticMoment(
                         id=f"convergence_{thread1.id}_{thread2.id}_{int(convergence_time)}",
                         timestamp=convergence_time,
                         primary_thread_id=thread1.id,

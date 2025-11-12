@@ -1,6 +1,9 @@
 """
 Fixed NPC presence update logic that ensures NPCs spawn properly on game start
 """
+from typing import Optional, Dict, Any
+import random
+
 
 def update_presence_fixed(self, current_time: float, event_bus = None, npc_definitions: Optional[Dict[str, Any]] = None) -> bool:
     """Fixed update_presence that handles initial spawn better."""

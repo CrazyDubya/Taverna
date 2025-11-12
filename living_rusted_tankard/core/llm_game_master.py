@@ -241,7 +241,8 @@ These memories will be included in future conversations to maintain consistency.
         # Format time
         try:
             time_str = game_state.clock.get_formatted_time()
-        except:
+        except (AttributeError, ValueError) as e:
+            logger.warning(f"Could not format time: {e}")
             time_str = "Unknown time"
         
         # Create the context dictionary
