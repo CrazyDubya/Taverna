@@ -12,6 +12,13 @@ from enum import Enum
 from dataclasses import dataclass
 
 
+class DisplayStyle(Enum):
+    """Style for displaying time"""
+    NATURAL = "natural"
+    ATMOSPHERIC = "atmospheric"
+    PRECISE = "precise"
+
+
 class TimeOfDay(Enum):
     DEEP_NIGHT = "deep_night"
     EARLY_DAWN = "early_dawn"

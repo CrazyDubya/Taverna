@@ -1,6 +1,9 @@
 from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass, asdict
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .game_state import GameState
@@ -72,7 +75,8 @@ class SnapshotManager:
                 time_value = self.game_state.clock.current_time.hours
             else:
                 time_value = 0.0
-        except:
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.warning(f"Failed to parse time value: {e}")
             time_value = 0.0
         
         # Get formatted natural time
