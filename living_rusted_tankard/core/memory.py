@@ -16,10 +16,9 @@ Integrates with:
 import logging
 import time
 import re
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
-import json
 import hashlib
 
 logger = logging.getLogger(__name__)
@@ -333,7 +332,7 @@ class MemoryManager:
             return
 
         # First try summarizing old memories
-        summarized = self.summarize_old_memories(session_id)
+        self.summarize_old_memories(session_id)
 
         # If still too many, remove least relevant memories
         if len(self.memories[session_id]) > self.max_memories_per_session:
@@ -386,7 +385,7 @@ class MemoryManager:
         for memory in relevant_memories:
             # Add time context using natural time display
             try:
-                from .time_display import format_time_for_display
+                pass
 
                 age_hours = memory.get_age_hours()
                 if age_hours < 1:

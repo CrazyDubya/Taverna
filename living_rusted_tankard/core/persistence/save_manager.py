@@ -14,7 +14,7 @@ import hashlib
 import shutil
 import time
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from enum import Enum

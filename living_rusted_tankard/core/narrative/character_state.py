@@ -4,7 +4,7 @@ Makes NPCs feel alive with moods, concerns, and goals that change based on world
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import random

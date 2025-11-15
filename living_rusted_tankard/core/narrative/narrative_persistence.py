@@ -8,8 +8,7 @@ import pickle
 import time
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
-from dataclasses import asdict, is_dataclass
+from typing import Dict, List, Optional, Any
 from enum import Enum
 import gzip
 

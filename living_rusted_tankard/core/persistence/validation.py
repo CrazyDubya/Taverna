@@ -8,7 +8,7 @@ This module provides:
 - Recovery suggestions for invalid saves
 """
 
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 import logging

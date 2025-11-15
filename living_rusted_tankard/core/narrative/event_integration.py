@@ -11,7 +11,6 @@ from dataclasses import dataclass
 
 from ..event_bus import EventType, Event
 from .story_thread import StoryThread, StoryBeat, ThreadType, ThreadStage
-from .thread_manager import ThreadManager
 from .orchestrator import NarrativeOrchestrator
 
 logger = logging.getLogger(__name__)
@@ -82,7 +81,7 @@ class NarrativeEventHandler:
     def on_room_change(self, event: Event):
         """Handle room change events"""
         new_room = event.data.get("new_room")
-        old_room = event.data.get("old_room")
+        event.data.get("old_room")
 
         if not new_room:
             return
@@ -104,14 +103,14 @@ class NarrativeEventHandler:
 
     def on_time_advanced(self, event: Event):
         """Handle time progression events"""
-        current_time = event.data.get("current_time")
+        event.data.get("current_time")
         elapsed = event.data.get("elapsed_minutes", 1)
 
         # Get current world state for narrative decisions
         world_state = self._build_world_state()
 
         # Let orchestrator handle time-based progression
-        available_participants = self._get_available_participants()
+        self._get_available_participants()
         orchestration_actions = self.orchestrator.orchestrate_narrative(
             self.thread_manager.get_active_threads(), world_state
         )
@@ -168,7 +167,7 @@ class NarrativeEventHandler:
     def on_item_acquired(self, event: Event):
         """Handle item acquisition events"""
         item_id = event.data.get("item_id")
-        source = event.data.get("source", "found")
+        event.data.get("source", "found")
 
         # Check if item acquisition triggers narrative beats
         for thread in self.thread_manager.get_active_threads():
@@ -592,9 +591,7 @@ class NarrativeEventHandler:
     def _create_dynamic_thread(self, thread_type: str, initial_tension: float):
         """Create a dynamic thread based on current game state"""
         # Implementation would analyze game state and create appropriate thread
-        pass
 
     def _execute_climax_beat(self, beat_data: Dict[str, Any], intensity: float):
         """Execute a climactic narrative beat"""
         # Implementation for dramatic climax execution
-        pass

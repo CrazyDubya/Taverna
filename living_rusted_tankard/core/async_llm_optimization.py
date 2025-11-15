@@ -10,7 +10,6 @@ This module provides:
 
 import asyncio
 import aiohttp
-import json
 import time
 import logging
 from typing import Dict, List, Any, Optional, Tuple
@@ -64,7 +63,6 @@ class AsyncContextCache:
                     state_elements.extend([npc.id for npc in present_npcs])
                 except (AttributeError, TypeError) as e:
                     logger.debug(f"Could not get NPC states for hashing: {e}")
-                    pass
 
             combined = "|".join(state_elements)
             return hashlib.md5(combined.encode()).hexdigest()[:16]

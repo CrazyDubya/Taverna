@@ -1,9 +1,8 @@
 """NPC system for The Living Rusted Tankard."""
 
-from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Callable, Set, TYPE_CHECKING, Union
+from typing import Dict, List, Optional, Tuple, Any, Callable, TYPE_CHECKING, Union
 import random
 import json
 from pydantic import BaseModel, Field as PydanticField
@@ -11,8 +10,7 @@ from pydantic import BaseModel, Field as PydanticField
 if TYPE_CHECKING:
     from .player import PlayerState
     from .economy import Economy
-    from .reputation import get_reputation, get_reputation_tier, REPUTATION_TIERS
-    from .news_manager import NewsManager  # For news sharing
+    from .news_manager import NewsManager  # For news sharing  # noqa: F401
     from .game_state import GameState  # To pass to _handle_conversation for context
 
 from .callable_registry import get_interaction
@@ -151,7 +149,7 @@ class NPC(BaseModel):
         return state_changed
 
     def _update_elara_inventory(self, npc_definitions: Optional[Dict[str, Any]] = None):
-        from .items import Item, ITEM_DEFINITIONS
+        from .items import ITEM_DEFINITIONS
 
         self.inventory = []
         item_ids_to_choose_from = list(self.base_inventory_ids)
@@ -286,7 +284,7 @@ class NPCManager:
     def _initialize_npcs_from_definitions(self) -> None:
         if not self._npc_definitions:
             return
-        from .items import ITEM_DEFINITIONS, Item  # Ensure Item is imported here
+        from .items import ITEM_DEFINITIONS, Item  # Ensure Item is imported here  # noqa: F401
 
         for def_id, npc_def_data in self._npc_definitions.items():
             try:

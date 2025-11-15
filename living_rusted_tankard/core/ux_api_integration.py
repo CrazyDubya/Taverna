@@ -8,16 +8,12 @@ This module provides endpoints and integration for:
 - Mobile responsiveness features
 """
 
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse, FileResponse
-from typing import Dict, List, Any, Optional
+from fastapi import APIRouter, HTTPException
+from typing import Dict, Any, Optional
 import logging
-import json
-from pathlib import Path
 
 from .audio_system import audio_manager, game_audio, get_audio_config, process_game_audio
-from .economy_balancing import economy_balancer, get_economic_status, get_balanced_price
-from .game_state import GameState as OptimizedGameState
+from .economy_balancing import economy_balancer, get_economic_status
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +46,7 @@ async def trigger_audio_event(request: Dict[str, Any]) -> Dict[str, Any]:
     """Trigger an audio event."""
     try:
         event_type = request.get("event_type")
-        session_id = request.get("session_id")
+        request.get("session_id")
         context = request.get("context", {})
 
         if not event_type:
@@ -216,7 +212,7 @@ async def submit_user_feedback(request: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"User feedback: {feedback_type} - Rating: {rating}/5 - Features: {features_used}")
 
         # In a real implementation, this would be stored in a database
-        feedback_data = {
+        _feedback_data = {  # noqa: F841 - placeholder for future database storage
             "type": feedback_type,
             "rating": rating,
             "comments": comments,

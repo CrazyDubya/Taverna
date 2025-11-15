@@ -5,8 +5,8 @@ This module implements the pacing rules, tension management, and narrative healt
 monitoring systems for the Living Rusted Tankard narrative engine.
 """
 
-from typing import Dict, List, Any, Optional, Set, Tuple
-from dataclasses import dataclass, field
+from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
 from enum import Enum
 import time
 from collections import defaultdict, deque

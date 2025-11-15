@@ -245,7 +245,7 @@ class EnhancedSecret:
     def _update_state(self) -> None:
         """Update secret state based on current conditions."""
         # Count suspicions and investigations
-        high_suspicions = sum(1 for level in self.suspected_by.values() if level > 0.7)
+        sum(1 for level in self.suspected_by.values() if level > 0.7)
 
         if self.state == SecretState.HIDDEN:
             if len(self.suspected_by) > 0:
@@ -410,7 +410,7 @@ class SecretGenerator:
                 evidence = Evidence(
                     id=f"{secret.id}_evidence_{i}",
                     type=ev_type,
-                    description=f"Someone who saw suspicious behavior",
+                    description="Someone who saw suspicious behavior",
                     holder=f"witness_{i}",
                     discovery_difficulty=0.6,
                     requires_relationship=0.5,
@@ -420,7 +420,7 @@ class SecretGenerator:
                 evidence = Evidence(
                     id=f"{secret.id}_evidence_{i}",
                     type=ev_type,
-                    description=f"Incriminating documents",
+                    description="Incriminating documents",
                     location="hidden_compartment",
                     discovery_difficulty=0.8,
                     requires_skill="investigation",
@@ -430,7 +430,7 @@ class SecretGenerator:
                 evidence = Evidence(
                     id=f"{secret.id}_evidence_{i}",
                     type=ev_type,
-                    description=f"Evidence pointing to the secret",
+                    description="Evidence pointing to the secret",
                     discovery_difficulty=0.5,
                     revelation_power=0.3,
                 )

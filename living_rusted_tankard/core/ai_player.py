@@ -3,10 +3,8 @@ AI Player system for The Living Rusted Tankard.
 Uses Ollama with gemma2:2b to create an autonomous character that players can watch.
 """
 
-import asyncio
 import json
 import time
-import random
 from typing import Dict, Any, Optional, AsyncGenerator, List
 import requests
 import aiohttp

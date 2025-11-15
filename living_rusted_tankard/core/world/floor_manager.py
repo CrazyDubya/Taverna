@@ -4,8 +4,7 @@ from typing import Dict, List, Optional, Set, Tuple, Any
 from dataclasses import dataclass
 from enum import Enum
 
-from .area import TavernArea, AreaType
-from .atmosphere import AtmosphereState
+from .area import TavernArea
 
 
 class FloorType(Enum):

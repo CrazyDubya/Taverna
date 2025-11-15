@@ -1,6 +1,6 @@
 """Simple event bus implementation for game events."""
 
-from typing import Dict, List, Callable, Any, Optional
+from typing import Dict, List, Callable, Any
 from dataclasses import dataclass
 from enum import Enum
 import logging

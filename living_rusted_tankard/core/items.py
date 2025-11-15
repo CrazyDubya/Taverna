@@ -52,7 +52,6 @@ class Inventory(BaseModel):
         Returns:
             bool: True if successful, False if item_id not found
         """
-        global ITEM_DEFINITIONS
         # If this exact item object is already in the inventory, just increase quantity
         if item_id in self.items:
             self.items[item_id].quantity += quantity
@@ -226,7 +225,7 @@ ITEM_DEFINITIONS = {}
 
 def load_item_definitions(data_dir: Path = Path("data")) -> Dict[str, Item]:
     """Load item definitions from items.json and populate ITEM_DEFINITIONS."""
-    global ITEM_DEFINITIONS
+    global ITEM_DEFINITIONS  # noqa: F824 - modified via .update() and dict assignment
 
     # First, populate with built-in TAVERN_ITEMS
     ITEM_DEFINITIONS.update(TAVERN_ITEMS)

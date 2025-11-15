@@ -1,6 +1,6 @@
 """Dynamic dialogue system with context awareness."""
 
-from typing import Dict, List, Optional, Set, Tuple, Any, Callable
+from typing import Dict, List, Optional, Set, Any
 from dataclasses import dataclass, field
 from enum import Enum
 import random

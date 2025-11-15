@@ -3,7 +3,7 @@
 from typing import Dict, Optional, List, Tuple, TYPE_CHECKING
 import random
 import string
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from core.player import PlayerState  # Assuming PlayerState is in core.player

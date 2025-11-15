@@ -4,12 +4,11 @@ Creates a social network where NPC opinions of the player spread and influence e
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 import random
 import time
 import logging
-import math
 
 logger = logging.getLogger(__name__)
 

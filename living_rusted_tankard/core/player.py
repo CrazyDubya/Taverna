@@ -1,9 +1,8 @@
-from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List, Union, Set
+from typing import Dict, Any, Optional, List, Set
 from pydantic import BaseModel, Field as PydanticField
 import random
 
-from .items import Item, Inventory, InventoryItem  # Added InventoryItem
+from .items import Item, Inventory, InventoryItem  # noqa: F401 - used for type annotations
 
 
 class ActiveEffect(BaseModel):
@@ -233,7 +232,6 @@ class PlayerState(BaseModel):
 
     def add_xp(self, amount: int):
         print(f"DEBUG: Player received {amount} XP.")
-        pass
 
     def has_completed_bounty(self, bounty_id: str) -> bool:
         return bounty_id in self.completed_bounty_ids

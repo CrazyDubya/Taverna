@@ -2,7 +2,7 @@
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from sqlmodel import SQLModel, Field, Column, JSON, String, DateTime
+from sqlmodel import SQLModel, Field, Column, JSON, DateTime
 import uuid
 
 
@@ -33,8 +33,6 @@ GameState = GameStatePersistence
 
 class GameStateCreate(GameStateBase):
     """Model for creating a new game state."""
-
-    pass
 
 
 class GameStateUpdate(SQLModel):

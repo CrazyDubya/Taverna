@@ -5,22 +5,19 @@ This module provides a REST API interface to interact with the game state
 and serves the web interface.
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status, Request
+from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import uuid
-import os
 import time
 import requests
 from pathlib import Path
 import logging
 
 from .game_state import GameState
-from .event_formatter import EventFormatter
 from .enhanced_llm_game_master import EnhancedLLMGameMaster as LLMGameMaster
 from .items import ITEM_DEFINITIONS, load_item_definitions
 

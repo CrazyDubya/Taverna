@@ -7,7 +7,7 @@ fantasy time references like "Third bell past sunset" instead of "19.25 hours".
 Integrates with existing GameClock system without breaking functionality.
 """
 
-from typing import Dict, Tuple, Optional
+from typing import Tuple, Optional
 from enum import Enum
 from dataclasses import dataclass
 
@@ -281,7 +281,7 @@ class TavernCalendar:
         Returns:
             Rich description suitable for LLM context or room descriptions
         """
-        tavern_time = cls.get_fantasy_time(game_time_hours)
+        cls.get_fantasy_time(game_time_hours)
         time_of_day, period_desc = cls.get_time_period(game_time_hours)
 
         # Base atmospheric descriptions

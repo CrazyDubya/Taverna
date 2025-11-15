@@ -1,9 +1,7 @@
 """Area management system for the tavern world."""
 
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
-import json
-import os
 
 from .area import TavernArea, Connection, AreaType, AccessLevel, Feature
 from .atmosphere import AtmosphereState, AtmosphereManager

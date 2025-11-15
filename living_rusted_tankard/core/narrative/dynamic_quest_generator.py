@@ -4,12 +4,11 @@ Creates meaningful quests and objectives that emerge naturally from player actio
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple, Any, Union
+from typing import Dict, List, Optional, Set, Any
 from dataclasses import dataclass, field
 import random
 import time
 import logging
-from .story_threads import StoryThread, ThreadStage, ThreadCondition, ThreadType, ThreadPriority, ThreadStatus
 
 logger = logging.getLogger(__name__)
 

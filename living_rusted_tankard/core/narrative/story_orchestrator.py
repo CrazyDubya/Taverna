@@ -4,15 +4,14 @@ Manages the overall narrative flow, tension, and pacing of the player's experien
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple, Any, Union
+from typing import Dict, List, Optional, Set, Any
 from dataclasses import dataclass, field
 import time
 import random
 import logging
-import math
-from .story_threads import StoryThread, ThreadType, ThreadStatus, ThreadPriority
-from .consequence_engine import ConsequenceEngine, TrackedAction
-from .dynamic_quest_generator import DynamicQuestGenerator, QuestType
+from .story_threads import StoryThread, ThreadStatus, ThreadPriority
+from .consequence_engine import ConsequenceEngine
+from .dynamic_quest_generator import DynamicQuestGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -356,7 +355,7 @@ class StoryOrchestrator:
 
     def _generate_tension_building_thread(self, game_state: Any) -> Optional[StoryThread]:
         """Generate a new story thread to build tension."""
-        from .story_threads import create_mystery_thread, create_business_thread
+        from .story_threads import create_mystery_thread
 
         # Choose thread type based on current story preferences
         possible_threads = []

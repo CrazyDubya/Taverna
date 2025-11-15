@@ -1,12 +1,11 @@
-from typing import Callable, Optional, Dict, List, Any, Union, Tuple, Type
+from typing import Callable, Optional, Dict, List, Any
 import time
-import heapq
 from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 from pydantic.fields import FieldInfo
 
 from .event_bus import EventBus, Event, EventType
-from .callable_registry import register_callback, get_callback
+from .callable_registry import get_callback
 
 
 class GameTime(BaseModel):
@@ -189,7 +188,6 @@ class GameClock(BaseModel):
         """
         # No actual runtime list of callables is stored persistently in this design.
         # Callbacks are retrieved from registry on-the-fly in _process_scheduled_events.
-        pass
 
     @property
     def event_bus(self) -> EventBus:  # Provide access to the event_bus_field attribute
@@ -508,30 +506,24 @@ class GameClock(BaseModel):
         current_hour_val = int(self.time.hour_of_day)
         current_minute_val = int((self.time.hour_of_day % 1) * 60)
 
-        day_changed = False
         if self.time.day != self.last_day_field:
             self.last_day_field = self.time.day
-            day_changed = True
             for callback_id, callback_func in list(self.day_callbacks.items()):
                 try:
                     callback_func(self.time.day)
                 except Exception as e:
                     print(f"Error in day change callback (id: {callback_id}): {e}")
 
-        hour_changed = False
         if current_hour_val != self.last_hour_field:
             self.last_hour_field = current_hour_val
-            hour_changed = True
             for callback_id, callback_func in list(self.hour_callbacks.items()):
                 try:
                     callback_func(current_hour_val)
                 except Exception as e:
                     print(f"Error in hour change callback (id: {callback_id}): {e}")
 
-        minute_changed = False
         if current_minute_val != self.last_minute_field:
             self.last_minute_field = current_minute_val
-            minute_changed = True
             for callback_id, callback_func in list(self.minute_callbacks.items()):
                 try:
                     callback_func(current_minute_val)

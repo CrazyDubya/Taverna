@@ -312,7 +312,7 @@ class PerformanceOptimizer:
             game_state.optimized_npc_manager = self.npc_manager
 
         # Override frequently called methods with optimized versions
-        original_get_present_npcs = game_state.npc_manager.get_present_npcs
+        game_state.npc_manager.get_present_npcs
 
         def optimized_get_present_npcs():
             present_npcs_dict = self.npc_manager.get_present_npcs_optimized()
@@ -326,7 +326,7 @@ class PerformanceOptimizer:
             game_state.optimized_snapshot_manager = self.snapshot_manager
 
         # Override get_snapshot method
-        original_get_snapshot = getattr(game_state, "get_snapshot", None)
+        getattr(game_state, "get_snapshot", None)
 
         def optimized_get_snapshot():
             return self.snapshot_manager.create_snapshot_optimized()

@@ -3,12 +3,11 @@
 from typing import Dict, List, Optional, Set, Tuple, Any
 from dataclasses import dataclass, field
 from enum import Enum
-from datetime import datetime, timedelta
+from datetime import datetime
 import random
 import math
 
-from .psychology import NPCPsychology, Personality
-from .relationships import RelationshipWeb, RelationshipType
+from .relationships import RelationshipWeb
 from .secrets import EnhancedSecret, SecretType
 
 
