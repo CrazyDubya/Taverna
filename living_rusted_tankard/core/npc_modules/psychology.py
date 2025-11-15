@@ -339,7 +339,7 @@ class NPCPsychology:
         # Modify by current state
         stress_modifier = self.stress_level * 0.3
         energy_modifier = (1.0 - self.energy_level) * 0.2
-        intox_modifier = self.intoxication * 0.4
+        self.intoxication * 0.4
 
         # Determine behavior based on situation
         if situation == "confrontation":

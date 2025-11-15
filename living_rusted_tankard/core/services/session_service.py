@@ -2,12 +2,11 @@
 
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
-from sqlmodel import select, or_
+from sqlmodel import select
 from sqlalchemy.orm import Session
 import uuid
 
-from core.models.persistence_models import GameStatePersistence, GameStateCreate, GameStateUpdate, GameSession
-from core.db.session import get_session
+from core.models.persistence_models import GameStatePersistence, GameSession
 
 
 class SessionService:
@@ -85,7 +84,7 @@ class SessionService:
         """Get all sessions for a user."""
         query = select(GameSession).where(GameSession.user_id == user_id)
         if active_only:
-            query = query.where(GameSession.is_active == True)
+            query = query.where(GameSession.is_active)
         return self.session.exec(query).all()
 
     def update_session_activity(self, session_id: str) -> Optional[GameSession]:

@@ -8,7 +8,7 @@ This module provides:
 - Migration validation and testing
 """
 
-from typing import Dict, Any, List, Callable, Optional, Tuple
+from typing import Dict, Any, List, Callable, Optional
 from dataclasses import dataclass
 import logging
 

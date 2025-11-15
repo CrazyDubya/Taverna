@@ -6,7 +6,7 @@ This is the critical piece that makes all our phase work actually functional.
 """
 
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 # Phase 2: World System
 from ..world.atmosphere import AtmosphereManager

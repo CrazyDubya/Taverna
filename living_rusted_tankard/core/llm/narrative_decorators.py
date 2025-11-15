@@ -5,9 +5,8 @@ This module provides decorators for adding caching and other functionality
 to narrative generation functions.
 """
 
-from typing import Callable, Any, Dict, Optional, TypeVar, cast
+from typing import Callable, Any, Dict, TypeVar, cast
 from functools import wraps
-from pathlib import Path
 import logging
 
 from .narrative_cache import NarrativeCache

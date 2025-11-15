@@ -4,11 +4,10 @@ Tracks player actions and creates meaningful, interconnected consequences across
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple, Any, Callable
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import time
-import random
 import logging
 
 logger = logging.getLogger(__name__)
@@ -362,7 +361,7 @@ class ConsequenceEngine:
 
         if rule.action_patterns:
             # If patterns are specified but none match, still allow category match
-            pattern_match = any(
+            _pattern_match = any(  # noqa: F841 - calculated but not used (patterns are hints, not requirements)
                 re.search(pattern, action.description, re.IGNORECASE) for pattern in rule.action_patterns
             )
             # Don't reject based on pattern mismatch - patterns are hints, not requirements

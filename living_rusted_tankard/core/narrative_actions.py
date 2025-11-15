@@ -8,7 +8,7 @@ world events, and other game state modifications.
 
 import re
 import logging
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
 
@@ -243,7 +243,7 @@ class NarrativeActionProcessor:
     def _handle_event_trigger(self, action: NarrativeAction, game_state) -> Dict[str, Any]:
         """Handle event trigger action."""
         event_name = action.parameters.get("target")
-        delay = action.parameters.get("delay", 0)
+        action.parameters.get("delay", 0)
 
         # For now, just add an immediate event
         # In the future, this could schedule delayed events

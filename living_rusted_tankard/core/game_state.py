@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Callable, Any, List, TYPE_CHECKING, Union, Deque, Set
+from typing import Dict, Optional, Callable, Any, List, TYPE_CHECKING, Deque, Set
 from collections import deque
 from datetime import datetime
 from pydantic import BaseModel, Field
@@ -6,7 +6,6 @@ import uuid
 import time
 import logging
 import re
-from sqlmodel import SQLModel, Field as SQLField, Column, JSON, DateTime
 from core.player import PlayerState
 
 # Import directly from the parser file that supports model parameter
@@ -19,16 +18,16 @@ Parser = direct_parser.Parser
 GameSnapshot = direct_parser.GameSnapshot
 
 logger = logging.getLogger(__name__)
-from .clock import GameClock, GameTime
+from .clock import GameClock
 from .room import RoomManager
 from .npc import NPCManager, NPC
-from .economy import Economy, TransactionResult
+from .economy import Economy
 from .items import Item, Inventory
 from .items import ITEM_DEFINITIONS, load_item_definitions
 from pathlib import Path
 from .news_manager import NewsManager
-from .bounties import BountyManager, BountyStatus, BountyObjective
-from .event_bus import EventBus, EventType, Event
+from .bounties import BountyManager, BountyStatus
+from .event_bus import EventBus
 
 from games.gambling_manager import GamblingManager
 from .events import NPCSpawnEvent, NPCDepartEvent, NPCInteractionEvent, NPCRelationshipChangeEvent
@@ -50,7 +49,7 @@ except ImportError:
 try:
     from .npc_systems.psychology import NPCPsychologyManager
     from .npc_systems.secrets import SecretsManager
-    from .npc_systems.dialogue import DialogueGenerator, DialogueContext
+    from .npc_systems.dialogue import DialogueGenerator
     from .npc_systems.gossip import GossipNetwork
     from .npc_systems.goals import GoalManager
     from .npc_systems.interactions import InteractionManager
@@ -75,7 +74,7 @@ try:
     from .narrative.character_memory import CharacterMemoryManager
     from .narrative.character_state import CharacterStateManager
     from .narrative.personality_traits import PersonalityManager
-    from .narrative.npc_schedules import ScheduleManager, create_schedule_for_profession
+    from .narrative.npc_schedules import ScheduleManager
     from .narrative.reputation_network import ReputationNetwork, setup_reputation_network_for_profession
     from .narrative.conversation_continuity import ConversationManager
     from .narrative.story_orchestrator import StoryOrchestrator
@@ -87,8 +86,7 @@ except ImportError as e:
     NARRATIVE_SYSTEMS_AVAILABLE = False
 
 if TYPE_CHECKING:
-    from .snapshot import SnapshotManager
-    from .reputation import get_reputation, get_reputation_tier
+    pass
 
 
 class GameEvent(BaseModel):
@@ -530,7 +528,7 @@ What tale will you weave in this living tapestry of stories?
         self.character_state_manager.tick_all()
 
         # Update schedules and availability
-        schedule_statuses = self.schedule_manager.update_all_schedules(current_hour)
+        self.schedule_manager.update_all_schedules(current_hour)
 
         # Periodic gossip spreading (every ~30 minutes game time)
         if hasattr(self, "_last_gossip_update"):
@@ -600,7 +598,7 @@ What tale will you weave in this living tapestry of stories?
             last_departure = (
                 self.travelling_merchant_departure_time
                 if self.travelling_merchant_departure_time is not None
-                else -float("inf")
+                else -float("in")
             )
             if current_game_hours > (last_departure + merchant_cooldown_hours):
                 if random.random() < merchant_arrival_chance_per_hour_after_cooldown:
@@ -830,7 +828,7 @@ What tale will you weave in this living tapestry of stories?
                         details["topic"] = kwargs.get("topic", "general conversation")
                         details["conversation_context"] = conv_context
 
-                    char_memory.add_interaction_memory(f"Had a conversation with player", details)
+                    char_memory.add_interaction_memory("Had a conversation with player", details)
 
                 elif interaction_id == "buy":
                     item = kwargs.get("item", "something")
@@ -873,49 +871,75 @@ What tale will you weave in this living tapestry of stories?
         if PHASE3_AVAILABLE and response.get("success", False) and interaction_id == "talk":
             npc = self.npc_manager.get_npc(actual_npc_id)
             if npc:
-                # Get psychological state
-                psychology = self.npc_psychology.get_npc_state(actual_npc_id)
+                # Get psychological state for dialogue generation
+                npc_psych_state = self.npc_psychology.get_npc_state(actual_npc_id)
+
+                # Build context for dialogue generation
+                dialogue_context = {
+                    "npc_id": actual_npc_id,
+                    "npc_name": npc.name,
+                    "player_relationship": char_memory.get_relationship_level().value if NARRATIVE_SYSTEMS_AVAILABLE else "neutral",
+                    "time_of_day": current_hour if NARRATIVE_SYSTEMS_AVAILABLE else 12,
+                    "location": self.player.location,
+                    "npc_mood": npc_psych_state.mood if npc_psych_state else "neutral",
+                    "npc_stress": npc_psych_state.stress if npc_psych_state else 0.5,
+                    "recent_memories": char_memory.get_recent_memories(5) if NARRATIVE_SYSTEMS_AVAILABLE else []
+                }
 
                 # Get narrative context if Phase 4 is available
-                narrative_context = None
-                if PHASE4_AVAILABLE and hasattr(self, "narrative_handler"):
-                    narrative_context = self.narrative_handler.get_narrative_context_for_npc(actual_npc_id)
+                if PHASE4_AVAILABLE:
+                    active_threads = self.thread_manager.get_active_threads()
+                    # Find threads involving this NPC
+                    npc_threads = [t for t in active_threads if actual_npc_id in t.participants]
+                    if npc_threads:
+                        dialogue_context["active_narrative_threads"] = [
+                            {"id": t.id, "type": t.thread_type.value, "description": t.description}
+                            for t in npc_threads[:2]  # Include top 2 threads
+                        ]
 
-                # Create dialogue context (simplified for now)
-                # TODO: Implement full DialogueContext integration
-                dialogue_context = None
+                # Generate enhanced dialogue using Phase 3 dialogue_generator
+                try:
+                    enhanced_dialogue = self.dialogue_generator.generate_dialogue(
+                        npc=npc,
+                        context=dialogue_context,
+                        interaction_type="greeting" if not kwargs.get("topic") else "conversation"
+                    )
 
-                # Enhance with character memory and state if available
-                if NARRATIVE_SYSTEMS_AVAILABLE:
-                    char_memory = self.character_memory_manager.get_or_create_memory(actual_npc_id, npc.name)
-                    char_state = self.character_state_manager.get_or_create_state(actual_npc_id, npc.name)
+                    # Only override if we got valid dialogue
+                    if enhanced_dialogue and len(enhanced_dialogue) > 0:
+                        response["message"] = enhanced_dialogue
+                        logger.info(f"Enhanced dialogue for {npc.name} using Phase 3 dialogue_generator")
+                except Exception as e:
+                    # Fallback gracefully if dialogue generation fails
+                    logger.warning(f"Dialogue generation failed for {npc.name}: {e}, using fallback")
+                    # Keep the original message from Phase 1 systems
 
-                    # Override mood with dynamic state (TODO: integrate with dialogue context)
-                    # dialogue_context.current_mood = char_state.mood.value
-
-                    # Add memory-based greeting if this is first interaction
-                    if not char_memory.memories:
-                        base_message = response.get("message", "")
-                        greeting = char_memory.get_contextual_greeting()
-                        response["message"] = f"{greeting} {base_message}"
-
-                # Use base message (dialogue enhancement disabled for Phase 1)
+                # Enhance dialogue with additional Phase 3 systems
                 base_message = response.get("message", "")
                 enhanced_message = base_message
 
-                # Add gossip if available
-                gossip = self.gossip_network.get_npc_gossip(actual_npc_id)
-                if gossip:
-                    enhanced_message += f"\n\n{npc.name} leans in and whispers: '{gossip}'"
+                # Add gossip if NPC has something to share
+                try:
+                    gossip = self.gossip_network.get_npc_gossip(actual_npc_id)
+                    if gossip:
+                        enhanced_message += f"\n\n{npc.name} leans in and whispers: '{gossip}'"
+                except Exception as e:
+                    logger.debug(f"Gossip retrieval failed for {npc.name}: {e}")
 
-                # Add goal-driven dialogue
-                current_goal = self.goal_manager.get_current_goal(actual_npc_id)
-                if current_goal and hasattr(current_goal, "involves_player") and current_goal.involves_player:
-                    goal_dialogue = self.goal_manager.get_goal_dialogue(actual_npc_id, current_goal)
-                    if goal_dialogue:
-                        enhanced_message += f"\n\n{goal_dialogue}"
+                # Add goal-driven dialogue if NPC has player-relevant goals
+                try:
+                    current_goal = self.goal_manager.get_current_goal(actual_npc_id)
+                    if current_goal and hasattr(current_goal, "involves_player") and current_goal.involves_player:
+                        goal_dialogue = self.goal_manager.get_goal_dialogue(actual_npc_id, current_goal)
+                        if goal_dialogue:
+                            enhanced_message += f"\n\n{goal_dialogue}"
+                except Exception as e:
+                    logger.debug(f"Goal dialogue failed for {npc.name}: {e}")
 
-                response["message"] = enhanced_message
+                # Update response with all enhancements
+                if enhanced_message != base_message:
+                    response["message"] = enhanced_message
+                    logger.info(f"Enhanced message for {npc.name} with gossip/goals")
 
         # Check bounty objectives
         if response.get("success", False) and interaction_id == "talk":
@@ -1215,7 +1239,7 @@ What tale will you weave in this living tapestry of stories?
 
         # Handle empty command specially at the beginning
         if not command:
-            help_text = self._generate_help_text()
+            self._generate_help_text()
             return {
                 "success": True,
                 "message": "What would you like to do? Type 'help' for a list of commands.",
@@ -2090,7 +2114,7 @@ A staircase leads up to the rooms for rent.
 
     def update_optimized(self, delta_override: Optional[float] = None) -> None:
         """Optimized update method with performance tracking."""
-        start_time = time.time()
+        time.time()
 
         # Call standard update
         self.update(delta_override)

@@ -1,12 +1,11 @@
 """NPC loader for The Living Rusted Tankard."""
 
 import json
-import os
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Dict, Any
 
-from .npc import NPC, NPCType, NPCDisposition, NPCInteraction
-from .items import Item, TAVERN_ITEMS
+from .npc import NPC, NPCType, NPCDisposition
+from .items import TAVERN_ITEMS
 
 
 class NPCLoader:

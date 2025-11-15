@@ -1,7 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Dict, Optional, Tuple, List, Union, Any
+from typing import Dict, Optional, List, Any
 import random
-from enum import Enum
 from pydantic import BaseModel, Field, validator
 from .items import Item, TAVERN_ITEMS
 
@@ -330,14 +328,12 @@ class Economy(BaseModel):
         item_def: Optional[Item] = TAVERN_ITEMS.get(item_id)  # All item definitions should be in TAVERN_ITEMS
 
         # Check availability if game_state and merchant are relevant
-        is_available_normally = (
-            item_id in TAVERN_ITEMS
-        )  # Standard availability check might be more complex in a full system
+        # Standard availability check - might be more complex in a full system
+        _is_available_normally = item_id in TAVERN_ITEMS  # noqa: F841 - reserved for future use
 
-        is_available_via_merchant = False
         if game_state and game_state.travelling_merchant_active:
             if item_id in game_state.travelling_merchant_temporary_items:
-                is_available_via_merchant = True
+                pass
 
         if not item_def:  # If the item definition itself doesn't exist
             return None

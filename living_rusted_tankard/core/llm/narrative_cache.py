@@ -10,7 +10,6 @@ import json
 from typing import Any, Dict, Optional
 import logging
 from pathlib import Path
-import os
 
 logger = logging.getLogger(__name__)
 

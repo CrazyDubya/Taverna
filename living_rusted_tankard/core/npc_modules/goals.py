@@ -1,13 +1,13 @@
 """NPC goals and agency system."""
 
-from typing import Dict, List, Optional, Set, Tuple, Any, Callable
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime, timedelta
 import random
 
 from .psychology import NPCPsychology, MotivationType, Personality
-from .behavioral_rules import BehaviorRule, Action, Condition, ConditionType, BehaviorPriority
+from .behavioral_rules import Action, Condition
 
 
 class GoalType(Enum):
@@ -862,7 +862,7 @@ class GoalManager:
             # Create basic goals based on NPC type
             basic_goal = Goal(
                 id=f"{npc_id}_basic",
-                name=f"Basic Activities",
+                name="Basic Activities",
                 description=f"Basic activities for {npc_id}",
                 category=GoalCategory.SOCIAL,
                 type=GoalType.SHORT_TERM,
@@ -902,5 +902,5 @@ class GoalManager:
         elif goal.category == GoalCategory.ECONOMIC:
             return f"Business has been on my mind lately - {goal.description.lower()}"
         elif goal.category == GoalCategory.PERSONAL:
-            return f"There's something personal I need to take care of"
+            return "There's something personal I need to take care of"
         return None

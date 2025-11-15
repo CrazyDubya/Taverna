@@ -3,9 +3,8 @@ Character Memory System - The foundation of making NPCs feel like real people.
 Each character remembers their interactions with the player and builds relationships over time.
 """
 
-import json
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 import logging

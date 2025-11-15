@@ -1,11 +1,13 @@
 """Thread management and convergence detection."""
 
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Dict, List, Optional, Set, Any, TYPE_CHECKING
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-import random
 
 from .story_thread import StoryThread, ThreadStage, ThreadType, BeatType, ThreadLibrary
+
+if TYPE_CHECKING:
+    from .story_thread import StoryBeat
 
 
 @dataclass

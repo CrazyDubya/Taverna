@@ -79,7 +79,7 @@ class EventFormatter:
                 try:
                     formatted_text = template.format(**event["data"])
                     formatted.append(formatted_text)
-                except (KeyError, ValueError) as e:
+                except (KeyError, ValueError):
                     # Fallback to a simple message if formatting fails
                     formatted.append(f"Something happened: {event['type']}")
 

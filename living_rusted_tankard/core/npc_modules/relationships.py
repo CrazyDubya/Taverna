@@ -6,7 +6,7 @@ from enum import Enum
 import random
 from datetime import datetime
 
-from .psychology import Relationship, Secret, Personality, Mood
+from .psychology import Relationship, Secret
 
 
 class RelationshipType(Enum):
@@ -191,7 +191,7 @@ class RelationshipWeb:
 
         # Social groups
         self.social_groups: Dict[str, Set[str]] = {
-            "staff": set(),
+            "staf": set(),
             "regulars": set(),
             "merchants": set(),
             "guards": set(),
@@ -381,7 +381,7 @@ class RelationshipWeb:
         groups = self.get_social_groups(npc_id)
         group_influence = {
             "nobility": 0.3,
-            "staff": 0.2,
+            "staf": 0.2,
             "merchants": 0.15,
             "guards": 0.2,
             "regulars": 0.1,
@@ -510,7 +510,7 @@ class RelationshipWeb:
                         self.create_conflict(
                             ConflictType.PERSONAL,
                             [betrayer, betrayed],
-                            f"Conflict arising from betrayal",
+                            "Conflict arising from betrayal",
                             "Betrayal of trust",
                             intensity=0.7,
                         )

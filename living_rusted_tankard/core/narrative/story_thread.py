@@ -1,6 +1,6 @@
 """Story thread system for narrative management."""
 
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Dict, List, Optional, Set, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime, timedelta

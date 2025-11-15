@@ -72,7 +72,7 @@ class TimeDisplayManager:
 
         Returns greetings like "Good morning" based on current time.
         """
-        tavern_time = TavernCalendar.get_fantasy_time(game_time_hours)
+        TavernCalendar.get_fantasy_time(game_time_hours)
 
         greetings = {
             "Deep Night": "A late night to you",
@@ -150,7 +150,7 @@ def format_time_for_npc_speech(game_time_hours: float, npc_data: Optional[Dict[s
             personality = "traditional"
         elif npc_type in ["bard", "adventurer"]:
             personality = "poetic"
-        elif npc_type in ["merchant", "thief"]:
+        elif npc_type in ["merchant", "thie"]:
             personality = "practical"
 
     return TimeDisplayManager.format_time_for_npc(game_time_hours, personality)
@@ -258,7 +258,7 @@ if __name__ == "__main__":
         greeting = get_time_greeting(time_val)
         print(f"{'greeting':12}: {greeting}")
 
-    print(f"\n--- Testing text replacement ---")
+    print("\n--- Testing text replacement ---")
     test_text = "It's currently 14.75 hours and the meeting is at 18.5."
     replaced = replace_decimal_time_in_text(test_text, 0)
     print(f"Original: {test_text}")

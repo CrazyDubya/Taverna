@@ -1,12 +1,12 @@
 """Behavioral rules engine for NPCs."""
 
-from typing import Dict, List, Optional, Any, Callable, Tuple
+from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 import random
-from datetime import datetime, time
+from datetime import datetime
 
-from .psychology import NPCPsychology, Personality, Mood, MotivationType
+from .psychology import NPCPsychology, Personality, Mood
 
 
 class BehaviorPriority(Enum):

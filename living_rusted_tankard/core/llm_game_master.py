@@ -8,11 +8,10 @@ rich narrative responses using Ollama's long-gemma model.
 
 import json
 import logging
-import os
 import re
 import requests
 import time
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 
 from .narrative_actions import NarrativeActionProcessor

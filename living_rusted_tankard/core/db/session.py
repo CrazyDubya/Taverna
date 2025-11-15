@@ -1,10 +1,9 @@
 """Database session management."""
 
-from typing import Generator, Optional
+from typing import Generator
 from sqlmodel import SQLModel, Session, create_engine
 from sqlalchemy.orm import sessionmaker
 import os
-from pathlib import Path
 
 # Database URL - using SQLite for simplicity
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./taverna.db")

@@ -1,5 +1,10 @@
 [flake8]
-max-line-length = 100
-exclude = .git,__pycache__,.venv,venv,build,dist,.mypy_cache,.pytest_cache
-ignore = E203,W503,E402,F401,F403,F405,E266,E800,E731,W504,B008,B006,B902,B018,B019
-max-complexity = 15
+max-line-length = 120
+exclude = .git,__pycache__,.venv,venv,build,dist,.mypy_cache,.pytest_cache,docs,old,archive
+# E203: whitespace before ':' (Black compatibility)
+# W503: line break before binary operator (Black compatibility)
+ignore = E203,W503
+max-complexity = 10
+per-file-ignores =
+    __init__.py:F401,F403
+    */tests/*:F841

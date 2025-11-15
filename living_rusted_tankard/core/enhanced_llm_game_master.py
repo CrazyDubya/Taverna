@@ -9,18 +9,15 @@ This module extends the original LLM Game Master with:
 - Context caching and intelligent context management
 """
 
-import json
 import logging
-import os
 import re
 import requests
 import time
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import threading
-import functools
 
 from .narrative_actions import NarrativeActionProcessor
 
@@ -389,7 +386,7 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
             fallback = self.get_fallback_response(user_input, session_id, game_context)
             return fallback.content, fallback.command, fallback.actions or []
 
-        user_input_lower = user_input.lower().strip()
+        user_input.lower().strip()
 
         # Build optimized context
         context_str = self._build_optimized_context(game_state, session_id)

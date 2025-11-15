@@ -6,7 +6,6 @@ from pathlib import Path
 
 if TYPE_CHECKING:
     from .player import PlayerState
-    from .reputation import get_reputation, get_reputation_tier, REPUTATION_TIERS
 
 
 class BountyStatus(str, Enum):

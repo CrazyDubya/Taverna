@@ -1,6 +1,6 @@
 """Inter-NPC autonomous interactions and conflict generation."""
 
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime, timedelta
@@ -10,7 +10,7 @@ from .psychology import NPCPsychology, Personality, Mood
 from .relationships import RelationshipWeb, RelationshipType, Conflict, ConflictType
 from .dialogue import DialogueGenerator, DialogueContext, DialogueType
 from .gossip import GossipNetwork
-from .goals import Goal, GoalCategory, NPCAgency
+from .goals import NPCAgency
 
 
 class InteractionType(Enum):
@@ -234,7 +234,7 @@ class InteractionManager:
             InteractionType.NEGOTIATION: DialogueType.BUSINESS,
         }
 
-        dialogue_type = dialogue_type_map.get(interaction_type, DialogueType.SMALL_TALK)
+        dialogue_type_map.get(interaction_type, DialogueType.SMALL_TALK)
 
         # Create dialogue context
         relationship = self.relationship_web.get_relationship(initiator, responder)
@@ -455,11 +455,11 @@ class InteractionManager:
         for witness in interaction.context.witnesses:
             # Determine what they saw
             if interaction.type == InteractionType.ARGUMENT:
-                description = f"having a heated argument"
+                description = "having a heated argument"
             elif interaction.type == InteractionType.ROMANCE:
-                description = f"in a romantic moment"
+                description = "in a romantic moment"
             elif interaction.type == InteractionType.INTIMIDATION:
-                description = f"threatening each other"
+                description = "threatening each other"
             else:
                 continue  # Not interesting enough
 

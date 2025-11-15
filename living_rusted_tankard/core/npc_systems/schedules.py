@@ -1,10 +1,9 @@
 """NPC scheduling and routine management."""
 
 from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 from enum import Enum
-import random
 
 from .behavioral_rules import BehaviorRule, Action, Condition, ConditionType, BehaviorPriority
 

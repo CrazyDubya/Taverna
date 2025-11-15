@@ -8,7 +8,6 @@ This module provides:
 - Web Audio API integration
 """
 
-import json
 import logging
 from typing import Dict, List, Optional, Any
 from pathlib import Path
@@ -339,7 +338,7 @@ class GameAudioIntegration:
 
         for event in events:
             event_type = event.get("type", "")
-            event_data = event.get("data", {})
+            event.get("data", {})
 
             # Map different event types to audio events
             if event_type == "success" and "gold" in event.get("message", "").lower():

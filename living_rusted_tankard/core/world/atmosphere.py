@@ -3,7 +3,6 @@
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 from enum import Enum
-import math
 import random
 
 
@@ -362,7 +361,7 @@ class AtmosphereManager:
 
         if area_id not in self.atmospheres:
             # Create default atmosphere for new area
-            self.atmospheres[area_id] = Atmosphere()
+            self.atmospheres[area_id] = AtmosphereState()
 
         # Apply area-specific atmosphere settings
         atmosphere = self.atmospheres[area_id]
@@ -389,7 +388,7 @@ class AtmosphereManager:
     def set_atmosphere_property(self, property_name: str, value: float) -> None:
         """Set a specific atmosphere property"""
         if not self.atmospheres:
-            self.atmospheres["default"] = Atmosphere()
+            self.atmospheres["default"] = AtmosphereState()
 
         # Apply to all atmospheres
         for atmosphere in self.atmospheres.values():

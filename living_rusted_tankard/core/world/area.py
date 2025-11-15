@@ -3,7 +3,6 @@
 from typing import Dict, List, Optional, Set, Any
 from dataclasses import dataclass, field
 from enum import Enum
-import json
 
 from .atmosphere import AtmosphereState
 

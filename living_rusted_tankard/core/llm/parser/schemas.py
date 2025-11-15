@@ -1,9 +1,9 @@
 """Pydantic models for LLM parser output validation in The Living Rusted Tankard."""
 
 from enum import Enum
-from typing import Dict, Any, Optional, List, Union, Literal
+from typing import Dict, Any, Optional, Union
 
-from pydantic import BaseModel, Field, validator, HttpUrl
+from pydantic import BaseModel, Field, validator
 
 
 class ActionType(str, Enum):

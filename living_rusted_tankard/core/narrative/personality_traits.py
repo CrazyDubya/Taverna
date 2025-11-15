@@ -4,8 +4,8 @@ Makes each NPC unique with distinct personality quirks that affect all interacti
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple, Any
-from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
 import random
 import time
 import logging

@@ -3,7 +3,7 @@
 import re
 import json
 import logging
-from typing import Dict, Any, Optional, TypedDict, Literal
+from typing import Dict, Any, Optional, TypedDict
 from dataclasses import dataclass
 import requests
 
@@ -125,13 +125,7 @@ class Parser:
         else:
             inventory_context = "\nPlayer Inventory: Empty"
 
-        # Build player state context
-        player_context = f"""
-Player Status:
-  Gold: {snapshot.player_state.get('gold', 0)}
-  Energy: {snapshot.player_state.get('energy', 100)}%
-  Tiredness: {snapshot.player_state.get('tiredness', 0)}%"""
-
+        # Player state is already included in the prompt below
         return f"""You are the command parser for "The Living Rusted Tankard" medieval fantasy tavern game.
 
 CURRENT GAME CONTEXT:

@@ -5,8 +5,8 @@ This module implements the high-level orchestration of narrative arcs,
 managing the timing and coordination of climaxes across multiple story threads.
 """
 
-from typing import Dict, List, Any, Optional, Set, Tuple
-from dataclasses import dataclass, field
+from typing import Dict, List, Any, Optional, Set
+from dataclasses import dataclass
 from enum import Enum
 import time
 import random
@@ -14,7 +14,7 @@ from collections import defaultdict
 import logging
 
 from .story_thread import StoryThread, ThreadStage, ThreadType, StoryBeat
-from .thread_manager import ThreadManager, ThreadConvergence
+from .thread_manager import ThreadManager
 from .rules import NarrativeRulesEngine, NarrativeHealth, InterventionAction
 
 logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ class ClimaticSequencer:
     def find_convergence_opportunities(self, threads: List[StoryThread]) -> List[ClimaticMoment]:
         """Find opportunities for converging multiple threads into a single climax"""
         opportunities = []
-        current_time = time.time()
+        time.time()
 
         # Group threads by potential convergence windows
         climax_ready_threads = [t for t in threads if t.stage == ThreadStage.RISING_ACTION and t.tension_level > 0.6]
