@@ -17,9 +17,8 @@ from .validation import SaveValidator, ValidationResult, ValidationIssue, Valida
 __all__ = [
     # Main classes
     "SaveManager",
-    "SaveMigrator", 
+    "SaveMigrator",
     "SaveValidator",
-    
     # Data structures
     "SaveFormat",
     "SaveMetadata",
@@ -27,7 +26,6 @@ __all__ = [
     "ValidationResult",
     "ValidationIssue",
     "ValidationSeverity",
-    
     # Utilities
     "DEFAULT_MIGRATIONS",
 ]

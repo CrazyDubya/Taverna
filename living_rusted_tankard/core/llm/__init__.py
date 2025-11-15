@@ -15,11 +15,9 @@ __all__ = [
     "CommandSchema",
     "CommandOutput",
     "ActionType",
-    
     # Narration
     "narrator",
     "Narrator",
-    
     # LLM client
-    "OllamaClient"
+    "OllamaClient",
 ]

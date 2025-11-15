@@ -15,7 +15,6 @@ __all__ = [
     # Core functions
     "parse",
     "format_command_output",
-    
     # Classes
     "Parser",
     "GameSnapshot",
@@ -24,7 +23,6 @@ __all__ = [
     "CommandOutput",
     "ActionType",
     "OllamaClient",
-    
     # Constants
-    "PARSER_PROMPT"
+    "PARSER_PROMPT",
 ]
