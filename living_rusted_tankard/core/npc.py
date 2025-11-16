@@ -70,7 +70,7 @@ class NPCInteraction(BaseModel):
 
 class NPC(BaseModel):
     id: str
-    definition_id: str
+    definition_id: Optional[str] = None
     name: str
     description: str
     npc_type: NPCType
@@ -155,7 +155,7 @@ class NPC(BaseModel):
 
         self.inventory = []
         item_ids_to_choose_from = list(self.base_inventory_ids)
-        if not item_ids_to_choose_from and npc_definitions and self.definition_id in npc_definitions:
+        if not item_ids_to_choose_from and npc_definitions and self.definition_id and self.definition_id in npc_definitions:
             item_ids_to_choose_from = list(npc_definitions[self.definition_id].get("base_inventory_ids", []))
         if not item_ids_to_choose_from:
             return
