@@ -204,6 +204,20 @@ class PlayerState(BaseModel):
             # Force minimal energy to prevent any actions
             self.energy = min(self.energy, 0.1)
 
+    def _clear_exhaustion_if_recovered(self, energy_gain: float) -> None:
+        """Clear exhaustion flags and restore energy if tiredness is back to normal.
+        
+        Args:
+            energy_gain: Amount of energy to restore per hour
+        """
+        if self.tiredness < CONFIG.MAX_TIREDNESS:
+            self.flags.pop("exhausted", None)
+            self.flags.pop("exhaustion_severity", None)
+            self.flags.pop("severely_exhausted", None)
+            self.flags.pop("critically_exhausted", None)
+            # Restore energy based on the recovery activity
+            self.energy = min(1.0, self.energy + energy_gain)
+
     def rest(self, hours: float) -> None:
         """Rest for a number of hours, reducing tiredness."""
         if not self.has_room:
@@ -212,14 +226,8 @@ class PlayerState(BaseModel):
         # Resting reduces tiredness more effectively than just waiting
         self.tiredness = max(0, self.tiredness - hours * 2)
 
-        # Clear exhaustion flags if tiredness is back to normal
-        if self.tiredness < CONFIG.MAX_TIREDNESS:
-            self.flags.pop("exhausted", None)
-            self.flags.pop("exhaustion_severity", None)
-            self.flags.pop("severely_exhausted", None)
-            self.flags.pop("critically_exhausted", None)
-            # Restore some energy when resting
-            self.energy = min(1.0, self.energy + hours * 0.1)
+        # Clear exhaustion flags and restore energy if recovered
+        self._clear_exhaustion_if_recovered(hours * 0.1)
 
     def sleep(self, hours: float) -> float:
         """Sleep for a number of hours, reducing tiredness and advancing time.
@@ -236,15 +244,8 @@ class PlayerState(BaseModel):
         # Reduce tiredness by hours slept (capped at 0)
         self.tiredness = max(0, self.tiredness - hours)
 
-        # Clear exhaustion flags if tiredness is back to normal
-        if self.tiredness < CONFIG.MAX_TIREDNESS:
-            self.flags.pop("exhausted", None)
-            self.flags.pop("exhaustion_severity", None)
-            self.flags.pop("severely_exhausted", None)
-            self.flags.pop("critically_exhausted", None)
-
-        # Restore energy significantly when sleeping
-        self.energy = min(1.0, self.energy + hours * 0.15)
+        # Clear exhaustion flags and restore energy if recovered
+        self._clear_exhaustion_if_recovered(hours * 0.15)
 
         return hours
 

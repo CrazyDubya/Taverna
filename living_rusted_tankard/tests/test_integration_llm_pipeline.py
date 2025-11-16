@@ -442,7 +442,7 @@ class TestLLMIntegrationWithGameSystems:
             id="chatty_barkeeper",
             name="Chatty Barkeeper",
             description="A friendly and talkative barkeeper",
-            npc_type=NPCType.BARTENDER,
+            npc_type=NPCType.BARKEEP,
             current_room="tavern"
         )
 

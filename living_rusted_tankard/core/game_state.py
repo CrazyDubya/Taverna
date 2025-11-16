@@ -1111,29 +1111,6 @@ What tale will you weave in this living tapestry of stories?
                     )
                     relationship_strength = char_memory.relationship_score
 
-                # Get time of day string
-                current_time = self.clock.get_current_time()
-                current_hour = current_time.total_hours % 24
-                if 5 <= current_hour < 12:
-                    time_of_day = "morning"
-                elif 12 <= current_hour < 17:
-                    time_of_day = "afternoon"
-                elif 17 <= current_hour < 21:
-                    time_of_day = "evening"
-                else:
-                    time_of_day = "night"
-
-                # Create DialogueContext
-                dialogue_context = DialogueContext(
-                    speaker_id=actual_npc_id,
-                    listener_id="player",
-                    location=self.player.current_room,
-                    time_of_day=time_of_day,
-                    relationship_type=relationship_type,
-                    relationship_strength=relationship_strength,
-                    last_interaction_type=kwargs.get("last_interaction_type"),
-                )
-
                 # Add memory-based greeting if this is first interaction
                 if NARRATIVE_SYSTEMS_AVAILABLE and char_memory and not char_memory.memories:
                     base_message = response.get("message", "")
