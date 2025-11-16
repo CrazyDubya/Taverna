@@ -1077,11 +1077,26 @@ What tale will you weave in this living tapestry of stories?
                         )
                     )
 
-                # Create dialogue context (simplified for now)
-                # TODO: Implement full DialogueContext integration
-                dialogue_context = None
+                # Create dialogue context with full integration
+                # Map RelationshipLevel to RelationshipType
+                from .npc_systems.relationships import RelationshipType as NPCRelationshipType
 
-                # Enhance with character memory and state if available
+                relationship_level_map = {
+                    "stranger": NPCRelationshipType.STRANGER,
+                    "acquaintance": NPCRelationshipType.ACQUAINTANCE,
+                    "friendly": NPCRelationshipType.FRIEND,
+                    "friend": NPCRelationshipType.FRIEND,
+                    "close_friend": NPCRelationshipType.BEST_FRIEND,
+                    "trusted": NPCRelationshipType.BEST_FRIEND,
+                    "hostile": NPCRelationshipType.ENEMY,
+                }
+
+                # Get relationship information
+                char_memory = None
+                char_state = None
+                relationship_type = NPCRelationshipType.STRANGER
+                relationship_strength = 0.0
+
                 if NARRATIVE_SYSTEMS_AVAILABLE:
                     char_memory = self.character_memory_manager.get_or_create_memory(
                         actual_npc_id, npc.name
@@ -1090,14 +1105,40 @@ What tale will you weave in this living tapestry of stories?
                         actual_npc_id, npc.name
                     )
 
-                    # Override mood with dynamic state (TODO: integrate with dialogue context)
-                    # dialogue_context.current_mood = char_state.mood.value
+                    rel_level = char_memory.get_relationship_level()
+                    relationship_type = relationship_level_map.get(
+                        rel_level.value, NPCRelationshipType.STRANGER
+                    )
+                    relationship_strength = char_memory.relationship_score
 
-                    # Add memory-based greeting if this is first interaction
-                    if not char_memory.memories:
-                        base_message = response.get("message", "")
-                        greeting = char_memory.get_contextual_greeting()
-                        response["message"] = f"{greeting} {base_message}"
+                # Get time of day string
+                current_time = self.clock.get_current_time()
+                current_hour = current_time.total_hours % 24
+                if 5 <= current_hour < 12:
+                    time_of_day = "morning"
+                elif 12 <= current_hour < 17:
+                    time_of_day = "afternoon"
+                elif 17 <= current_hour < 21:
+                    time_of_day = "evening"
+                else:
+                    time_of_day = "night"
+
+                # Create DialogueContext
+                dialogue_context = DialogueContext(
+                    speaker_id=actual_npc_id,
+                    listener_id="player",
+                    location=self.player.current_room,
+                    time_of_day=time_of_day,
+                    relationship_type=relationship_type,
+                    relationship_strength=relationship_strength,
+                    last_interaction_type=kwargs.get("last_interaction_type"),
+                )
+
+                # Add memory-based greeting if this is first interaction
+                if NARRATIVE_SYSTEMS_AVAILABLE and char_memory and not char_memory.memories:
+                    base_message = response.get("message", "")
+                    greeting = char_memory.get_contextual_greeting()
+                    response["message"] = f"{greeting} {base_message}"
 
                 # Use base message (dialogue enhancement disabled for Phase 1)
                 base_message = response.get("message", "")

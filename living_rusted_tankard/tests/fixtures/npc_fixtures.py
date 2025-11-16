@@ -2,40 +2,61 @@
 
 import pytest
 from typing import Dict, Any, List
-from core.npc import NPC
+from core.npc import NPC, NPCType, NPCDisposition
 from core.reputation import ReputationManager
 
 
 @pytest.fixture
 def basic_npc():
     """Create a basic NPC for testing."""
-    return NPC("TestNPC", "A test character", room_id="main_hall")
+    return NPC(
+        id="test_npc",
+        name="TestNPC",
+        description="A test character",
+        npc_type=NPCType.PATRON,
+        current_room="main_hall"
+    )
 
 
 @pytest.fixture
 def bartender_npc():
     """Create a bartender NPC."""
-    npc = NPC("Gareth", "The friendly tavern keeper", room_id="main_hall")
-    npc.disposition = "friendly"
-    npc.dialogue_state = "greeting"
+    npc = NPC(
+        id="gareth",
+        name="Gareth",
+        description="The friendly tavern keeper",
+        npc_type=NPCType.BARTENDER,
+        disposition=NPCDisposition.FRIENDLY,
+        current_room="main_hall"
+    )
     return npc
 
 
 @pytest.fixture
 def merchant_npc():
     """Create a merchant NPC."""
-    npc = NPC("Tobias", "A traveling merchant", room_id="main_hall")
-    npc.disposition = "neutral"
-    npc.dialogue_state = "trading"
+    npc = NPC(
+        id="tobias",
+        name="Tobias",
+        description="A traveling merchant",
+        npc_type=NPCType.MERCHANT,
+        disposition=NPCDisposition.NEUTRAL,
+        current_room="main_hall"
+    )
     return npc
 
 
 @pytest.fixture
 def guard_npc():
     """Create a guard NPC."""
-    npc = NPC("Captain Marcus", "The tavern's security", room_id="main_hall")
-    npc.disposition = "suspicious"
-    npc.dialogue_state = "watching"
+    npc = NPC(
+        id="captain_marcus",
+        name="Captain Marcus",
+        description="The tavern's security",
+        npc_type=NPCType.GUARD,
+        disposition=NPCDisposition.SUSPICIOUS,
+        current_room="main_hall"
+    )
     return npc
 
 
@@ -43,18 +64,48 @@ def guard_npc():
 def multiple_npcs():
     """Create multiple NPCs for testing."""
     return [
-        NPC("Gareth", "The friendly tavern keeper", room_id="main_hall"),
-        NPC("Tobias", "A traveling merchant", room_id="main_hall"),
-        NPC("Captain Marcus", "The tavern's security", room_id="main_hall"),
-        NPC("Elena", "A mysterious stranger", room_id="main_hall"),
+        NPC(
+            id="gareth",
+            name="Gareth",
+            description="The friendly tavern keeper",
+            npc_type=NPCType.BARTENDER,
+            current_room="main_hall"
+        ),
+        NPC(
+            id="tobias",
+            name="Tobias",
+            description="A traveling merchant",
+            npc_type=NPCType.MERCHANT,
+            current_room="main_hall"
+        ),
+        NPC(
+            id="captain_marcus",
+            name="Captain Marcus",
+            description="The tavern's security",
+            npc_type=NPCType.GUARD,
+            current_room="main_hall"
+        ),
+        NPC(
+            id="elena",
+            name="Elena",
+            description="A mysterious stranger",
+            npc_type=NPCType.PATRON,
+            current_room="main_hall"
+        ),
     ]
 
 
 @pytest.fixture
 def npc_with_dialogue():
     """Create an NPC with dialogue options."""
-    npc = NPC("Chatty Pete", "A talkative patron", room_id="main_hall")
-    npc.dialogue_options = [
+    npc = NPC(
+        id="chatty_pete",
+        name="Chatty Pete",
+        description="A talkative patron",
+        npc_type=NPCType.PATRON,
+        current_room="main_hall"
+    )
+    npc.conversation_topics = [
         "Tell me about the weather",
         "What's new in town?",
         "Buy me a drink",
@@ -65,7 +116,13 @@ def npc_with_dialogue():
 @pytest.fixture
 def npc_with_inventory():
     """Create an NPC with inventory items."""
-    npc = NPC("Trader Sam", "A merchant with goods", room_id="main_hall")
+    npc = NPC(
+        id="trader_sam",
+        name="Trader Sam",
+        description="A merchant with goods",
+        npc_type=NPCType.MERCHANT,
+        current_room="main_hall"
+    )
     npc.inventory = [
         {"name": "healing_potion", "quantity": 3, "price": 25},
         {"name": "rope", "quantity": 1, "price": 10},
