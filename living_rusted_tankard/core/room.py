@@ -27,7 +27,9 @@ class Room(BaseModel):
     price_per_night: int = ROOM_COST
     is_occupied: bool = False
     occupant_id: Optional[str] = None
-    npcs: List[str] = Field(default_factory=list, description="List of NPC IDs currently in the room")
+    npcs: List[str] = Field(
+        default_factory=list, description="List of NPC IDs currently in the room"
+    )
     features: List[Dict[str, str]] = Field(default_factory=list)
     has_storage_chest: bool = False  # Added
     storage_chest_cost_modifier: int = STORAGE_CHEST_COST_MODIFIER  # Added
@@ -47,7 +49,9 @@ class Room(BaseModel):
         if self.description is None and self.name:
             self.description = f"This is {self.name}."
 
-    def rent(self, player_id: str, with_storage_chest: bool = False) -> bool:  # Added with_storage_chest
+    def rent(
+        self, player_id: str, with_storage_chest: bool = False
+    ) -> bool:  # Added with_storage_chest
         if (
             self.is_occupied and self.occupant_id != player_id
         ):  # Allow re-renting to same player if needed by logic elsewhere
@@ -190,16 +194,27 @@ class RoomManager(BaseModel):
         return False
 
     def rent_room(
-        self, player: "PlayerState", for_how_long: int = 1, with_storage_chest: bool = False
+        self,
+        player: "PlayerState",
+        for_how_long: int = 1,
+        with_storage_chest: bool = False,
     ) -> Tuple[bool, Optional[str], str]:
         if player.has_room and player.room_id:
             current_rented_room = self.rooms.get(player.room_id)
             if current_rented_room and current_rented_room.occupant_id == player.id:
-                return False, player.room_id, f"You already have room {current_rented_room.name} rented."
+                return (
+                    False,
+                    player.room_id,
+                    f"You already have room {current_rented_room.name} rented.",
+                )
 
         room_to_rent: Optional[Room] = None
         for r_id, r_obj in self.rooms.items():
-            if r_id != "tavern_main" and r_id != "deep_cellar" and not r_obj.is_occupied:
+            if (
+                r_id != "tavern_main"
+                and r_id != "deep_cellar"
+                and not r_obj.is_occupied
+            ):
                 room_to_rent = r_obj
                 break
 
@@ -218,7 +233,9 @@ class RoomManager(BaseModel):
             if old_room:
                 old_room.vacate()  # Vacate also resets has_storage_chest
 
-        success_rent = room_to_rent.rent(player.id, with_storage_chest)  # Pass with_storage_chest to Room.rent
+        success_rent = room_to_rent.rent(
+            player.id, with_storage_chest
+        )  # Pass with_storage_chest to Room.rent
 
         if success_rent:
             player.has_room = True

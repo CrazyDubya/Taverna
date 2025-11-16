@@ -3,7 +3,6 @@
 import pytest
 
 
-
 def test_player_initial_state(player_state):
     """Test that a new player has the expected initial state."""
     assert player_state.gold == 40
@@ -15,7 +14,6 @@ def test_player_initial_state(player_state):
     assert isinstance(player_state.inventory, type(player_state.inventory))
     assert len(player_state.inventory._items) == 0  # Check it's empty
     assert player_state.flags == {}
-
 
 
 def test_gold_management(player_state):
@@ -31,7 +29,6 @@ def test_gold_management(player_state):
     # Test insufficient funds
     assert player_state.spend_gold(40) is False
     assert player_state.gold == 30  # Should not change
-
 
 
 def test_tiredness_mechanics(player_state):
@@ -50,7 +47,6 @@ def test_tiredness_mechanics(player_state):
     # Rest reduces tiredness by hours * 0.2 (8 * 0.2 = 1.6), but can't go below 0
     expected_tiredness = max(0, 1.0 - (8 * 0.2))
     assert player_state.tiredness == pytest.approx(expected_tiredness)
-
 
 
 def test_no_sleep_quest(player_state):

@@ -75,16 +75,26 @@ class ConsequenceRule:
     delay_hours: float = 0.0  # How long before consequence manifests
 
     # Effects
-    reputation_changes: Dict[str, float] = field(default_factory=dict)  # NPC ID -> change
-    relationship_changes: Dict[str, float] = field(default_factory=dict)  # NPC ID -> change
-    mood_changes: Dict[str, float] = field(default_factory=dict)  # NPC ID -> mood modifier
+    reputation_changes: Dict[str, float] = field(
+        default_factory=dict
+    )  # NPC ID -> change
+    relationship_changes: Dict[str, float] = field(
+        default_factory=dict
+    )  # NPC ID -> change
+    mood_changes: Dict[str, float] = field(
+        default_factory=dict
+    )  # NPC ID -> mood modifier
     world_state_changes: Dict[str, Any] = field(default_factory=dict)
-    story_thread_triggers: List[str] = field(default_factory=list)  # Thread types to create
+    story_thread_triggers: List[str] = field(
+        default_factory=list
+    )  # Thread types to create
 
     # Descriptive text
     consequence_description: str = ""
     player_notification: str = ""
-    npc_reactions: Dict[str, str] = field(default_factory=dict)  # NPC ID -> reaction text
+    npc_reactions: Dict[str, str] = field(
+        default_factory=dict
+    )  # NPC ID -> reaction text
 
     # Rule metadata
     weight: float = 1.0  # Likelihood multiplier
@@ -139,7 +149,11 @@ class PendingConsequence:
 
     def is_ready_to_execute(self) -> bool:
         """Check if this consequence should be executed now."""
-        return not self.executed and not self.cancelled and time.time() >= self.scheduled_time
+        return (
+            not self.executed
+            and not self.cancelled
+            and time.time() >= self.scheduled_time
+        )
 
 
 class ConsequenceChain:
@@ -198,7 +212,12 @@ class ConsequenceEngine:
                 name="Generous Behavior Pattern",
                 description="Consistent helpful and generous actions improve reputation",
                 action_category=ActionCategory.SOCIAL,
-                action_patterns=[r"help.*npc", r"give.*gold", r"assist.*", r"volunteer.*"],
+                action_patterns=[
+                    r"help.*npc",
+                    r"give.*gold",
+                    r"assist.*",
+                    r"volunteer.*",
+                ],
                 minimum_occurrences=1,
                 time_window_hours=48.0,
                 consequence_type=ConsequenceType.MEDIUM_TERM,
@@ -218,7 +237,12 @@ class ConsequenceEngine:
                 name="Aggressive Behavior Pattern",
                 description="Threatening or violent actions create fear and hostility",
                 action_category=ActionCategory.VIOLENT,
-                action_patterns=[r"threaten.*", r"attack.*", r"intimidate.*", r"fight.*"],
+                action_patterns=[
+                    r"threaten.*",
+                    r"attack.*",
+                    r"intimidate.*",
+                    r"fight.*",
+                ],
                 minimum_occurrences=2,
                 time_window_hours=24.0,
                 consequence_type=ConsequenceType.SHORT_TERM,
@@ -240,7 +264,11 @@ class ConsequenceEngine:
                 name="Successful Merchant",
                 description="Consistent profitable trading establishes business reputation",
                 action_category=ActionCategory.ECONOMIC,
-                action_patterns=[r"sell.*profit", r"negotiate.*success", r"trade.*advantage"],
+                action_patterns=[
+                    r"sell.*profit",
+                    r"negotiate.*success",
+                    r"trade.*advantage",
+                ],
                 minimum_occurrences=2,
                 time_window_hours=72.0,
                 consequence_type=ConsequenceType.MEDIUM_TERM,
@@ -260,12 +288,19 @@ class ConsequenceEngine:
                 name="Unreliable Behavior",
                 description="Breaking promises or failing commitments damages relationships",
                 action_category=ActionCategory.MORAL,
-                action_patterns=[r"break.*promise", r"fail.*commitment", r"abandon.*quest", r"ignore.*request"],
+                action_patterns=[
+                    r"break.*promise",
+                    r"fail.*commitment",
+                    r"abandon.*quest",
+                    r"ignore.*request",
+                ],
                 minimum_occurrences=1,
                 consequence_type=ConsequenceType.IMMEDIATE,
                 consequence_scope=ConsequenceScope.INDIVIDUAL,
                 delay_hours=0.0,
-                relationship_changes={"target": -0.3},  # "target" means the affected NPC
+                relationship_changes={
+                    "target": -0.3
+                },  # "target" means the affected NPC
                 reputation_changes={"target": -0.2},
                 consequence_description="Your unreliability has damaged trust",
                 player_notification="You sense that your reputation has suffered",
@@ -280,7 +315,12 @@ class ConsequenceEngine:
                 name="Curious Investigator",
                 description="Investigating mysteries and asking questions uncovers secrets",
                 action_category=ActionCategory.EXPLORATION,
-                action_patterns=[r"investigate.*", r"search.*clues", r"ask.*about.*mystery", r"examine.*suspicious"],
+                action_patterns=[
+                    r"investigate.*",
+                    r"search.*clues",
+                    r"ask.*about.*mystery",
+                    r"examine.*suspicious",
+                ],
                 minimum_occurrences=2,
                 time_window_hours=24.0,
                 consequence_type=ConsequenceType.SHORT_TERM,
@@ -300,7 +340,11 @@ class ConsequenceEngine:
                 name="Wealthy Customer",
                 description="Spending lots of money attracts special offers and attention",
                 action_category=ActionCategory.ECONOMIC,
-                action_patterns=[r"buy.*expensive", r"purchase.*multiple", r"spend.*gold"],
+                action_patterns=[
+                    r"buy.*expensive",
+                    r"purchase.*multiple",
+                    r"spend.*gold",
+                ],
                 minimum_occurrences=2,
                 time_window_hours=48.0,
                 required_gold_min=200,
@@ -338,7 +382,9 @@ class ConsequenceEngine:
         cutoff_time = current_time - (max_age_hours * 3600)
 
         old_action_ids = [
-            action_id for action_id, action in self.tracked_actions.items() if action.timestamp < cutoff_time
+            action_id
+            for action_id, action in self.tracked_actions.items()
+            if action.timestamp < cutoff_time
         ]
 
         for action_id in old_action_ids:
@@ -351,7 +397,9 @@ class ConsequenceEngine:
                 if self._should_trigger_rule(rule, action):
                     self._trigger_consequence(rule, action)
 
-    def _action_matches_rule(self, action: TrackedAction, rule: ConsequenceRule) -> bool:
+    def _action_matches_rule(
+        self, action: TrackedAction, rule: ConsequenceRule
+    ) -> bool:
         """Check if an action matches a rule's criteria."""
         # Category match
         if action.category != rule.action_category:
@@ -363,7 +411,8 @@ class ConsequenceEngine:
         if rule.action_patterns:
             # If patterns are specified but none match, still allow category match
             pattern_match = any(
-                re.search(pattern, action.description, re.IGNORECASE) for pattern in rule.action_patterns
+                re.search(pattern, action.description, re.IGNORECASE)
+                for pattern in rule.action_patterns
             )
             # Don't reject based on pattern mismatch - patterns are hints, not requirements
             # This makes the system more flexible and responsive to player actions
@@ -379,7 +428,9 @@ class ConsequenceEngine:
 
         return True
 
-    def _should_trigger_rule(self, rule: ConsequenceRule, current_action: TrackedAction) -> bool:
+    def _should_trigger_rule(
+        self, rule: ConsequenceRule, current_action: TrackedAction
+    ) -> bool:
         """Determine if a rule should trigger based on occurrence patterns."""
         # Check cooldown
         if rule.last_triggered and rule.cooldown_hours > 0:
@@ -398,12 +449,17 @@ class ConsequenceEngine:
         matching_actions = [
             action
             for action in self.tracked_actions.values()
-            if (action.timestamp >= window_start and self._action_matches_rule(action, rule))
+            if (
+                action.timestamp >= window_start
+                and self._action_matches_rule(action, rule)
+            )
         ]
 
         return len(matching_actions) >= rule.minimum_occurrences
 
-    def _trigger_consequence(self, rule: ConsequenceRule, trigger_action: TrackedAction) -> None:
+    def _trigger_consequence(
+        self, rule: ConsequenceRule, trigger_action: TrackedAction
+    ) -> None:
         """Trigger a consequence based on a rule."""
         consequence_id = f"consequence_{rule.rule_id}_{int(time.time())}"
 
@@ -414,7 +470,9 @@ class ConsequenceEngine:
         affected_npcs = trigger_action.involved_npcs.copy()
         if rule.consequence_scope == ConsequenceScope.COMMUNITY:
             # Add all known NPCs
-            affected_npcs.extend(["grim_bartender", "mira_merchant", "jonas_blacksmith", "elara_healer"])
+            affected_npcs.extend(
+                ["grim_bartender", "mira_merchant", "jonas_blacksmith", "elara_healer"]
+            )
             affected_npcs = list(set(affected_npcs))  # Remove duplicates
 
         # Create pending consequence
@@ -445,13 +503,17 @@ class ConsequenceEngine:
         # Create or extend consequence chain
         chain_id = f"chain_{trigger_action.action_id}"
         if chain_id not in self.consequence_chains:
-            self.consequence_chains[chain_id] = ConsequenceChain(chain_id, trigger_action.action_id)
+            self.consequence_chains[chain_id] = ConsequenceChain(
+                chain_id, trigger_action.action_id
+            )
 
         self.consequence_chains[chain_id].add_consequence(consequence_id, rule.weight)
 
         self.total_consequences_triggered += 1
 
-        logger.info(f"Triggered consequence: {rule.name} -> {rule.consequence_description}")
+        logger.info(
+            f"Triggered consequence: {rule.name} -> {rule.consequence_description}"
+        )
 
     def update(self, game_state: Any) -> List[str]:
         """Update the consequence engine and execute ready consequences."""
@@ -459,7 +521,9 @@ class ConsequenceEngine:
 
         # Execute ready consequences
         ready_consequences = [
-            consequence for consequence in self.pending_consequences.values() if consequence.is_ready_to_execute()
+            consequence
+            for consequence in self.pending_consequences.values()
+            if consequence.is_ready_to_execute()
         ]
 
         for consequence in ready_consequences:
@@ -469,13 +533,17 @@ class ConsequenceEngine:
 
         return executed_notifications
 
-    def _execute_consequence(self, consequence: PendingConsequence, game_state: Any) -> Optional[str]:
+    def _execute_consequence(
+        self, consequence: PendingConsequence, game_state: Any
+    ) -> Optional[str]:
         """Execute a pending consequence."""
         try:
             effects = consequence.effects
 
             # Apply reputation changes
-            if "reputation_changes" in effects and hasattr(game_state, "reputation_network"):
+            if "reputation_changes" in effects and hasattr(
+                game_state, "reputation_network"
+            ):
                 for npc_or_all, change in effects["reputation_changes"].items():
                     if npc_or_all == "all":
                         # Apply to all affected NPCs
@@ -505,7 +573,9 @@ class ConsequenceEngine:
                         )
 
             # Apply relationship changes
-            if "relationship_changes" in effects and hasattr(game_state, "character_memory_manager"):
+            if "relationship_changes" in effects and hasattr(
+                game_state, "character_memory_manager"
+            ):
                 for npc_or_target, change in effects["relationship_changes"].items():
                     if npc_or_target == "target" and consequence.affected_npcs:
                         npc_id = consequence.affected_npcs[0]
@@ -520,7 +590,9 @@ class ConsequenceEngine:
                             memory.damage_relationship(abs(change))
 
             # Apply mood changes
-            if "mood_changes" in effects and hasattr(game_state, "character_state_manager"):
+            if "mood_changes" in effects and hasattr(
+                game_state, "character_state_manager"
+            ):
                 for npc_or_all, mood_modifier in effects["mood_changes"].items():
                     npcs_to_affect = []
                     if npc_or_all == "all":
@@ -529,9 +601,13 @@ class ConsequenceEngine:
                         npcs_to_affect = [npc_or_all]
 
                     for npc_id in npcs_to_affect:
-                        state = game_state.character_state_manager.character_states.get(npc_id)
+                        state = game_state.character_state_manager.character_states.get(
+                            npc_id
+                        )
                         if state:
-                            state.mood_modifiers[f"consequence_{consequence.consequence_id}"] = (
+                            state.mood_modifiers[
+                                f"consequence_{consequence.consequence_id}"
+                            ] = (
                                 mood_modifier,
                                 datetime.now() + timedelta(hours=24),
                             )
@@ -543,7 +619,9 @@ class ConsequenceEngine:
                     logger.info(f"World state change: {change_key} = {change_value}")
 
             # Trigger story threads
-            if "story_thread_triggers" in effects and hasattr(game_state, "story_thread_manager"):
+            if "story_thread_triggers" in effects and hasattr(
+                game_state, "story_thread_manager"
+            ):
                 for thread_type in effects["story_thread_triggers"]:
                     # This would integrate with the story thread system
                     logger.info(f"Would trigger story thread: {thread_type}")
@@ -555,7 +633,9 @@ class ConsequenceEngine:
             return consequence.player_notification
 
         except Exception as e:
-            logger.error(f"Error executing consequence {consequence.consequence_id}: {e}")
+            logger.error(
+                f"Error executing consequence {consequence.consequence_id}: {e}"
+            )
             consequence.cancelled = True
             return None
 
@@ -573,10 +653,16 @@ class ConsequenceEngine:
             "total_actions_tracked": self.total_actions_tracked,
             "total_consequences_triggered": self.total_consequences_triggered,
             "active_rules": len(self.rules),
-            "pending_consequences": len([c for c in self.pending_consequences.values() if not c.executed]),
+            "pending_consequences": len(
+                [c for c in self.pending_consequences.values() if not c.executed]
+            ),
             "active_chains": len(self.consequence_chains),
             "most_triggered_rule": (
-                max(self.rules.values(), key=lambda r: r.triggered_count, default=None).name if self.rules else None
+                max(
+                    self.rules.values(), key=lambda r: r.triggered_count, default=None
+                ).name
+                if self.rules
+                else None
             ),
         }
 
@@ -646,7 +732,9 @@ class ConsequenceEngine:
             context={
                 "command": command,
                 "result": result,
-                "player_gold": getattr(game_state.player, "gold", 0) if hasattr(game_state, "player") else 0,
+                "player_gold": getattr(game_state.player, "gold", 0)
+                if hasattr(game_state, "player")
+                else 0,
             },
             success=result.get("success", False),
             magnitude=1.0,

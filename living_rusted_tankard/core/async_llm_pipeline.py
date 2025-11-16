@@ -112,7 +112,11 @@ class ResponseCache:
         if len(self.cache) >= self.max_size:
             self._evict_oldest()
 
-        self.cache[cache_key] = {"response": response, "timestamp": time.time(), "hits": 0}
+        self.cache[cache_key] = {
+            "response": response,
+            "timestamp": time.time(),
+            "hits": 0,
+        }
         logger.debug(f"Cached response for input: {user_input[:50]}...")
 
     def _evict_oldest(self) -> None:
@@ -163,7 +167,9 @@ class FallbackResponseGenerator:
         # Add time context if available
         time_context = ""
         if context and "current_time" in context:
-            time_context = f" The {context['current_time'].lower()} atmosphere adds to the moment."
+            time_context = (
+                f" The {context['current_time'].lower()} atmosphere adds to the moment."
+            )
 
         base_response = random.choice(self.GENERAL_RESPONSES)
         return base_response + time_context
@@ -172,7 +178,11 @@ class FallbackResponseGenerator:
 class AsyncLLMPipeline:
     """Enhanced asynchronous LLM processing pipeline."""
 
-    def __init__(self, ollama_url: str = "http://localhost:11434", model: str = "long-gemma:latest"):
+    def __init__(
+        self,
+        ollama_url: str = "http://localhost:11434",
+        model: str = "long-gemma:latest",
+    ):
         self.ollama_url = ollama_url
         self.model = model
 
@@ -235,7 +245,9 @@ class AsyncLLMPipeline:
                         else:
                             self._stats[key] = value
                     else:
-                        self._stats[key] += value if isinstance(value, (int, float)) else 1
+                        self._stats[key] += (
+                            value if isinstance(value, (int, float)) else 1
+                        )
 
     def get_stats(self) -> Dict[str, Any]:
         """Thread-safe method to get current statistics."""
@@ -285,7 +297,11 @@ class AsyncLLMPipeline:
         logger.info("Async LLM Pipeline stopped")
 
     async def process_request_async(
-        self, user_input: str, game_state: Any, session_id: str, priority: RequestPriority = RequestPriority.NORMAL
+        self,
+        user_input: str,
+        game_state: Any,
+        session_id: str,
+        priority: RequestPriority = RequestPriority.NORMAL,
     ) -> str:
         """Process a request asynchronously and return request ID for tracking."""
         if not self.is_running:
@@ -324,7 +340,9 @@ class AsyncLLMPipeline:
 
         return request_id
 
-    async def get_response(self, request_id: str, timeout: float = 30.0) -> Optional[LLMResponse]:
+    async def get_response(
+        self, request_id: str, timeout: float = 30.0
+    ) -> Optional[LLMResponse]:
         """Get the response for a request (blocking until ready or timeout)."""
         start_time = time.time()
 
@@ -341,7 +359,8 @@ class AsyncLLMPipeline:
         request = self._get_active_request(request_id)
         if request:
             fallback_content = self.fallback_generator.generate_fallback(
-                request.user_input, {"current_time": "evening"}  # Could get from game_state
+                request.user_input,
+                {"current_time": "evening"},  # Could get from game_state
             )
 
             # Clean up
@@ -376,7 +395,9 @@ class AsyncLLMPipeline:
 
             # Fall back to enhanced LLM for synchronous processing
             start_time = time.time()
-            response, command, actions = self.enhanced_llm.process_input(user_input, game_state, session_id)
+            response, command, actions = self.enhanced_llm.process_input(
+                user_input, game_state, session_id
+            )
             processing_time = time.time() - start_time
 
             # Cache the response
@@ -401,7 +422,9 @@ class AsyncLLMPipeline:
                 try:
                     from .time_display import get_time_context_for_llm
 
-                    time_context = get_time_context_for_llm(game_state.clock.current_time_hours)
+                    time_context = get_time_context_for_llm(
+                        game_state.clock.current_time_hours
+                    )
                     game_context["current_time"] = time_context
                 except Exception:
                     game_context["current_time"] = "evening"
@@ -413,14 +436,18 @@ class AsyncLLMPipeline:
                 except Exception:
                     game_context["present_npcs"] = []
 
-                response, command, actions = handle_llm_error(e, session_id, user_input, game_context)
+                response, command, actions = handle_llm_error(
+                    e, session_id, user_input, game_context
+                )
 
                 self._update_stats(fallback_responses=1)
                 return response, command, actions
 
             except ImportError:
                 # Fallback to basic fallback response
-                fallback_response = self.fallback_generator.generate_fallback(user_input, {"current_time": "evening"})
+                fallback_response = self.fallback_generator.generate_fallback(
+                    user_input, {"current_time": "evening"}
+                )
 
                 self._update_stats(fallback_responses=1)
                 return fallback_response, None, []
@@ -431,7 +458,9 @@ class AsyncLLMPipeline:
             try:
                 # Get request from queue with timeout
                 try:
-                    priority, timestamp, request = await asyncio.wait_for(self.request_queue.get(), timeout=1.0)
+                    priority, timestamp, request = await asyncio.wait_for(
+                        self.request_queue.get(), timeout=1.0
+                    )
                 except asyncio.TimeoutError:
                     continue
 
@@ -466,7 +495,9 @@ class AsyncLLMPipeline:
             try:
                 from .time_display import get_time_context_for_llm
 
-                time_context = get_time_context_for_llm(request.game_state.clock.current_time_hours)
+                time_context = get_time_context_for_llm(
+                    request.game_state.clock.current_time_hours
+                )
                 self.response_cache.set(request.user_input, time_context, response)
             except Exception as e:
                 logger.debug(f"Error caching response: {e}")
@@ -481,8 +512,13 @@ class AsyncLLMPipeline:
 
                 # Adjust importance based on content
                 if command or (actions and len(actions) > 0):
-                    importance = MemoryImportance.HIGH  # Commands and actions are more important
-                elif any(word in request.user_input.lower() for word in ["hello", "hi", "greet"]):
+                    importance = (
+                        MemoryImportance.HIGH
+                    )  # Commands and actions are more important
+                elif any(
+                    word in request.user_input.lower()
+                    for word in ["hello", "hi", "greet"]
+                ):
                     importance = MemoryImportance.TRIVIAL
 
                 add_session_memory(request.session_id, memory_content, importance)
@@ -501,7 +537,9 @@ class AsyncLLMPipeline:
             logger.error(f"Error processing request {request.id}: {e}")
 
             # Generate fallback response
-            fallback_response = self.fallback_generator.generate_fallback(request.user_input, request.context)
+            fallback_response = self.fallback_generator.generate_fallback(
+                request.user_input, request.context
+            )
 
             if request.callback:
                 request.callback(fallback_response, None, [])
@@ -598,11 +636,16 @@ def process_llm_request_sync(
 
 
 async def process_llm_request_async(
-    user_input: str, game_state: Any, session_id: str, priority: RequestPriority = RequestPriority.NORMAL
+    user_input: str,
+    game_state: Any,
+    session_id: str,
+    priority: RequestPriority = RequestPriority.NORMAL,
 ) -> str:
     """Process LLM request asynchronously and return request ID."""
     pipeline = get_pipeline()
-    return await pipeline.process_request_async(user_input, game_state, session_id, priority)
+    return await pipeline.process_request_async(
+        user_input, game_state, session_id, priority
+    )
 
 
 if __name__ == "__main__":

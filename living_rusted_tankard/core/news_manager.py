@@ -41,7 +41,9 @@ class NewsManager(BaseModel):
 
         news_file = self._data_dir / "news.json"
         if not news_file.exists():
-            print(f"Warning: News data file not found at {news_file}. No news items loaded.")
+            print(
+                f"Warning: News data file not found at {news_file}. No news items loaded."
+            )
             self.news_items = []
             self._loaded = True
             return
@@ -67,13 +69,18 @@ class NewsManager(BaseModel):
         except json.JSONDecodeError as e:
             print(f"Error decoding news items from {news_file}: {e}")
             self.news_items = []
-        except Exception as e:  # Catch other Pydantic validation errors or general issues
+        except (
+            Exception
+        ) as e:  # Catch other Pydantic validation errors or general issues
             print(f"Unexpected error loading news items: {e}")
             self.news_items = []
         self._loaded = True
 
     def get_relevant_news(
-        self, npc_type_str: str, current_day: int, active_events: Optional[List[str]] = None
+        self,
+        npc_type_str: str,
+        current_day: int,
+        active_events: Optional[List[str]] = None,
     ) -> List[NewsItem]:
         """
         Filters news_items based on NPC type and game conditions.
@@ -101,9 +108,15 @@ class NewsManager(BaseModel):
             # Check conditions
             conditions_met = True
             if item.conditions:
-                if item.conditions.min_day is not None and current_day < item.conditions.min_day:
+                if (
+                    item.conditions.min_day is not None
+                    and current_day < item.conditions.min_day
+                ):
                     conditions_met = False
-                if item.conditions.requires_event and item.conditions.requires_event not in active_events:
+                if (
+                    item.conditions.requires_event
+                    and item.conditions.requires_event not in active_events
+                ):
                     conditions_met = False
 
             if conditions_met:
@@ -124,7 +137,9 @@ class NewsManager(BaseModel):
         relevant_news = self.get_relevant_news(npc_type_str, current_day, active_events)
 
         if recently_shared_ids:
-            available_news = [news for news in relevant_news if news.id not in recently_shared_ids]
+            available_news = [
+                news for news in relevant_news if news.id not in recently_shared_ids
+            ]
         else:
             available_news = relevant_news
 

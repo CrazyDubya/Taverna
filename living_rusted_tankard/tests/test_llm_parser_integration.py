@@ -54,9 +54,7 @@ async def test_llm_parser_integration():
 
         # Call the parse function
         result = await parse(
-            input_text=input_text,
-            game_state=SAMPLE_GAME_STATE,
-            use_llm=True
+            input_text=input_text, game_state=SAMPLE_GAME_STATE, use_llm=True
         )
 
         # Log the result
@@ -64,39 +62,50 @@ async def test_llm_parser_integration():
 
         # Basic assertions
         assert result.success, f"Failed to parse input: {input_text}"
-        assert result.command is not None, f"No command returned for input: {input_text}"
+        assert (
+            result.command is not None
+        ), f"No command returned for input: {input_text}"
 
         # Verify action matches
         if isinstance(expected["action"], ActionType):
-            assert result.command.action == expected["action"], \
-                f"Action mismatch for input: {input_text}"
+            assert (
+                result.command.action == expected["action"]
+            ), f"Action mismatch for input: {input_text}"
         else:
-            assert str(result.command.action).lower() == expected["action"].lower(), \
-                f"Action string mismatch for input: {input_text}"
+            assert (
+                str(result.command.action).lower() == expected["action"].lower()
+            ), f"Action string mismatch for input: {input_text}"
 
         # Verify target if expected
         if "target" in expected:
-            assert result.command.target is not None, \
-                f"Expected target for input: {input_text}"
-            assert str(result.command.target).lower() == expected["target"].lower(), \
-                f"Target mismatch for input: {input_text}"
+            assert (
+                result.command.target is not None
+            ), f"Expected target for input: {input_text}"
+            assert (
+                str(result.command.target).lower() == expected["target"].lower()
+            ), f"Target mismatch for input: {input_text}"
 
         # Verify subject if expected
         if "subject" in expected:
-            assert result.command.subject is not None, \
-                f"Expected subject for input: {input_text}"
-            assert expected["subject"].lower() in str(result.command.subject).lower(), \
-                f"Subject mismatch for input: {input_text}"
+            assert (
+                result.command.subject is not None
+            ), f"Expected subject for input: {input_text}"
+            assert (
+                expected["subject"].lower() in str(result.command.subject).lower()
+            ), f"Subject mismatch for input: {input_text}"
 
         # Verify amount if expected
         if "amount" in expected:
-            assert result.command.amount is not None, \
-                f"Expected amount for input: {input_text}"
-            assert result.command.amount == expected["amount"], \
-                f"Amount mismatch for input: {input_text}"
+            assert (
+                result.command.amount is not None
+            ), f"Expected amount for input: {input_text}"
+            assert (
+                result.command.amount == expected["amount"]
+            ), f"Amount mismatch for input: {input_text}"
 
     # Clean up
     await client.close()
+
 
 if __name__ == "__main__":
     asyncio.run(test_llm_parser_integration())

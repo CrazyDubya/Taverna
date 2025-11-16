@@ -162,9 +162,14 @@ class CharacterState:
         """Add a new concern or intensify existing one."""
         # Check if we already have a similar concern
         for existing in self.concerns:
-            if existing.type == concern.type and existing.description == concern.description:
+            if (
+                existing.type == concern.type
+                and existing.description == concern.description
+            ):
                 # Intensify existing concern
-                existing.intensity = min(1.0, existing.intensity + concern.intensity * 0.5)
+                existing.intensity = min(
+                    1.0, existing.intensity + concern.intensity * 0.5
+                )
                 existing.expires_at = concern.expires_at
                 return
 
@@ -195,7 +200,10 @@ class CharacterState:
             if goal.description == description:
                 goal.progress = 1.0
                 # Completing goals improves mood
-                self.mood_modifiers[f"completed_{description}"] = (0.5, datetime.now().replace(hour=23, minute=59))
+                self.mood_modifiers[f"completed_{description}"] = (
+                    0.5,
+                    datetime.now().replace(hour=23, minute=59),
+                )
                 self.goals.remove(goal)
                 self.update_mood()
                 break
@@ -251,8 +259,16 @@ class CharacterState:
         """Get state modifiers for dialogue generation."""
         return {
             "mood": self.mood.value,
-            "energy_level": "exhausted" if self.energy < 0.3 else "tired" if self.energy < 0.6 else "energetic",
-            "stress_level": "calm" if self.stress < 0.3 else "tense" if self.stress < 0.7 else "very stressed",
+            "energy_level": "exhausted"
+            if self.energy < 0.3
+            else "tired"
+            if self.energy < 0.6
+            else "energetic",
+            "stress_level": "calm"
+            if self.stress < 0.3
+            else "tense"
+            if self.stress < 0.7
+            else "very stressed",
             "primary_concern": self.concerns[0].description if self.concerns else None,
             "current_goal": self.goals[0].description if self.goals else None,
             "is_busy": self.is_busy,
@@ -315,7 +331,9 @@ class CharacterStateManager:
                     "curiosity": random.uniform(0.2, 0.8),
                 }
 
-            self.character_states[npc_id] = CharacterState(npc_id, npc_name, personality)
+            self.character_states[npc_id] = CharacterState(
+                npc_id, npc_name, personality
+            )
 
         return self.character_states[npc_id]
 

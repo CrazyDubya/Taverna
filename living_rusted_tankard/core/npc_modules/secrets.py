@@ -132,7 +132,9 @@ class EnhancedSecret:
 
     # Who knows what
     known_by: Set[str] = field(default_factory=set)  # Fully know
-    suspected_by: Dict[str, float] = field(default_factory=dict)  # ID -> suspicion level
+    suspected_by: Dict[str, float] = field(
+        default_factory=dict
+    )  # ID -> suspicion level
     investigating: Set[str] = field(default_factory=set)  # Actively investigating
 
     # Evidence
@@ -149,13 +151,17 @@ class EnhancedSecret:
     # History
     created: datetime = field(default_factory=datetime.now)
     last_investigated: Optional[datetime] = None
-    exposure_events: List[Tuple[datetime, str, str]] = field(default_factory=list)  # (when, who, what)
+    exposure_events: List[Tuple[datetime, str, str]] = field(
+        default_factory=list
+    )  # (when, who, what)
 
     def add_evidence(self, evidence: Evidence) -> None:
         """Add evidence to the trail."""
         self.evidence_trail.append(evidence)
         # Evidence might advance revelation
-        self.revelation_progress = min(1.0, self.revelation_progress + evidence.revelation_power * 0.5)
+        self.revelation_progress = min(
+            1.0, self.revelation_progress + evidence.revelation_power * 0.5
+        )
         self._update_state()
 
     def add_suspicion(self, character_id: str, amount: float = 0.1) -> None:
@@ -172,7 +178,9 @@ class EnhancedSecret:
 
         self._update_state()
 
-    def investigate(self, investigator_id: str, skill_level: float = 0.5) -> List[Evidence]:
+    def investigate(
+        self, investigator_id: str, skill_level: float = 0.5
+    ) -> List[Evidence]:
         """Investigate the secret, potentially finding evidence."""
         if investigator_id not in self.investigating:
             self.investigating.add(investigator_id)
@@ -198,7 +206,9 @@ class EnhancedSecret:
                 found_evidence.append(evidence)
 
                 # Update revelation progress
-                self.revelation_progress = min(1.0, self.revelation_progress + evidence.get_revelation_value())
+                self.revelation_progress = min(
+                    1.0, self.revelation_progress + evidence.get_revelation_value()
+                )
 
         # Might also find false evidence
         for false_ev in self.false_evidence:
@@ -221,7 +231,9 @@ class EnhancedSecret:
             if character_id in self.investigating:
                 self.investigating.remove(character_id)
 
-            self.exposure_events.append((datetime.now(), character_id, "full_revelation"))
+            self.exposure_events.append(
+                (datetime.now(), character_id, "full_revelation")
+            )
 
         self._update_state()
 
@@ -229,7 +241,9 @@ class EnhancedSecret:
         """Add a protection method."""
         self.protections.append(protection)
 
-    def create_false_evidence(self, description: str, evidence_type: EvidenceType = EvidenceType.DOCUMENT) -> Evidence:
+    def create_false_evidence(
+        self, description: str, evidence_type: EvidenceType = EvidenceType.DOCUMENT
+    ) -> Evidence:
         """Create false evidence to mislead investigators."""
         false_ev = Evidence(
             id=f"{self.id}_false_{len(self.false_evidence)}",
@@ -280,7 +294,9 @@ class EnhancedSecret:
         base_risk += len(self.investigating) * 0.2
 
         # Evidence discovery increases risk
-        discovered_evidence = sum(1 for ev in self.evidence_trail if len(ev.discovered_by) > 0)
+        discovered_evidence = sum(
+            1 for ev in self.evidence_trail if len(ev.discovered_by) > 0
+        )
         base_risk += discovered_evidence * 0.15
 
         # Protections reduce risk
@@ -319,17 +335,25 @@ class SecretGenerator:
     """Generates secrets for NPCs based on context."""
 
     @staticmethod
-    def generate_secret(npc_data: Dict[str, Any], secret_type: Optional[SecretType] = None) -> EnhancedSecret:
+    def generate_secret(
+        npc_data: Dict[str, Any], secret_type: Optional[SecretType] = None
+    ) -> EnhancedSecret:
         """Generate a contextual secret for an NPC."""
         if secret_type is None:
             # Choose based on NPC role
             occupation = npc_data.get("occupation", "patron")
             if occupation in ["merchant", "trader"]:
-                secret_type = random.choice([SecretType.FINANCIAL, SecretType.CRIMINAL, SecretType.PROFESSIONAL])
+                secret_type = random.choice(
+                    [SecretType.FINANCIAL, SecretType.CRIMINAL, SecretType.PROFESSIONAL]
+                )
             elif occupation in ["guard", "soldier"]:
-                secret_type = random.choice([SecretType.CRIMINAL, SecretType.POLITICAL, SecretType.PERSONAL])
+                secret_type = random.choice(
+                    [SecretType.CRIMINAL, SecretType.POLITICAL, SecretType.PERSONAL]
+                )
             elif occupation in ["bartender", "cook", "staff"]:
-                secret_type = random.choice([SecretType.PERSONAL, SecretType.ROMANTIC, SecretType.PROFESSIONAL])
+                secret_type = random.choice(
+                    [SecretType.PERSONAL, SecretType.ROMANTIC, SecretType.PROFESSIONAL]
+                )
             else:
                 secret_type = random.choice(list(SecretType))
 
@@ -410,7 +434,7 @@ class SecretGenerator:
                 evidence = Evidence(
                     id=f"{secret.id}_evidence_{i}",
                     type=ev_type,
-                    description=f"Someone who saw suspicious behavior",
+                    description="Someone who saw suspicious behavior",
                     holder=f"witness_{i}",
                     discovery_difficulty=0.6,
                     requires_relationship=0.5,
@@ -420,7 +444,7 @@ class SecretGenerator:
                 evidence = Evidence(
                     id=f"{secret.id}_evidence_{i}",
                     type=ev_type,
-                    description=f"Incriminating documents",
+                    description="Incriminating documents",
                     location="hidden_compartment",
                     discovery_difficulty=0.8,
                     requires_skill="investigation",
@@ -430,7 +454,7 @@ class SecretGenerator:
                 evidence = Evidence(
                     id=f"{secret.id}_evidence_{i}",
                     type=ev_type,
-                    description=f"Evidence pointing to the secret",
+                    description="Evidence pointing to the secret",
                     discovery_difficulty=0.5,
                     revelation_power=0.3,
                 )
@@ -529,4 +553,7 @@ class SecretsManager:
 
     def is_secret_discovered(self, player_id: str, secret_id: str) -> bool:
         """Check if a player has discovered a specific secret"""
-        return player_id in self.discovered_secrets and secret_id in self.discovered_secrets[player_id]
+        return (
+            player_id in self.discovered_secrets
+            and secret_id in self.discovered_secrets[player_id]
+        )

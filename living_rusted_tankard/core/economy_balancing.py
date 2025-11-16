@@ -112,7 +112,9 @@ class EconomyBalancer:
             "information": 5,
         }
 
-    def _initialize_progression_multipliers(self) -> Dict[ProgressionTier, Dict[str, float]]:
+    def _initialize_progression_multipliers(
+        self,
+    ) -> Dict[ProgressionTier, Dict[str, float]]:
         """Initialize price multipliers based on player progression."""
         return {
             ProgressionTier.NOVICE: {
@@ -208,7 +210,11 @@ class EconomyBalancer:
                 name="Blacksmith's Special Offer",
                 description="Local blacksmith offers discounted equipment",
                 duration_hours=8.0,
-                price_modifiers={"rusty_dagger": 0.7, "iron_sword": 0.8, "steel_armor": 0.85},
+                price_modifiers={
+                    "rusty_dagger": 0.7,
+                    "iron_sword": 0.8,
+                    "steel_armor": 0.85,
+                },
                 probability=0.10,
                 min_tier=ProgressionTier.JOURNEYMAN,
             ),
@@ -217,7 +223,10 @@ class EconomyBalancer:
                 name="Tax Collectors Visit",
                 description="Heavy taxation increases all prices temporarily",
                 duration_hours=6.0,
-                price_modifiers={item: 1.25 for item in ["room_basic", "room_comfortable", "room_luxury"]},
+                price_modifiers={
+                    item: 1.25
+                    for item in ["room_basic", "room_comfortable", "room_luxury"]
+                },
                 probability=0.05,
                 min_tier=ProgressionTier.EXPERT,
             ),
@@ -229,7 +238,9 @@ class EconomyBalancer:
             self.player_profiles[player_id] = PlayerEconomicProfile()
         return self.player_profiles[player_id]
 
-    def update_player_profile(self, player_id: str, gold_change: int, transaction_type: str, amount: int = 0):
+    def update_player_profile(
+        self, player_id: str, gold_change: int, transaction_type: str, amount: int = 0
+    ):
         """Update player economic profile."""
         profile = self.get_player_profile(player_id)
 
@@ -253,9 +264,13 @@ class EconomyBalancer:
 
         # Log tier progression
         if profile.progression_tier != old_tier:
-            logger.info(f"Player {player_id} progressed from {old_tier.value} to {profile.progression_tier.value}")
+            logger.info(
+                f"Player {player_id} progressed from {old_tier.value} to {profile.progression_tier.value}"
+            )
 
-    def _calculate_progression_tier(self, profile: PlayerEconomicProfile) -> ProgressionTier:
+    def _calculate_progression_tier(
+        self, profile: PlayerEconomicProfile
+    ) -> ProgressionTier:
         """Calculate player progression tier based on economic activity."""
         # Primary factor: current gold
         gold = profile.current_gold
@@ -296,7 +311,9 @@ class EconomyBalancer:
         final_price = max(1, int(base_price * price_multiplier))
         return final_price * quantity
 
-    def get_reward_amount(self, base_amount: int, reward_type: str, player_id: str) -> int:
+    def get_reward_amount(
+        self, base_amount: int, reward_type: str, player_id: str
+    ) -> int:
         """Calculate scaled reward amount based on player progression."""
         profile = self.get_player_profile(player_id)
 
@@ -309,11 +326,15 @@ class EconomyBalancer:
 
         return max(1, int(base_amount * multiplier))
 
-    def update_economic_events(self, current_time: datetime, player_tier: ProgressionTier) -> Optional[Dict[str, Any]]:
+    def update_economic_events(
+        self, current_time: datetime, player_tier: ProgressionTier
+    ) -> Optional[Dict[str, Any]]:
         """Update active economic events and potentially trigger new ones."""
         # Remove expired events
         self.active_events = [
-            event for event in self.active_events if event.active_until and event.active_until > current_time
+            event
+            for event in self.active_events
+            if event.active_until and event.active_until > current_time
         ]
 
         # Chance to trigger new event
@@ -321,7 +342,8 @@ class EconomyBalancer:
             available_events = [
                 event
                 for event in self.economic_events
-                if event.min_tier.value <= player_tier.value and event.id not in [ae.id for ae in self.active_events]
+                if event.min_tier.value <= player_tier.value
+                and event.id not in [ae.id for ae in self.active_events]
             ]
 
             if available_events:
@@ -334,7 +356,8 @@ class EconomyBalancer:
                         description=event_template.description,
                         duration_hours=event_template.duration_hours,
                         price_modifiers=event_template.price_modifiers.copy(),
-                        active_until=current_time + timedelta(hours=event_template.duration_hours),
+                        active_until=current_time
+                        + timedelta(hours=event_template.duration_hours),
                     )
 
                     self.active_events.append(new_event)
@@ -366,19 +389,29 @@ class EconomyBalancer:
                     "name": event.name,
                     "description": event.description,
                     "time_remaining": (
-                        (event.active_until - datetime.now()).total_seconds() / 3600 if event.active_until else 0
+                        (event.active_until - datetime.now()).total_seconds() / 3600
+                        if event.active_until
+                        else 0
                     ),
                 }
                 for event in self.active_events
             ],
             "price_modifiers": {
-                "tier_discount": self.progression_multipliers[profile.progression_tier]["discount"],
-                "quest_reward_multiplier": self.progression_multipliers[profile.progression_tier]["quest_reward"],
-                "work_payment_multiplier": self.progression_multipliers[profile.progression_tier]["work_payment"],
+                "tier_discount": self.progression_multipliers[profile.progression_tier][
+                    "discount"
+                ],
+                "quest_reward_multiplier": self.progression_multipliers[
+                    profile.progression_tier
+                ]["quest_reward"],
+                "work_payment_multiplier": self.progression_multipliers[
+                    profile.progression_tier
+                ]["work_payment"],
             },
         }
 
-    def get_pricing_preview(self, player_id: str, items: List[str]) -> Dict[str, Dict[str, Any]]:
+    def get_pricing_preview(
+        self, player_id: str, items: List[str]
+    ) -> Dict[str, Dict[str, Any]]:
         """Get pricing preview for multiple items."""
         preview = {}
 
@@ -390,26 +423,35 @@ class EconomyBalancer:
 
             # Check progression tier impact
             profile = self.get_player_profile(player_id)
-            tier_multiplier = self.progression_multipliers[profile.progression_tier]["discount"]
+            tier_multiplier = self.progression_multipliers[profile.progression_tier][
+                "discount"
+            ]
             if tier_multiplier != 1.0:
-                price_factors.append(f"Tier ({profile.progression_tier.value}): {tier_multiplier:.1%}")
+                price_factors.append(
+                    f"Tier ({profile.progression_tier.value}): {tier_multiplier:.1%}"
+                )
 
             # Check event impacts
             for event in self.active_events:
                 if item_id in event.price_modifiers:
-                    price_factors.append(f"{event.name}: {event.price_modifiers[item_id]:.1%}")
+                    price_factors.append(
+                        f"{event.name}: {event.price_modifiers[item_id]:.1%}"
+                    )
 
             preview[item_id] = {
                 "base_price": base_price,
                 "current_price": current_price,
                 "price_change": current_price - base_price,
-                "price_change_percent": ((current_price - base_price) / base_price) * 100,
+                "price_change_percent": ((current_price - base_price) / base_price)
+                * 100,
                 "factors": price_factors,
             }
 
         return preview
 
-    def simulate_progression(self, starting_gold: int, activities: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def simulate_progression(
+        self, starting_gold: int, activities: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Simulate economic progression for balancing purposes."""
         simulation_profile = PlayerEconomicProfile(current_gold=starting_gold)
 
@@ -426,12 +468,16 @@ class EconomyBalancer:
                 simulation_profile.total_spent += amount
                 simulation_profile.current_gold -= amount
             elif activity_type == "quest":
-                reward = self.get_reward_amount(amount, "quest_completion", "simulation")
+                reward = self.get_reward_amount(
+                    amount, "quest_completion", "simulation"
+                )
                 simulation_profile.quest_rewards_earned += reward
                 simulation_profile.current_gold += reward
 
             old_tier = simulation_profile.progression_tier
-            simulation_profile.progression_tier = self._calculate_progression_tier(simulation_profile)
+            simulation_profile.progression_tier = self._calculate_progression_tier(
+                simulation_profile
+            )
 
             if simulation_profile.progression_tier != old_tier:
                 progression_log.append(
@@ -468,9 +514,13 @@ def get_scaled_reward(base_amount: int, reward_type: str, player_id: str) -> int
     return economy_balancer.get_reward_amount(base_amount, reward_type, player_id)
 
 
-def update_player_economy(player_id: str, gold_change: int, transaction_type: str, amount: int = 0):
+def update_player_economy(
+    player_id: str, gold_change: int, transaction_type: str, amount: int = 0
+):
     """Update player economic profile."""
-    economy_balancer.update_player_profile(player_id, gold_change, transaction_type, amount)
+    economy_balancer.update_player_profile(
+        player_id, gold_change, transaction_type, amount
+    )
 
 
 def get_economic_status(player_id: str) -> Dict[str, Any]:
@@ -481,4 +531,6 @@ def get_economic_status(player_id: str) -> Dict[str, Any]:
 def trigger_economic_update(player_id: str) -> Optional[Dict[str, Any]]:
     """Trigger economic event update."""
     profile = economy_balancer.get_player_profile(player_id)
-    return economy_balancer.update_economic_events(datetime.now(), profile.progression_tier)
+    return economy_balancer.update_economic_events(
+        datetime.now(), profile.progression_tier
+    )

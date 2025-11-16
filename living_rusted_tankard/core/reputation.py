@@ -70,7 +70,13 @@ def get_reputation_tier(score: int) -> str:
     # Iterate upwards for positive scores
     if score > 0:
         for threshold, name in reversed(REPUTATION_TIERS):
-            if name in ["Neutral", "Unfriendly", "Disliked", "Hated", "Despised"]:  # Skip negative tiers
+            if name in [
+                "Neutral",
+                "Unfriendly",
+                "Disliked",
+                "Hated",
+                "Despised",
+            ]:  # Skip negative tiers
                 continue
             if score >= threshold:  # This logic is a bit off for threshold based.
                 # Let's use the REPUTATION_TIER_MAP ranges.
@@ -194,7 +200,9 @@ class ReputationManager:
     def get_reputation(self, player_state: "PlayerState", entity_id: str) -> int:
         return get_reputation(player_state, entity_id)
 
-    def update_reputation(self, player_state: "PlayerState", entity_id: str, change: int) -> int:
+    def update_reputation(
+        self, player_state: "PlayerState", entity_id: str, change: int
+    ) -> int:
         return update_reputation(player_state, entity_id, change)
 
     def get_reputation_tier(self, score: int) -> str:

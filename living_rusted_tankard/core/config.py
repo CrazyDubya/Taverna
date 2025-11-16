@@ -78,11 +78,17 @@ class GameConfig:
                     elif field_type == float:
                         setattr(config, field_name, float(env_value))
                     elif field_type == bool:
-                        setattr(config, field_name, env_value.lower() in ("true", "1", "yes", "on"))
+                        setattr(
+                            config,
+                            field_name,
+                            env_value.lower() in ("true", "1", "yes", "on"),
+                        )
                     else:
                         setattr(config, field_name, env_value)
                 except (ValueError, TypeError) as e:
-                    print(f"Warning: Could not parse {env_name}={env_value} as {field_type}: {e}")
+                    print(
+                        f"Warning: Could not parse {env_name}={env_value} as {field_type}: {e}"
+                    )
 
         return config
 

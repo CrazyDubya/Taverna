@@ -60,7 +60,9 @@ class Inventory(BaseModel):
 
         # Otherwise, find the item in the definitions
         if item_id in ITEM_DEFINITIONS:
-            self.items[item_id] = InventoryItem(item=ITEM_DEFINITIONS[item_id], quantity=quantity)
+            self.items[item_id] = InventoryItem(
+                item=ITEM_DEFINITIONS[item_id], quantity=quantity
+            )
             return True
 
         print(f"Warning: Item ID '{item_id}' not found in ITEM_DEFINITIONS.")
@@ -82,7 +84,10 @@ class Inventory(BaseModel):
 
             if self.items[item_id].quantity > quantity:
                 self.items[item_id].quantity -= quantity
-                return True, f"Removed {quantity} {self.items[item_id].item.name}(s) from inventory."
+                return (
+                    True,
+                    f"Removed {quantity} {self.items[item_id].item.name}(s) from inventory.",
+                )
 
             elif self.items[item_id].quantity == quantity:
                 # Remove the item entirely

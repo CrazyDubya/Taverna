@@ -31,7 +31,12 @@ class GameSnapshot:
 
 
 class Parser:
-    def __init__(self, use_llm: bool = True, llm_endpoint: str = "http://localhost:11434", model: str = "long-gemma"):
+    def __init__(
+        self,
+        use_llm: bool = True,
+        llm_endpoint: str = "http://localhost:11434",
+        model: str = "long-gemma",
+    ):
         self.use_llm = use_llm
         self.llm_endpoint = llm_endpoint
         self.llm_model = model  # Engine uses long-gemma by default
@@ -90,7 +95,12 @@ class Parser:
             logger.debug(f"Sending LLM request for: '{text}'")
             response = requests.post(
                 f"{self.llm_endpoint}/api/generate",
-                json={"model": self.llm_model, "prompt": prompt, "format": "json", "stream": False},
+                json={
+                    "model": self.llm_model,
+                    "prompt": prompt,
+                    "format": "json",
+                    "stream": False,
+                },
                 timeout=45,  # Enhanced prompt needs more processing time
             )
             response.raise_for_status()
@@ -121,18 +131,20 @@ class Parser:
         # Build inventory context
         inventory_context = ""
         if snapshot.visible_objects:
-            inventory_context = f"\nPlayer Inventory: {', '.join(snapshot.visible_objects)}"
+            inventory_context = (
+                f"\nPlayer Inventory: {', '.join(snapshot.visible_objects)}"
+            )
         else:
             inventory_context = "\nPlayer Inventory: Empty"
 
         # Build player state context
-        player_context = f"""
+        player_context = """
 Player Status:
   Gold: {snapshot.player_state.get('gold', 0)}
   Energy: {snapshot.player_state.get('energy', 100)}%
   Tiredness: {snapshot.player_state.get('tiredness', 0)}%"""
 
-        return f"""You are the command parser for "The Living Rusted Tankard" medieval fantasy tavern game.
+        return """You are the command parser for "The Living Rusted Tankard" medieval fantasy tavern game.
 
 CURRENT GAME CONTEXT:
 📍 Location: {snapshot.location}
@@ -185,7 +197,7 @@ CORE COMMAND MAPPINGS:
 - "help" / "commands" / "what can I do" / "how do I play" → "help"
 
 CONTEXT-AWARE PARSING:
-{f"🚫 No NPCs present - suggest 'wait' or 'move' for social commands" if not snapshot.visible_npcs else f"👥 NPCs available: {', '.join(snapshot.visible_npcs)}"}
+{"🚫 No NPCs present - suggest 'wait' or 'move' for social commands" if not snapshot.visible_npcs else f"👥 NPCs available: {', '.join(snapshot.visible_npcs)}"}
 
 RESPONSE FORMAT:
 Return ONLY valid JSON in this exact format:
@@ -221,7 +233,9 @@ Parse the player input with full understanding of context and intent."""
         # Default to a generic action if no pattern matches
         return self._create_command("unknown", text)
 
-    def _create_command(self, action: str, target: Optional[str] = None, **extras) -> Command:
+    def _create_command(
+        self, action: str, target: Optional[str] = None, **extras
+    ) -> Command:
         """Create a properly formatted command dictionary."""
         return {"action": action, "target": target, "extras": extras or {}}
 
@@ -234,7 +248,11 @@ Parse the player input with full understanding of context and intent."""
         if not action:
             raise ValueError("Command must have an 'action'")
 
-        target = str(data["target"]).lower() if "target" in data and data["target"] is not None else None
+        target = (
+            str(data["target"]).lower()
+            if "target" in data and data["target"] is not None
+            else None
+        )
         extras = {k: v for k, v in data.get("extras", {}).items() if v is not None}
 
         return self._create_command(action, target, **extras)

@@ -161,11 +161,15 @@ class AtmosphereState:
         # Remove any existing detail of same type from same source
         if detail.source:
             self.sensory_details = [
-                d for d in self.sensory_details if not (d.type == detail.type and d.source == detail.source)
+                d
+                for d in self.sensory_details
+                if not (d.type == detail.type and d.source == detail.source)
             ]
         self.sensory_details.append(detail)
 
-    def get_sensory_details(self, sense_type: Optional[str] = None) -> List[SensoryDetail]:
+    def get_sensory_details(
+        self, sense_type: Optional[str] = None
+    ) -> List[SensoryDetail]:
         """Get sensory details, optionally filtered by type."""
         if sense_type:
             return [d for d in self.sensory_details if d.type == sense_type]
@@ -222,7 +226,9 @@ class AtmosphereManager:
 
     def __init__(self):
         self.atmospheres: Dict[str, AtmosphereState] = {}
-        self.connections: Dict[str, List[Tuple[str, float]]] = {}  # area_id -> [(connected_id, influence)]
+        self.connections: Dict[
+            str, List[Tuple[str, float]]
+        ] = {}  # area_id -> [(connected_id, influence)]
 
     def set_atmosphere(self, area_id: str, atmosphere: AtmosphereState) -> None:
         """Set atmosphere for an area."""
@@ -259,11 +265,20 @@ class AtmosphereManager:
 
                 # Prepare updates (don't modify during iteration)
                 if connected_id not in updates:
-                    updates[connected_id] = {"noise": 0, "temperature": 0, "air_quality": 0, "count": 0}
+                    updates[connected_id] = {
+                        "noise": 0,
+                        "temperature": 0,
+                        "air_quality": 0,
+                        "count": 0,
+                    }
 
                 # Sound propagates
                 if atmosphere.noise_level > connected.noise_level:
-                    updates[connected_id]["noise"] += (atmosphere.noise_level - connected.noise_level) * influence * 0.5
+                    updates[connected_id]["noise"] += (
+                        (atmosphere.noise_level - connected.noise_level)
+                        * influence
+                        * 0.5
+                    )
 
                 # Temperature equalizes
                 temp_diff = atmosphere.temperature - connected.temperature
@@ -284,9 +299,15 @@ class AtmosphereManager:
 
             # Average the influences
             count = changes["count"]
-            atmosphere.noise_level = min(1.0, max(0.0, atmosphere.noise_level + changes["noise"] / count))
-            atmosphere.temperature = min(1.0, max(0.0, atmosphere.temperature + changes["temperature"] / count))
-            atmosphere.air_quality = min(1.0, max(0.0, atmosphere.air_quality + changes["air_quality"] / count))
+            atmosphere.noise_level = min(
+                1.0, max(0.0, atmosphere.noise_level + changes["noise"] / count)
+            )
+            atmosphere.temperature = min(
+                1.0, max(0.0, atmosphere.temperature + changes["temperature"] / count)
+            )
+            atmosphere.air_quality = min(
+                1.0, max(0.0, atmosphere.air_quality + changes["air_quality"] / count)
+            )
 
             atmosphere.calculate_modifiers()
 
@@ -315,11 +336,15 @@ class AtmosphereManager:
             elif 2 <= hour <= 6:
                 base_temp -= 0.1
 
-            atmosphere.temperature = min(1.0, max(0.0, base_temp + random.uniform(-0.05, 0.05)))
+            atmosphere.temperature = min(
+                1.0, max(0.0, base_temp + random.uniform(-0.05, 0.05))
+            )
 
             # Update expired sensory details
             atmosphere.sensory_details = [
-                d for d in atmosphere.sensory_details if not d.temporary or d.duration is None or d.duration > 0
+                d
+                for d in atmosphere.sensory_details
+                if not d.temporary or d.duration is None or d.duration > 0
             ]
 
             # Decrement durations
@@ -339,7 +364,13 @@ class AtmosphereManager:
     def get_current_atmosphere(self) -> Dict[str, float]:
         """Get current atmosphere properties for the active area"""
         if not self.atmospheres:
-            return {"tension": 0.0, "comfort": 0.5, "mystery": 0.0, "safety": 0.8, "energy": 0.5}
+            return {
+                "tension": 0.0,
+                "comfort": 0.5,
+                "mystery": 0.0,
+                "safety": 0.8,
+                "energy": 0.5,
+            }
 
         # Use the first atmosphere or find main area
         atmosphere_id = list(self.atmospheres.keys())[0]

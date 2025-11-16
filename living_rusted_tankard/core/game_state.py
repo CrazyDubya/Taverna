@@ -31,7 +31,12 @@ from .bounties import BountyManager, BountyStatus, BountyObjective
 from .event_bus import EventBus, EventType, Event
 
 from games.gambling_manager import GamblingManager
-from .events import NPCSpawnEvent, NPCDepartEvent, NPCInteractionEvent, NPCRelationshipChangeEvent
+from .events import (
+    NPCSpawnEvent,
+    NPCDepartEvent,
+    NPCInteractionEvent,
+    NPCRelationshipChangeEvent,
+)
 from .event_formatter import EventFormatter
 from game.commands.bounty_commands import BOUNTY_COMMAND_HANDLERS
 from game.commands.reputation_commands import REPUTATION_COMMAND_HANDLERS
@@ -62,7 +67,13 @@ except ImportError as e:
 
 # Phase 4: Narrative Engine imports
 try:
-    from .narrative import ThreadManager, NarrativeRulesEngine, NarrativeOrchestrator, StoryThread, ThreadType
+    from .narrative import (
+        ThreadManager,
+        NarrativeRulesEngine,
+        NarrativeOrchestrator,
+        StoryThread,
+        ThreadType,
+    )
     from .narrative.event_integration import NarrativeEventHandler
 
     PHASE4_AVAILABLE = True
@@ -76,7 +87,10 @@ try:
     from .narrative.character_state import CharacterStateManager
     from .narrative.personality_traits import PersonalityManager
     from .narrative.npc_schedules import ScheduleManager, create_schedule_for_profession
-    from .narrative.reputation_network import ReputationNetwork, setup_reputation_network_for_profession
+    from .narrative.reputation_network import (
+        ReputationNetwork,
+        setup_reputation_network_for_profession,
+    )
     from .narrative.conversation_continuity import ConversationManager
     from .narrative.story_orchestrator import StoryOrchestrator
     from .narrative.narrative_persistence import NarrativePersistenceManager
@@ -112,7 +126,12 @@ class GameState:
     - Memory management and optimization
     """
 
-    def __init__(self, data_dir: str = "data", session_id: Optional[str] = None, db_id: Optional[str] = None):
+    def __init__(
+        self,
+        data_dir: str = "data",
+        session_id: Optional[str] = None,
+        db_id: Optional[str] = None,
+    ):
         self._data_dir = Path(data_dir)
         if not ITEM_DEFINITIONS:
             load_item_definitions(self._data_dir)
@@ -121,7 +140,9 @@ class GameState:
         self.player = PlayerState()
         self.room_manager = RoomManager()
         self.event_bus = EventBus()  # Create proper event bus
-        self.npc_manager = NPCManager(data_dir=str(self._data_dir), event_bus=self.event_bus)
+        self.npc_manager = NPCManager(
+            data_dir=str(self._data_dir), event_bus=self.event_bus
+        )
         self.economy = Economy()
         self.gambling_manager = GamblingManager()
         self.bounty_manager = BountyManager(data_dir=str(self._data_dir))
@@ -189,14 +210,18 @@ class GameState:
             self.relationship_web = RelationshipWeb()
             self.gossip_network = GossipNetwork(self.relationship_web)
             self.goal_manager = GoalManager()
-            self.interaction_manager = InteractionManager(self.relationship_web, self.gossip_network)
+            self.interaction_manager = InteractionManager(
+                self.relationship_web, self.gossip_network
+            )
             logger.info("Phase 3: NPC Systems initialized")
 
         # Initialize Phase 4: Narrative Engine
         if PHASE4_AVAILABLE:
             self.thread_manager = ThreadManager()
             self.rules_engine = NarrativeRulesEngine()
-            self.narrative_orchestrator = NarrativeOrchestrator(self.thread_manager, self.rules_engine)
+            self.narrative_orchestrator = NarrativeOrchestrator(
+                self.thread_manager, self.rules_engine
+            )
             # Event handler will be initialized after event_bus is set up
             self._narrative_handler_pending = True
             logger.info("Phase 4: Narrative Engine initialized")
@@ -208,7 +233,9 @@ class GameState:
             self.llm_parser = Parser(use_llm=True, model="long-gemma")
             logger.info("LLM Parser initialized with long-gemma engine")
         except Exception as e:
-            logger.warning(f"LLM Parser initialization failed: {e}, falling back to regex")
+            logger.warning(
+                f"LLM Parser initialization failed: {e}, falling back to regex"
+            )
             self.llm_parser = Parser(use_llm=False, model="long-gemma")
 
         # Initialize Narrative Systems: Complete Phase 1 integration
@@ -231,7 +258,9 @@ class GameState:
             # Register all components for persistence
             self._register_narrative_components()
 
-            logger.info("Narrative Systems: Complete Phase 1 implementation initialized")
+            logger.info(
+                "Narrative Systems: Complete Phase 1 implementation initialized"
+            )
 
         self._initialize_game()
 
@@ -246,7 +275,12 @@ class GameState:
             npc_ids = list(self.npc_manager.npcs.keys())
         else:
             # Default NPCs that are likely to exist
-            npc_ids = ["grim_bartender", "mira_merchant", "jonas_blacksmith", "elara_healer"]
+            npc_ids = [
+                "grim_bartender",
+                "mira_merchant",
+                "jonas_blacksmith",
+                "elara_healer",
+            ]
 
         # Create default social network
         self.reputation_network.create_default_social_network(npc_ids)
@@ -256,20 +290,36 @@ class GameState:
             npc = self.npc_manager.get_npc(npc_id)
             if npc:
                 profession = getattr(npc, "profession", "common_folk")
-                setup_reputation_network_for_profession(self.reputation_network, npc_id, npc.name, profession)
+                setup_reputation_network_for_profession(
+                    self.reputation_network, npc_id, npc.name, profession
+                )
 
     def _register_narrative_components(self):
         """Register all narrative components for automatic persistence."""
         if not NARRATIVE_SYSTEMS_AVAILABLE:
             return
 
-        self.narrative_persistence.register_component("character_memory_manager", self.character_memory_manager)
-        self.narrative_persistence.register_component("character_state_manager", self.character_state_manager)
-        self.narrative_persistence.register_component("personality_manager", self.personality_manager)
-        self.narrative_persistence.register_component("schedule_manager", self.schedule_manager)
-        self.narrative_persistence.register_component("reputation_network", self.reputation_network)
-        self.narrative_persistence.register_component("conversation_manager", self.conversation_manager)
-        self.narrative_persistence.register_component("story_orchestrator", self.story_orchestrator)
+        self.narrative_persistence.register_component(
+            "character_memory_manager", self.character_memory_manager
+        )
+        self.narrative_persistence.register_component(
+            "character_state_manager", self.character_state_manager
+        )
+        self.narrative_persistence.register_component(
+            "personality_manager", self.personality_manager
+        )
+        self.narrative_persistence.register_component(
+            "schedule_manager", self.schedule_manager
+        )
+        self.narrative_persistence.register_component(
+            "reputation_network", self.reputation_network
+        )
+        self.narrative_persistence.register_component(
+            "conversation_manager", self.conversation_manager
+        )
+        self.narrative_persistence.register_component(
+            "story_orchestrator", self.story_orchestrator
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         serialized_events = [event.model_dump(mode="json") for event in self.events]
@@ -320,16 +370,21 @@ class GameState:
         session_id = session_id or data.get("session_id")
         db_id = db_id or data.get("db_id")
 
-        game_state = cls(data_dir=str(game_state_data_dir), session_id=session_id, db_id=db_id)
+        game_state = cls(
+            data_dir=str(game_state_data_dir), session_id=session_id, db_id=db_id
+        )
 
         game_state.clock = GameClock.model_validate(data["clock"])
         game_state.player = PlayerState.model_validate(data["player"])
         game_state.room_manager = RoomManager.model_validate(data["room_manager"])
         game_state.npc_manager = NPCManager.model_validate(
-            data.get("npc_manager", {}), context={"event_bus": game_state, "data_dir": str(game_state_data_dir)}
+            data.get("npc_manager", {}),
+            context={"event_bus": game_state, "data_dir": str(game_state_data_dir)},
         )
         game_state.economy = Economy.model_validate(data["economy"])
-        game_state.gambling_manager = GamblingManager.model_validate(data["gambling_manager"])
+        game_state.gambling_manager = GamblingManager.model_validate(
+            data["gambling_manager"]
+        )
         game_state.bounty_manager = BountyManager.model_validate(
             data["bounty_manager"], context={"data_dir": str(game_state_data_dir)}
         )
@@ -340,14 +395,28 @@ class GameState:
         game_state.pending_command = data.get("pending_command")
 
         game_state.events = deque(
-            (GameEvent.model_validate(event_data) for event_data in data.get("events", [])), maxlen=100
+            (
+                GameEvent.model_validate(event_data)
+                for event_data in data.get("events", [])
+            ),
+            maxlen=100,
         )
 
-        game_state.travelling_merchant_active = data.get("travelling_merchant_active", False)
-        game_state.travelling_merchant_npc_id = data.get("travelling_merchant_npc_id", "travelling_merchant_elara")
-        game_state.travelling_merchant_arrival_time = data.get("travelling_merchant_arrival_time")
-        game_state.travelling_merchant_departure_time = data.get("travelling_merchant_departure_time")
-        game_state.travelling_merchant_temporary_items = data.get("travelling_merchant_temporary_items", [])
+        game_state.travelling_merchant_active = data.get(
+            "travelling_merchant_active", False
+        )
+        game_state.travelling_merchant_npc_id = data.get(
+            "travelling_merchant_npc_id", "travelling_merchant_elara"
+        )
+        game_state.travelling_merchant_arrival_time = data.get(
+            "travelling_merchant_arrival_time"
+        )
+        game_state.travelling_merchant_departure_time = data.get(
+            "travelling_merchant_departure_time"
+        )
+        game_state.travelling_merchant_temporary_items = data.get(
+            "travelling_merchant_temporary_items", []
+        )
         game_state._last_update_time = data.get("_last_update_time", 0.0)
 
         game_state._observers = {}
@@ -381,7 +450,9 @@ class GameState:
                 if not success:
                     print(f"Warning: Failed to add starting item '{item_id}'")
             else:
-                print(f"Warning: Starting item ID '{item_id}' not found in ITEM_DEFINITIONS.")
+                print(
+                    f"Warning: Starting item ID '{item_id}' not found in ITEM_DEFINITIONS."
+                )
 
         # Initialize player attributes
         if not hasattr(self.player, "active_bounty_ids"):
@@ -390,15 +461,23 @@ class GameState:
             self.player.completed_bounty_ids = set()
         if not hasattr(self.player, "active_effects"):
             self.player.active_effects = []
-        if not hasattr(self.player, "storage_inventory"):  # Ensure storage_inventory is initialized
+        if not hasattr(
+            self.player, "storage_inventory"
+        ):  # Ensure storage_inventory is initialized
             self.player.storage_inventory = Inventory()
 
         # Give player some starting gold
         self.player.gold = 20
 
         # Complete Phase 4 setup now that event_bus exists
-        if PHASE4_AVAILABLE and hasattr(self, "_narrative_handler_pending") and self._narrative_handler_pending:
-            self.narrative_handler = NarrativeEventHandler(self, self.narrative_orchestrator)
+        if (
+            PHASE4_AVAILABLE
+            and hasattr(self, "_narrative_handler_pending")
+            and self._narrative_handler_pending
+        ):
+            self.narrative_handler = NarrativeEventHandler(
+                self, self.narrative_orchestrator
+            )
             self._narrative_handler_pending = False
 
             # Create initial narrative threads
@@ -425,7 +504,9 @@ What tale will you weave in this living tapestry of stories?
 """
         self._add_event(welcome_message, "welcome")
 
-    def _add_event(self, message: str, event_type: str = "info", data: Optional[Dict] = None) -> None:
+    def _add_event(
+        self, message: str, event_type: str = "info", data: Optional[Dict] = None
+    ) -> None:
         current_time = getattr(self.clock, "current_time_hours", None)
         if current_time is None:
             current_time_obj = getattr(self.clock, "current_time", None)
@@ -437,7 +518,12 @@ What tale will you weave in this living tapestry of stories?
                 current_time = 0.0
 
         self.events.append(
-            GameEvent(timestamp=float(current_time), message=message, event_type=event_type, data=data or {})
+            GameEvent(
+                timestamp=float(current_time),
+                message=message,
+                event_type=event_type,
+                data=data or {},
+            )
         )
 
     def _setup_event_handlers(self) -> None:
@@ -449,11 +535,16 @@ What tale will you weave in this living tapestry of stories?
             if event_update:
                 self._add_event(event_update["message"], "info")
             self._handle_time_based_events(old_time, new_time, delta)
-            self._notify_observers("time_advanced", {"old_time": old_time, "new_time": new_time, "delta": delta})
+            self._notify_observers(
+                "time_advanced",
+                {"old_time": old_time, "new_time": new_time, "delta": delta},
+            )
 
         self.clock.on_time_advanced = on_time_advanced
 
-    def _handle_time_based_events(self, old_time: float, new_time: float, delta: float) -> None:
+    def _handle_time_based_events(
+        self, old_time: float, new_time: float, delta: float
+    ) -> None:
         old_hour = int(old_time % 24)
         new_hour = int(new_time % 24)
         if old_hour != new_hour:
@@ -461,12 +552,19 @@ What tale will you weave in this living tapestry of stories?
                 self._add_event("Dawn breaks over the tavern.", "info")
             elif new_hour == 18:
                 self._add_event("The sun begins to set outside.", "info")
-            if new_hour in [22, 23, 0, 1, 2, 3, 4, 5] and not self.player.has_room and not self.player.rest_immune:
+            if (
+                new_hour in [22, 23, 0, 1, 2, 3, 4, 5]
+                and not self.player.has_room
+                and not self.player.rest_immune
+            ):
                 self._add_event(
-                    "The common room is getting uncomfortable. Consider renting a room for the night.", "warning"
+                    "The common room is getting uncomfortable. Consider renting a room for the night.",
+                    "warning",
                 )
 
-    def add_observer(self, event_type: str, callback: Callable[[Any], None]) -> Callable[[], None]:
+    def add_observer(
+        self, event_type: str, callback: Callable[[Any], None]
+    ) -> Callable[[], None]:
         observer_id = str(id(callback))
         self._observers[observer_id] = callback
 
@@ -535,7 +633,9 @@ What tale will you weave in this living tapestry of stories?
         # Periodic gossip spreading (every ~30 minutes game time)
         if hasattr(self, "_last_gossip_update"):
             time_since_gossip = current_hour - self._last_gossip_update
-            if abs(time_since_gossip) > 0.5 or time_since_gossip < 0:  # Handle day rollover
+            if (
+                abs(time_since_gossip) > 0.5 or time_since_gossip < 0
+            ):  # Handle day rollover
                 self.reputation_network.simulate_gossip_round()
                 self._last_gossip_update = current_hour
         else:
@@ -550,7 +650,10 @@ What tale will you weave in this living tapestry of stories?
                 self._add_event(notification, "story", {"source": "story_orchestrator"})
 
         # Auto-save narrative state periodically
-        if hasattr(self, "narrative_persistence") and self.narrative_persistence.should_auto_save():
+        if (
+            hasattr(self, "narrative_persistence")
+            and self.narrative_persistence.should_auto_save()
+        ):
             session_id = getattr(self, "_session_id", "default_session")
             if self.narrative_persistence.save_all_narrative_state(session_id):
                 logger.info("Auto-saved narrative state")
@@ -591,7 +694,10 @@ What tale will you weave in this living tapestry of stories?
                 self.travelling_merchant_departure_time is not None
                 and current_game_hours >= self.travelling_merchant_departure_time
             ):
-                self._add_event(f"{merchant_npc.name} has packed up their wares and departed.", "event")
+                self._add_event(
+                    f"{merchant_npc.name} has packed up their wares and departed.",
+                    "event",
+                )
                 merchant_npc.is_present = False
                 merchant_npc.current_room = None
                 self.travelling_merchant_active = False
@@ -600,25 +706,38 @@ What tale will you weave in this living tapestry of stories?
             last_departure = (
                 self.travelling_merchant_departure_time
                 if self.travelling_merchant_departure_time is not None
-                else -float("inf")
+                else -float("in")
             )
             if current_game_hours > (last_departure + merchant_cooldown_hours):
                 if random.random() < merchant_arrival_chance_per_hour_after_cooldown:
                     self.travelling_merchant_active = True
                     self.travelling_merchant_arrival_time = current_game_hours
-                    self.travelling_merchant_departure_time = current_game_hours + merchant_duration_hours
+                    self.travelling_merchant_departure_time = (
+                        current_game_hours + merchant_duration_hours
+                    )
                     merchant_npc.is_present = True
                     merchant_npc.current_room = "tavern_main"
                     self.travelling_merchant_temporary_items.clear()
                     if not ITEM_DEFINITIONS:
                         load_item_definitions(self._data_dir)
                     for item_instance in merchant_npc.inventory:
-                        self.travelling_merchant_temporary_items.append(item_instance.id)
-                    self._add_event(f"A travelling merchant, {merchant_npc.name}, has arrived in the tavern!", "event")
-                    item_names_for_sale = [item.name for item in merchant_npc.inventory if hasattr(item, "name")]
+                        self.travelling_merchant_temporary_items.append(
+                            item_instance.id
+                        )
+                    self._add_event(
+                        f"A travelling merchant, {merchant_npc.name}, has arrived in the tavern!",
+                        "event",
+                    )
+                    item_names_for_sale = [
+                        item.name
+                        for item in merchant_npc.inventory
+                        if hasattr(item, "name")
+                    ]
                     if not item_names_for_sale:
                         item_names_for_sale = [
-                            ITEM_DEFINITIONS.get(item_id).name if ITEM_DEFINITIONS.get(item_id) else item_id
+                            ITEM_DEFINITIONS.get(item_id).name
+                            if ITEM_DEFINITIONS.get(item_id)
+                            else item_id
                             for item_id in self.travelling_merchant_temporary_items
                         ]
                     if item_names_for_sale:
@@ -629,7 +748,9 @@ What tale will you weave in this living tapestry of stories?
 
     def _update_player_status(self) -> None:
         if self.player.tiredness >= 0.9 and not self.player.rest_immune:
-            self._add_event("You're feeling extremely tired. Find a place to rest soon!", "warning")
+            self._add_event(
+                "You're feeling extremely tired. Find a place to rest soon!", "warning"
+            )
         if self.player.energy < 0.3:
             self._add_event("You're feeling weak from hunger or thirst.", "warning")
 
@@ -677,10 +798,18 @@ What tale will you weave in this living tapestry of stories?
                 self._present_npcs[npc.id] = npc
                 self._add_npc_to_room(npc)
                 self.event_formatter.add_event(
-                    "npc_spawn", npc_name=npc.name, npc_id=npc.id, location=event.data.get("location", "tavern")
+                    "npc_spawn",
+                    npc_name=npc.name,
+                    npc_id=npc.id,
+                    location=event.data.get("location", "tavern"),
                 )
                 self._notify_observers(
-                    "npc_spawn", {"npc_id": npc.id, "room_id": npc.current_room, "npc_name": npc.name}
+                    "npc_spawn",
+                    {
+                        "npc_id": npc.id,
+                        "room_id": npc.current_room,
+                        "npc_name": npc.name,
+                    },
                 )
 
         def handle_npc_depart(event: NPCDepartEvent):
@@ -688,10 +817,17 @@ What tale will you weave in this living tapestry of stories?
             if npc:
                 reason = event.data.get("reason", "unknown")
                 self._remove_npc_from_room(npc.id)
-                self.event_formatter.add_event("npc_depart", npc_name=npc.name, npc_id=npc.id, reason=reason)
+                self.event_formatter.add_event(
+                    "npc_depart", npc_name=npc.name, npc_id=npc.id, reason=reason
+                )
                 self._notify_observers(
                     "npc_depart",
-                    {"npc_id": npc.id, "room_id": npc.current_room, "npc_name": npc.name, "reason": reason},
+                    {
+                        "npc_id": npc.id,
+                        "room_id": npc.current_room,
+                        "npc_name": npc.name,
+                        "reason": reason,
+                    },
                 )
 
         def handle_npc_interaction(event: NPCInteractionEvent):
@@ -710,11 +846,20 @@ What tale will you weave in this living tapestry of stories?
     def get_state_snapshot(self) -> Dict[str, Any]:
         current_room = self.room_manager.current_room
         room_occupants_data = []
-        if current_room and hasattr(current_room, "occupants") and isinstance(current_room.occupants, list):
+        if (
+            current_room
+            and hasattr(current_room, "occupants")
+            and isinstance(current_room.occupants, list)
+        ):
             for occupant_id_str in current_room.occupants:
                 if occupant_id_str == self.player.id:
                     room_occupants_data.append(
-                        {"id": occupant_id_str, "type": "player", "name": self.player.name, "is_player": True}
+                        {
+                            "id": occupant_id_str,
+                            "type": "player",
+                            "name": self.player.name,
+                            "is_player": True,
+                        }
                     )
                 else:
                     npc = self.npc_manager.get_npc(occupant_id_str)
@@ -727,14 +872,25 @@ What tale will you weave in this living tapestry of stories?
                                 "description": npc.description,
                                 "is_player": False,
                                 "disposition": npc.disposition.name.lower(),
-                                "relationship": npc.relationships.get(self.player.id, 0),
+                                "relationship": npc.relationships.get(
+                                    self.player.id, 0
+                                ),
                             }
                         )
-        elif current_room and hasattr(current_room, "occupants") and isinstance(current_room.occupants, dict):
+        elif (
+            current_room
+            and hasattr(current_room, "occupants")
+            and isinstance(current_room.occupants, dict)
+        ):
             for occupant_id, occupant_type in current_room.occupants.items():  # type: ignore
                 if occupant_type == "player" and occupant_id == self.player.id:
                     room_occupants_data.append(
-                        {"id": occupant_id, "type": "player", "name": self.player.name, "is_player": True}
+                        {
+                            "id": occupant_id,
+                            "type": "player",
+                            "name": self.player.name,
+                            "is_player": True,
+                        }
                     )
                 elif occupant_type == "npc":
                     npc = self.npc_manager.get_npc(occupant_id)
@@ -747,7 +903,9 @@ What tale will you weave in this living tapestry of stories?
                                 "description": npc.description,
                                 "is_player": False,
                                 "disposition": npc.disposition.name.lower(),
-                                "relationship": npc.relationships.get(self.player.id, 0),
+                                "relationship": npc.relationships.get(
+                                    self.player.id, 0
+                                ),
                             }
                         )
         return {
@@ -768,7 +926,9 @@ What tale will you weave in this living tapestry of stories?
             ],
         }
 
-    def interact_with_npc(self, npc_id: str, interaction_id: str, **kwargs) -> Dict[str, Any]:
+    def interact_with_npc(
+        self, npc_id: str, interaction_id: str, **kwargs
+    ) -> Dict[str, Any]:
         # Map short NPC names to full IDs for convenience
         npc_id_map = {
             "gene": "gene_bartender",
@@ -781,7 +941,9 @@ What tale will you weave in this living tapestry of stories?
         actual_npc_id = npc_id_map.get(npc_id.lower(), npc_id)
 
         # Get base response from NPC manager
-        response = self.npc_manager.interact_with_npc(actual_npc_id, self.player, interaction_id, self, **kwargs)
+        response = self.npc_manager.interact_with_npc(
+            actual_npc_id, self.player, interaction_id, self, **kwargs
+        )
 
         # Enhanced narrative systems integration
         if NARRATIVE_SYSTEMS_AVAILABLE and response.get("success", False):
@@ -791,17 +953,25 @@ What tale will you weave in this living tapestry of stories?
                 current_hour = self.clock.get_current_time().total_hours % 24
 
                 # 1. Character Memory System
-                char_memory = self.character_memory_manager.get_or_create_memory(actual_npc_id, npc.name)
+                char_memory = self.character_memory_manager.get_or_create_memory(
+                    actual_npc_id, npc.name
+                )
 
                 # 2. Character State System
                 profession = getattr(npc, "profession", "common_folk")
-                char_state = self.character_state_manager.get_or_create_state(actual_npc_id, npc.name)
+                char_state = self.character_state_manager.get_or_create_state(
+                    actual_npc_id, npc.name
+                )
 
                 # 3. Personality System
-                personality = self.personality_manager.get_or_create_personality(actual_npc_id, npc.name, profession)
+                personality = self.personality_manager.get_or_create_personality(
+                    actual_npc_id, npc.name, profession
+                )
 
                 # 4. Schedule System
-                schedule = self.schedule_manager.get_or_create_schedule(actual_npc_id, npc.name, profession)
+                schedule = self.schedule_manager.get_or_create_schedule(
+                    actual_npc_id, npc.name, profession
+                )
 
                 # 5. Conversation Continuity System
                 relationship_level = char_memory.get_relationship_level().value
@@ -813,10 +983,15 @@ What tale will you weave in this living tapestry of stories?
                 if interaction_id == "talk":
                     # Handle conversation continuity
                     if interaction_id == "talk":
-                        time_since_last = char_memory._time_since_last_interaction() or 24
+                        time_since_last = (
+                            char_memory._time_since_last_interaction() or 24
+                        )
 
                         # Start or continue conversation
-                        greeting, conv_context = self.conversation_manager.start_conversation(
+                        (
+                            greeting,
+                            conv_context,
+                        ) = self.conversation_manager.start_conversation(
                             actual_npc_id, npc.name, relationship_level, time_since_last
                         )
 
@@ -830,13 +1005,17 @@ What tale will you weave in this living tapestry of stories?
                         details["topic"] = kwargs.get("topic", "general conversation")
                         details["conversation_context"] = conv_context
 
-                    char_memory.add_interaction_memory(f"Had a conversation with player", details)
+                    char_memory.add_interaction_memory(
+                        "Had a conversation with player", details
+                    )
 
                 elif interaction_id == "buy":
                     item = kwargs.get("item", "something")
                     price = kwargs.get("price", 0)
                     details.update({"item": item, "gold_spent": price})
-                    char_memory.add_interaction_memory(f"Player bought {item} for {price} gold", details)
+                    char_memory.add_interaction_memory(
+                        f"Player bought {item} for {price} gold", details
+                    )
 
                     # Record reputation action
                     self.reputation_network.record_player_action(
@@ -850,7 +1029,9 @@ What tale will you weave in this living tapestry of stories?
                     item = kwargs.get("item", "something")
                     price = kwargs.get("price", 0)
                     details.update({"item": item, "gold_earned": price})
-                    char_memory.add_interaction_memory(f"Player sold {item} for {price} gold", details)
+                    char_memory.add_interaction_memory(
+                        f"Player sold {item} for {price} gold", details
+                    )
 
                 # Update relationship and state
                 if response.get("success"):
@@ -858,19 +1039,30 @@ What tale will you weave in this living tapestry of stories?
                     char_state.stress = max(0, char_state.stress - 0.1)
 
                 # Check schedule availability for future interactions
-                available, availability_reason = schedule.is_available_for_interaction(current_hour)
+                available, availability_reason = schedule.is_available_for_interaction(
+                    current_hour
+                )
                 if not available:
                     # Add schedule information to response
                     original_message = response.get("message", "")
-                    schedule_info = f"\n\n({npc.name} is currently {availability_reason})"
+                    schedule_info = (
+                        f"\n\n({npc.name} is currently {availability_reason})"
+                    )
                     response["message"] = original_message + schedule_info
 
                 # Store personal facts
                 if "personal_fact" in kwargs:
-                    char_memory.add_personal_fact(kwargs["personal_fact"]["category"], kwargs["personal_fact"]["fact"])
+                    char_memory.add_personal_fact(
+                        kwargs["personal_fact"]["category"],
+                        kwargs["personal_fact"]["fact"],
+                    )
 
         # Enhance with Phase 3 systems if available
-        if PHASE3_AVAILABLE and response.get("success", False) and interaction_id == "talk":
+        if (
+            PHASE3_AVAILABLE
+            and response.get("success", False)
+            and interaction_id == "talk"
+        ):
             npc = self.npc_manager.get_npc(actual_npc_id)
             if npc:
                 # Get psychological state
@@ -879,7 +1071,11 @@ What tale will you weave in this living tapestry of stories?
                 # Get narrative context if Phase 4 is available
                 narrative_context = None
                 if PHASE4_AVAILABLE and hasattr(self, "narrative_handler"):
-                    narrative_context = self.narrative_handler.get_narrative_context_for_npc(actual_npc_id)
+                    narrative_context = (
+                        self.narrative_handler.get_narrative_context_for_npc(
+                            actual_npc_id
+                        )
+                    )
 
                 # Create dialogue context (simplified for now)
                 # TODO: Implement full DialogueContext integration
@@ -887,8 +1083,12 @@ What tale will you weave in this living tapestry of stories?
 
                 # Enhance with character memory and state if available
                 if NARRATIVE_SYSTEMS_AVAILABLE:
-                    char_memory = self.character_memory_manager.get_or_create_memory(actual_npc_id, npc.name)
-                    char_state = self.character_state_manager.get_or_create_state(actual_npc_id, npc.name)
+                    char_memory = self.character_memory_manager.get_or_create_memory(
+                        actual_npc_id, npc.name
+                    )
+                    char_state = self.character_state_manager.get_or_create_state(
+                        actual_npc_id, npc.name
+                    )
 
                     # Override mood with dynamic state (TODO: integrate with dialogue context)
                     # dialogue_context.current_mood = char_state.mood.value
@@ -906,12 +1106,20 @@ What tale will you weave in this living tapestry of stories?
                 # Add gossip if available
                 gossip = self.gossip_network.get_npc_gossip(actual_npc_id)
                 if gossip:
-                    enhanced_message += f"\n\n{npc.name} leans in and whispers: '{gossip}'"
+                    enhanced_message += (
+                        f"\n\n{npc.name} leans in and whispers: '{gossip}'"
+                    )
 
                 # Add goal-driven dialogue
                 current_goal = self.goal_manager.get_current_goal(actual_npc_id)
-                if current_goal and hasattr(current_goal, "involves_player") and current_goal.involves_player:
-                    goal_dialogue = self.goal_manager.get_goal_dialogue(actual_npc_id, current_goal)
+                if (
+                    current_goal
+                    and hasattr(current_goal, "involves_player")
+                    and current_goal.involves_player
+                ):
+                    goal_dialogue = self.goal_manager.get_goal_dialogue(
+                        actual_npc_id, current_goal
+                    )
                     if goal_dialogue:
                         enhanced_message += f"\n\n{goal_dialogue}"
 
@@ -930,7 +1138,10 @@ What tale will you weave in this living tapestry of stories?
         return self.gambling_manager.get_available_games()
 
     def play_gambling_game(self, game_type: str, bet: int, **kwargs) -> Dict[str, Any]:
-        if not self.room_manager.current_room or "tavern" not in self.room_manager.current_room.id.lower():
+        if (
+            not self.room_manager.current_room
+            or "tavern" not in self.room_manager.current_room.id.lower()
+        ):
             return {"success": False, "message": "You can only gamble in the tavern!"}
         result = self.gambling_manager.play_game(self.player, game_type, bet, **kwargs)
         self._notify_observers(
@@ -963,16 +1174,22 @@ What tale will you weave in this living tapestry of stories?
 
         # Character relationship summary
         if hasattr(self, "character_memory_manager"):
-            status["relationships"] = self.character_memory_manager.get_relationship_summary()
+            status[
+                "relationships"
+            ] = self.character_memory_manager.get_relationship_summary()
 
         # Reputation network summary
         if hasattr(self, "reputation_network"):
-            status["reputation"] = self.reputation_network.get_overall_reputation_summary()
+            status[
+                "reputation"
+            ] = self.reputation_network.get_overall_reputation_summary()
 
         # Schedule status
         if hasattr(self, "schedule_manager"):
             current_hour = self.clock.get_current_time().total_hours % 24
-            status["schedules"] = self.schedule_manager.get_schedule_summary(current_hour)
+            status["schedules"] = self.schedule_manager.get_schedule_summary(
+                current_hour
+            )
 
         return status
 
@@ -993,7 +1210,11 @@ What tale will you weave in this living tapestry of stories?
         if NARRATIVE_SYSTEMS_AVAILABLE and hasattr(self, "story_orchestrator"):
             success = self.story_orchestrator.quest_generator.accept_quest(quest_id)
             if success:
-                self._add_event(f"Accepted quest: {quest_id}", "quest_accepted", {"quest_id": quest_id})
+                self._add_event(
+                    f"Accepted quest: {quest_id}",
+                    "quest_accepted",
+                    {"quest_id": quest_id},
+                )
             return success
         return False
 
@@ -1008,7 +1229,9 @@ What tale will you weave in this living tapestry of stories?
         """Load narrative state from save."""
         if NARRATIVE_SYSTEMS_AVAILABLE and hasattr(self, "narrative_persistence"):
             session_id = getattr(self, "_session_id", "manual_save")
-            return self.narrative_persistence.load_narrative_state(session_id, timestamp)
+            return self.narrative_persistence.load_narrative_state(
+                session_id, timestamp
+            )
         return False
 
     def process_command(self, command: str) -> Dict[str, Any]:
@@ -1039,7 +1262,11 @@ What tale will you weave in this living tapestry of stories?
                     # Clean up target - remove articles like "the", "a", "an"
                     if target:  # Only process if target exists
                         target_words = target.split()
-                        if target_words and target_words[0].lower() in ["the", "a", "an"]:
+                        if target_words and target_words[0].lower() in [
+                            "the",
+                            "a",
+                            "an",
+                        ]:
                             target = " ".join(target_words[1:])
                     extras = parsed.get("extras", {})
 
@@ -1070,7 +1297,11 @@ What tale will you weave in this living tapestry of stories?
         command = self._preprocess_command(command.lower().strip())
 
         # Default result for unknown commands
-        result = {"success": False, "message": "I don't understand that command.", "recent_events": []}
+        result = {
+            "success": False,
+            "message": "I don't understand that command.",
+            "recent_events": [],
+        }
 
         # Validate command first
         is_valid, validation_msg = self._validate_command(command)
@@ -1085,7 +1316,9 @@ What tale will you weave in this living tapestry of stories?
             result = self._handle_command_error(command, e)
 
         # Smart retry on failure - only for specific error types
-        if not result.get("success", False) and not result.get("retry_attempted", False):
+        if not result.get("success", False) and not result.get(
+            "retry_attempted", False
+        ):
             # Only retry for certain error types to avoid interference
             error_msg = result.get("message", "").lower()
             should_retry = any(
@@ -1107,7 +1340,9 @@ What tale will you weave in this living tapestry of stories?
 
         # Process command through story orchestrator for narrative consequences
         if NARRATIVE_SYSTEMS_AVAILABLE and hasattr(self, "story_orchestrator"):
-            story_notifications = self.story_orchestrator.process_player_action(original_command, result, self)
+            story_notifications = self.story_orchestrator.process_player_action(
+                original_command, result, self
+            )
 
             # Add any story notifications to the result
             if story_notifications:
@@ -1121,7 +1356,9 @@ What tale will you weave in this living tapestry of stories?
 
                 # Also add as events for the event formatter
                 for notification in story_notifications:
-                    self._add_event(notification, "story_consequence", {"command": original_command})
+                    self._add_event(
+                        notification, "story_consequence", {"command": original_command}
+                    )
 
         return result
 
@@ -1145,9 +1382,15 @@ What tale will you weave in this living tapestry of stories?
                 if bet <= 0:
                     return False, "Bet amount must be positive"
                 if bet > self.player.gold:
-                    return False, f"Not enough gold. You have {self.player.gold}, need {bet}"
+                    return (
+                        False,
+                        f"Not enough gold. You have {self.player.gold}, need {bet}",
+                    )
             except (ValueError, IndexError):
-                return False, "Usage: gamble <amount> (amount must be a positive number)"
+                return (
+                    False,
+                    "Usage: gamble <amount> (amount must be a positive number)",
+                )
 
         elif main_command == "wait" and args:
             try:
@@ -1161,12 +1404,18 @@ What tale will you weave in this living tapestry of stories?
             item_id = args[0].lower()
             # Basic validation - no special characters that could cause issues
             if not re.match(r"^[a-zA-Z0-9_-]+$", item_id):
-                return False, "Invalid item name. Use letters, numbers, underscore or dash only."
+                return (
+                    False,
+                    "Invalid item name. Use letters, numbers, underscore or dash only.",
+                )
 
         elif main_command == "move" and args:
             room_id = args[0]
             if not re.match(r"^[a-zA-Z0-9_-]+$", room_id):
-                return False, "Invalid room name. Use letters, numbers, underscore or dash only."
+                return (
+                    False,
+                    "Invalid room name. Use letters, numbers, underscore or dash only.",
+                )
 
         return True, "Valid command"
 
@@ -1208,7 +1457,11 @@ What tale will you weave in this living tapestry of stories?
         """Internal command processing with all the original logic."""
 
         # Default result for unknown commands
-        result = {"success": False, "message": "I don't understand that command.", "recent_events": []}
+        result = {
+            "success": False,
+            "message": "I don't understand that command.",
+            "recent_events": [],
+        }
 
         # Clear any previous events
         self.event_formatter.clear_events()
@@ -1267,12 +1520,16 @@ What tale will you weave in this living tapestry of stories?
                 result = {"success": False, "message": "Invalid quantity."}
                 quantity_to_retrieve = 0
             if quantity_to_retrieve > 0:
-                result = self._handle_retrieve_item(item_id_to_retrieve, quantity_to_retrieve)
+                result = self._handle_retrieve_item(
+                    item_id_to_retrieve, quantity_to_retrieve
+                )
         elif main_command == "check" and "storage" in args:
             result = self._handle_check_storage()
         elif main_command == "read" and " ".join(args) == "notice board":
             result = self._handle_read_notice_board()
-        elif main_command == "accept" and args and args[0] == "bounty" and len(args) > 1:
+        elif (
+            main_command == "accept" and args and args[0] == "bounty" and len(args) > 1
+        ):
             bounty_id_to_accept = args[1]
             result = self._handle_accept_bounty(bounty_id_to_accept)
         elif main_command == "interact" and len(args) >= 2:
@@ -1281,12 +1538,17 @@ What tale will you weave in this living tapestry of stories?
             interaction_kwargs = {}
             if interaction_id_arg == "talk" and len(args) > 2:
                 interaction_kwargs["topic"] = " ".join(args[2:])
-            result = self.interact_with_npc(npc_id_arg, interaction_id_arg, **interaction_kwargs)
+            result = self.interact_with_npc(
+                npc_id_arg, interaction_id_arg, **interaction_kwargs
+            )
         elif main_command == "progress_bounty" and len(args) >= 2:
             b_id, obj_id_param = args[0], args[1]
             bounty_instance = self.bounty_manager.get_bounty(b_id)
             active_obj_id_to_progress = obj_id_param
-            if bounty_instance and bounty_instance.accepted_by_player_id == self.player.id:
+            if (
+                bounty_instance
+                and bounty_instance.accepted_by_player_id == self.player.id
+            ):
                 active_obj = bounty_instance.get_active_objective()
                 if active_obj and obj_id_param == "active":
                     active_obj_id_to_progress = active_obj.id
@@ -1298,7 +1560,9 @@ What tale will you weave in this living tapestry of stories?
             result = {"success": success, "message": msg}
         elif main_command == "complete_bounty" and args:
             b_id = args[0]
-            success, msg = self.bounty_manager.complete_bounty(self.player.id, b_id, self)
+            success, msg = self.bounty_manager.complete_bounty(
+                self.player.id, b_id, self
+            )
             if success:
                 self.player.active_bounty_ids.discard(b_id)
                 self.player.completed_bounty_ids.add(b_id)
@@ -1334,9 +1598,15 @@ What tale will you weave in this living tapestry of stories?
                 else main_command in REPUTATION_COMMAND_HANDLERS
             ):
                 handler_key_long = f"{main_command} {args[0]}" if args else ""
-                actual_args_for_handler = args[1:] if args and handler_key_long in REPUTATION_COMMAND_HANDLERS else args
+                actual_args_for_handler = (
+                    args[1:]
+                    if args and handler_key_long in REPUTATION_COMMAND_HANDLERS
+                    else args
+                )
                 if handler_key_long in REPUTATION_COMMAND_HANDLERS:
-                    result = REPUTATION_COMMAND_HANDLERS[handler_key_long](self, actual_args_for_handler)
+                    result = REPUTATION_COMMAND_HANDLERS[handler_key_long](
+                        self, actual_args_for_handler
+                    )
                 elif main_command in REPUTATION_COMMAND_HANDLERS:
                     result = REPUTATION_COMMAND_HANDLERS[main_command](self, args)
             elif main_command == "status":
@@ -1359,7 +1629,10 @@ What tale will you weave in this living tapestry of stories?
                         hours = float(args[0])
                         result = self._handle_wait(hours)
                     except ValueError:
-                        result = {"success": False, "message": "Please specify a valid number of hours to wait."}
+                        result = {
+                            "success": False,
+                            "message": "Please specify a valid number of hours to wait.",
+                        }
                 else:
                     result = self._handle_wait()
             elif main_command == "sleep":
@@ -1368,7 +1641,10 @@ What tale will you weave in this living tapestry of stories?
                         hours = float(args[0])
                         result = self._handle_sleep(hours)
                     except ValueError:
-                        result = {"success": False, "message": "Please specify a valid number of hours to sleep."}
+                        result = {
+                            "success": False,
+                            "message": "Please specify a valid number of hours to sleep.",
+                        }
                 else:
                     result = self._handle_sleep()
             elif main_command in ("quit", "exit"):
@@ -1389,9 +1665,15 @@ What tale will you weave in this living tapestry of stories?
                             for i, g in enumerate(games)
                         ]
                     )
-                    result = {"success": True, "message": f"Available games:\n{game_list}"}
+                    result = {
+                        "success": True,
+                        "message": f"Available games:\n{game_list}",
+                    }
                 else:
-                    result = {"success": False, "message": "No games available right now."}
+                    result = {
+                        "success": False,
+                        "message": "No games available right now.",
+                    }
             elif main_command == "play" and args:
                 game_type_arg = args[0]
                 bet_amount_str = args[1] if len(args) > 1 else "0"
@@ -1400,30 +1682,50 @@ What tale will you weave in this living tapestry of stories?
                     if bet_amount <= 0:
                         raise ValueError("Bet must be a positive number!")
                     game_kwargs = {}
-                    game_type_map = {"dice": "dice", "coin": "coin_flip", "high": "high_card"}
+                    game_type_map = {
+                        "dice": "dice",
+                        "coin": "coin_flip",
+                        "high": "high_card",
+                    }
                     actual_game_type = game_type_map.get(game_type_arg)
                     if actual_game_type == "dice":
                         if len(args) > 2:
                             guess_arg = args[2].lower()
                             game_kwargs["guess"] = (
-                                1 if guess_arg in ("low", "1") else (2 if guess_arg in ("high", "2") else None)
+                                1
+                                if guess_arg in ("low", "1")
+                                else (2 if guess_arg in ("high", "2") else None)
                             )
                         if game_kwargs.get("guess") is None:
-                            raise ValueError("For dice, specify 'low'/'high' or '1'/'2'.")
+                            raise ValueError(
+                                "For dice, specify 'low'/'high' or '1'/'2'."
+                            )
                     elif actual_game_type == "coin_flip":
                         if len(args) > 2:
                             guess_arg = args[2].lower()
-                            game_kwargs["guess"] = guess_arg if guess_arg in ("heads", "tails") else None
+                            game_kwargs["guess"] = (
+                                guess_arg if guess_arg in ("heads", "tails") else None
+                            )
                         if game_kwargs.get("guess") is None:
-                            raise ValueError("For coin flip, specify 'heads' or 'tails'.")
+                            raise ValueError(
+                                "For coin flip, specify 'heads' or 'tails'."
+                            )
                     if actual_game_type:
-                        result = self.play_gambling_game(actual_game_type, bet_amount, **game_kwargs)
+                        result = self.play_gambling_game(
+                            actual_game_type, bet_amount, **game_kwargs
+                        )
                     else:
-                        result = {"success": False, "message": f"Unknown game: {game_type_arg}"}
+                        result = {
+                            "success": False,
+                            "message": f"Unknown game: {game_type_arg}",
+                        }
                 except ValueError as e:
                     result = {"success": False, "message": str(e)}
                 except IndexError:
-                    result = {"success": False, "message": "Invalid 'play' command format."}
+                    result = {
+                        "success": False,
+                        "message": "Invalid 'play' command format.",
+                    }
             elif command == "gambling stats":
                 stats = self.get_gambling_stats()
                 if stats and stats.get("total_games_played", 0) > 0:
@@ -1438,12 +1740,15 @@ What tale will you weave in this living tapestry of stories?
                             won = game_stats.get("total_won", 0)
                             lost = game_stats.get("total_lost", 0)
                             profit = game_stats.get("net_profit", 0)
-                            stats_msg.append(f"{game_type}: {played} games, Won: {won}, Lost: {lost}, Net: {profit}")
+                            stats_msg.append(
+                                f"{game_type}: {played} games, Won: {won}, Lost: {lost}, Net: {profit}"
+                            )
 
                     if stats_msg:
                         result = {
                             "success": True,
-                            "message": f"Overall: {total_played} played, Net: {net_profit}\n" + "\n".join(stats_msg),
+                            "message": f"Overall: {total_played} played, Net: {net_profit}\n"
+                            + "\n".join(stats_msg),
                         }
                     else:
                         result = {
@@ -1451,7 +1756,10 @@ What tale will you weave in this living tapestry of stories?
                             "message": f"Overall: {total_played} games played, Net profit: {net_profit}",
                         }
                 else:
-                    result = {"success": True, "message": "No gambling stats yet. Try gambling first!"}
+                    result = {
+                        "success": True,
+                        "message": "No gambling stats yet. Try gambling first!",
+                    }
             elif main_command == "gamble" and args:
                 # Simple gamble command - default to dice game
                 try:
@@ -1471,10 +1779,15 @@ What tale will you weave in this living tapestry of stories?
                 # List NPCs in current area
                 present_npcs = self.npc_manager.get_present_npcs()
                 if present_npcs:
-                    npc_list = "\n".join([f"- {npc.name}: {npc.description}" for npc in present_npcs])
+                    npc_list = "\n".join(
+                        [f"- {npc.name}: {npc.description}" for npc in present_npcs]
+                    )
                     result = {"success": True, "message": f"NPCs present:\n{npc_list}"}
                 else:
-                    result = {"success": True, "message": "There are no NPCs around right now."}
+                    result = {
+                        "success": True,
+                        "message": "There are no NPCs around right now.",
+                    }
 
         # Only update if not awaiting confirmation
         if not self.pending_command:
@@ -1489,16 +1802,26 @@ What tale will you weave in this living tapestry of stories?
 
         for bounty_id in active_bounty_ids_copy:
             bounty = self.bounty_manager.get_bounty(bounty_id)
-            if not bounty or bounty.status != BountyStatus.ACCEPTED or bounty.accepted_by_player_id != player_id:
+            if (
+                not bounty
+                or bounty.status != BountyStatus.ACCEPTED
+                or bounty.accepted_by_player_id != player_id
+            ):
                 continue
 
             active_objective = bounty.get_active_objective()
-            if not active_objective or active_objective.is_completed or not active_objective.is_active:
+            if (
+                not active_objective
+                or active_objective.is_completed
+                or not active_objective.is_active
+            ):
                 continue
 
             if active_objective.type == "discover_location":
                 if self.room_manager.current_room_id == active_objective.target_id:
-                    success, msg = self.bounty_manager.update_bounty_progress(player_id, bounty_id, active_objective.id)
+                    success, msg = self.bounty_manager.update_bounty_progress(
+                        player_id, bounty_id, active_objective.id
+                    )
                     if success:
                         self._add_event(msg, "bounty")
 
@@ -1508,25 +1831,45 @@ What tale will you weave in this living tapestry of stories?
 
         for bounty_id in active_bounty_ids_copy:
             bounty = self.bounty_manager.get_bounty(bounty_id)
-            if not bounty or bounty.status != BountyStatus.ACCEPTED or bounty.accepted_by_player_id != player_id:
+            if (
+                not bounty
+                or bounty.status != BountyStatus.ACCEPTED
+                or bounty.accepted_by_player_id != player_id
+            ):
                 continue
 
             active_objective = bounty.get_active_objective()
-            if not active_objective or active_objective.is_completed or not active_objective.is_active:
+            if (
+                not active_objective
+                or active_objective.is_completed
+                or not active_objective.is_active
+            ):
                 continue
 
-            if active_objective.type == "report_to_npc" and active_objective.target_id == interacted_npc_id:
-                success, msg = self.bounty_manager.update_bounty_progress(player_id, bounty_id, active_objective.id)
+            if (
+                active_objective.type == "report_to_npc"
+                and active_objective.target_id == interacted_npc_id
+            ):
+                success, msg = self.bounty_manager.update_bounty_progress(
+                    player_id, bounty_id, active_objective.id
+                )
                 if success:
                     self._add_event(msg, "bounty")
 
     def _handle_read_notice_board(self) -> Dict[str, Any]:
         if self.room_manager.current_room_id != "tavern_main":
-            return {"success": False, "message": "You need to be in the Tavern Common Area to read the notice board."}
+            return {
+                "success": False,
+                "message": "You need to be in the Tavern Common Area to read the notice board.",
+            }
         current_room = self.room_manager.current_room
-        if not current_room or not any(feature["id"] == "notice_board" for feature in current_room.features):
+        if not current_room or not any(
+            feature["id"] == "notice_board" for feature in current_room.features
+        ):
             return {"success": False, "message": "There is no notice board here."}
-        available_bounties = self.bounty_manager.get_available_bounties_on_notice_board(self.player)
+        available_bounties = self.bounty_manager.get_available_bounties_on_notice_board(
+            self.player
+        )
         if not available_bounties:
             return {"success": True, "message": "The notice board is empty."}
         bounty_listings = []
@@ -1546,7 +1889,12 @@ What tale will you weave in this living tapestry of stories?
         return {
             "success": True,
             "message": "Available Bounties:\n" + "\n\n".join(bounty_listings),
-            "data": {"bounties": [b.dict() if hasattr(b, "dict") else b.model_dump() for b in available_bounties]},
+            "data": {
+                "bounties": [
+                    b.dict() if hasattr(b, "dict") else b.model_dump()
+                    for b in available_bounties
+                ]
+            },
         }
 
     def _handle_accept_bounty(self, bounty_id: str) -> Dict[str, Any]:
@@ -1556,8 +1904,13 @@ What tale will you weave in this living tapestry of stories?
                 "message": "You must be at the notice board in the Tavern Common Area to accept a bounty.",
             }
         current_room = self.room_manager.current_room
-        if not current_room or not any(feature["id"] == "notice_board" for feature in current_room.features):
-            return {"success": False, "message": "There is no notice board here to accept bounties from."}
+        if not current_room or not any(
+            feature["id"] == "notice_board" for feature in current_room.features
+        ):
+            return {
+                "success": False,
+                "message": "There is no notice board here to accept bounties from.",
+            }
 
         current_time_float = (
             self.clock.current_time_hours
@@ -1565,7 +1918,9 @@ What tale will you weave in this living tapestry of stories?
             else float(self.clock.current_time)
         )
         success, message = self.bounty_manager.accept_bounty(
-            bounty_id=bounty_id, player_state=self.player, current_game_time=current_time_float
+            bounty_id=bounty_id,
+            player_state=self.player,
+            current_game_time=current_time_float,
         )
 
         if success:
@@ -1603,10 +1958,17 @@ What tale will you weave in this living tapestry of stories?
                 bounty = self.bounty_manager.get_bounty(b_id)
                 if bounty and bounty.status == BountyStatus.ACCEPTED:
                     active_obj_desc = (
-                        self.bounty_manager.get_active_objective_description(self.player.id, b_id) or "N/A"
+                        self.bounty_manager.get_active_objective_description(
+                            self.player.id, b_id
+                        )
+                        or "N/A"
                     )
-                    active_bounties_info.append(f"{bounty.title} (ID: {b_id}) - Current Objective: {active_obj_desc}")
-        status_data["active_bounties"] = active_bounties_info if active_bounties_info else "None"
+                    active_bounties_info.append(
+                        f"{bounty.title} (ID: {b_id}) - Current Objective: {active_obj_desc}"
+                    )
+        status_data["active_bounties"] = (
+            active_bounties_info if active_bounties_info else "None"
+        )
         return {"success": True, "message": "Player status:", "data": status_data}
 
     def _handle_inventory(self) -> Dict[str, Any]:
@@ -1622,7 +1984,10 @@ What tale will you weave in this living tapestry of stories?
     def _handle_buy(self, item_id: str) -> Dict[str, Any]:
         item_id_lower = item_id.lower()
         item_to_buy: Optional[Item] = None
-        if self.travelling_merchant_active and item_id_lower in self.travelling_merchant_temporary_items:
+        if (
+            self.travelling_merchant_active
+            and item_id_lower in self.travelling_merchant_temporary_items
+        ):
             merchant_npc = self.npc_manager.get_npc(self.travelling_merchant_npc_id)
             if merchant_npc:
                 for item_in_merchant_inventory in merchant_npc.inventory:
@@ -1637,14 +2002,19 @@ What tale will you weave in this living tapestry of stories?
         if price is None:
             return {"success": False, "message": f"Cannot price {item_to_buy.name}."}
         if not self.player.spend_gold(price):
-            return {"success": False, "message": f"Not enough gold for {item_to_buy.name}."}
+            return {
+                "success": False,
+                "message": f"Not enough gold for {item_to_buy.name}.",
+            }
         success = self.player.inventory.add_item(item_to_buy.id, quantity=1)
         add_msg = "Added successfully" if success else "Failed to add item"
         if not success:
             self.player.add_gold(price)
             return {"success": False, "message": f"Failed to add: {add_msg}"}
         self._add_event(f"Bought {item_to_buy.name} for {price} gold.", "success")
-        self.event_formatter.add_event("item_bought", item_name=item_to_buy.name, price=price)
+        self.event_formatter.add_event(
+            "item_bought", item_name=item_to_buy.name, price=price
+        )
         return {
             "success": True,
             "message": f"Bought {item_to_buy.name} for {price} gold.",
@@ -1665,7 +2035,9 @@ What tale will you weave in this living tapestry of stories?
             if hasattr(self.clock, "current_time_hours")
             else float(self.clock.current_time)
         )
-        consume_success = self.player.consume_item_and_apply_effects(item_def, current_time_float)
+        consume_success = self.player.consume_item_and_apply_effects(
+            item_def, current_time_float
+        )
 
         if consume_success:
             self.event_formatter.add_event("item_used", item_name=item_def.name)
@@ -1693,11 +2065,20 @@ What tale will you weave in this living tapestry of stories?
         self.player.add_gold(result["reward"])
         self.player.tiredness = min(1.0, self.player.tiredness + result["tiredness"])
         for item_data in result.get("items", []):
-            self.player.inventory.add_item(item_id_to_add=item_data["id"], quantity=item_data.get("quantity", 1))
-        self.event_formatter.add_event("job_completed", job_name=job_id, reward=result["reward"])
-        response_data = {"reward": result["reward"], "tiredness_increase": result["tiredness"]}
+            self.player.inventory.add_item(
+                item_id_to_add=item_data["id"], quantity=item_data.get("quantity", 1)
+            )
+        self.event_formatter.add_event(
+            "job_completed", job_name=job_id, reward=result["reward"]
+        )
+        response_data = {
+            "reward": result["reward"],
+            "tiredness_increase": result["tiredness"],
+        }
         if "items" in result and result["items"]:
-            response_data["items_received"] = [item_data["id"] for item_data in result["items"]]
+            response_data["items_received"] = [
+                item_data["id"] for item_data in result["items"]
+            ]
         return {"success": True, "message": result["message"], "data": response_data}
 
     def _handle_look(self) -> Dict[str, Any]:
@@ -1719,14 +2100,20 @@ A staircase leads up to the rooms for rent.
         for npc in self.npc_manager.get_present_npcs():
             npc_descriptions.append(f"{npc.name} is here. {npc.description}")
 
-        npc_text = "\n".join(npc_descriptions) if npc_descriptions else "There's no one of interest here at the moment."
+        npc_text = (
+            "\n".join(npc_descriptions)
+            if npc_descriptions
+            else "There's no one of interest here at the moment."
+        )
 
         # Add atmosphere description if Phase 2 is available
         atmosphere_desc = ""
         if PHASE2_AVAILABLE and hasattr(self, "atmosphere_manager"):
             current_atmosphere = self.atmosphere_manager.get_current_atmosphere()
             if current_atmosphere.get("tension", 0) > 0.7:
-                atmosphere_desc = "\nThe atmosphere is tense - you can feel it in the air."
+                atmosphere_desc = (
+                    "\nThe atmosphere is tense - you can feel it in the air."
+                )
             elif current_atmosphere.get("comfort", 0) > 0.8:
                 atmosphere_desc = "\nThe atmosphere is warm and inviting."
             elif current_atmosphere.get("mystery", 0) > 0.6:
@@ -1737,7 +2124,9 @@ A staircase leads up to the rooms for rent.
         if PHASE4_AVAILABLE and hasattr(self, "thread_manager"):
             active_threads = self.thread_manager.get_active_threads()
             if active_threads:
-                high_tension_threads = [t for t in active_threads if t.tension_level > 0.6]
+                high_tension_threads = [
+                    t for t in active_threads if t.tension_level > 0.6
+                ]
                 if high_tension_threads:
                     narrative_hint = f"\n\n[Something important seems to be happening: {high_tension_threads[0].title}]"
 
@@ -1763,7 +2152,9 @@ A staircase leads up to the rooms for rent.
         sleep_hours = min(hours, 24.0)
         self.clock.advance_time(sleep_hours)
         self.player.tiredness = 0.0
-        self.event_formatter.add_event("sleep_success", hours=sleep_hours, room_id=self.player.room_id)
+        self.event_formatter.add_event(
+            "sleep_success", hours=sleep_hours, room_id=self.player.room_id
+        )
         return {
             "success": True,
             "message": f"Slept {sleep_hours:.1f} hours. Refreshed! {self.clock.time.format_time()}",
@@ -1772,7 +2163,11 @@ A staircase leads up to the rooms for rent.
 
     def _handle_rent_room_command(self, with_chest: bool) -> Dict[str, Any]:
         # If player already has a room and items in storage, and is trying to rent a *different* room
-        if self.player.has_room and self.player.room_id and not self.player.storage_inventory.is_empty():
+        if (
+            self.player.has_room
+            and self.player.room_id
+            and not self.player.storage_inventory.is_empty()
+        ):
             # Find any available new room to check if it's different
             new_available_room_id = None
             for r_id, r_obj in self.room_manager.rooms.items():
@@ -1785,8 +2180,13 @@ A staircase leads up to the rooms for rent.
                     new_available_room_id = r_id
                     break
 
-            if new_available_room_id:  # If they are trying to rent a new, different room
-                self.pending_command = {"type": "confirm_rent", "params": {"with_chest": with_chest}}
+            if (
+                new_available_room_id
+            ):  # If they are trying to rent a new, different room
+                self.pending_command = {
+                    "type": "confirm_rent",
+                    "params": {"with_chest": with_chest},
+                }
                 return {
                     "success": True,
                     "message": "Warning: You have items in your current room's storage. Renting a new room will empty this storage. Proceed? (yes/no)",
@@ -1797,7 +2197,11 @@ A staircase leads up to the rooms for rent.
 
     def _execute_rent_room(self, with_chest: bool) -> Dict[str, Any]:
         # Clear storage if player had a room and is now renting (implies new room or re-renting old one after expiry)
-        if self.player.has_room and self.player.room_id and not self.player.storage_inventory.is_empty():
+        if (
+            self.player.has_room
+            and self.player.room_id
+            and not self.player.storage_inventory.is_empty()
+        ):
             self.player.storage_inventory.items.clear()  # Clear the storage
             self._add_event("Your previous room storage has been cleared.", "info")
 
@@ -1808,50 +2212,86 @@ A staircase leads up to the rooms for rent.
         if success and rented_room_id_or_msg:
             self.event_formatter.add_event("rent_success", amount=self.room_manager.get_room(rented_room_id_or_msg).price_per_night, room_id=rented_room_id_or_msg)  # type: ignore
             return {"success": True, "message": message}
-        return {"success": False, "message": rented_room_id_or_msg}  # This will be the failure message from RoomManager
+        return {
+            "success": False,
+            "message": rented_room_id_or_msg,
+        }  # This will be the failure message from RoomManager
 
     def _handle_store_item(self, item_id: str, quantity: int) -> Dict[str, Any]:
         if not self.player.has_room or not self.player.room_id:
-            return {"success": False, "message": "You need to rent a room with a storage chest first."}
+            return {
+                "success": False,
+                "message": "You need to rent a room with a storage chest first.",
+            }
         room = self.room_manager.get_room(self.player.room_id)
         if not room or not room.has_storage_chest:
-            return {"success": False, "message": "Your current room doesn't have a storage chest."}
+            return {
+                "success": False,
+                "message": "Your current room doesn't have a storage chest.",
+            }
 
         if not self.player.inventory.has_item(item_id, quantity):
-            return {"success": False, "message": f"You don't have {quantity} of {item_id}."}
+            return {
+                "success": False,
+                "message": f"You don't have {quantity} of {item_id}.",
+            }
 
         item_def = ITEM_DEFINITIONS.get(item_id)
         if not item_def:
-            return {"success": False, "message": "Item definition not found."}  # Should not happen if has_item passed
+            return {
+                "success": False,
+                "message": "Item definition not found.",
+            }  # Should not happen if has_item passed
 
-        remove_success, remove_msg = self.player.inventory.remove_item(item_id, quantity)
+        remove_success, remove_msg = self.player.inventory.remove_item(
+            item_id, quantity
+        )
         if not remove_success:
             return {"success": False, "message": remove_msg}
 
         # Add to storage_inventory (which uses Item object, not just item_id)
-        add_success, add_msg = self.player.storage_inventory.add_item(item_def, quantity)
+        add_success, add_msg = self.player.storage_inventory.add_item(
+            item_def, quantity
+        )
         if not add_success:
             # Rollback: add back to player inventory
             self.player.inventory.add_item(item_def, quantity)
-            return {"success": False, "message": f"Failed to store item in chest: {add_msg}"}
+            return {
+                "success": False,
+                "message": f"Failed to store item in chest: {add_msg}",
+            }
 
-        return {"success": True, "message": f"Stored {quantity} x {item_def.name} in your room's chest."}
+        return {
+            "success": True,
+            "message": f"Stored {quantity} x {item_def.name} in your room's chest.",
+        }
 
     def _handle_retrieve_item(self, item_id: str, quantity: int) -> Dict[str, Any]:
         if not self.player.has_room or not self.player.room_id:
-            return {"success": False, "message": "You need to be in your rented room to access storage."}
+            return {
+                "success": False,
+                "message": "You need to be in your rented room to access storage.",
+            }
         room = self.room_manager.get_room(self.player.room_id)
         if not room or not room.has_storage_chest:
-            return {"success": False, "message": "Your current room doesn't have a storage chest."}
+            return {
+                "success": False,
+                "message": "Your current room doesn't have a storage chest.",
+            }
 
         if not self.player.storage_inventory.has_item(item_id, quantity):
-            return {"success": False, "message": f"Cannot retrieve {quantity} of {item_id}. Not that many in storage."}
+            return {
+                "success": False,
+                "message": f"Cannot retrieve {quantity} of {item_id}. Not that many in storage.",
+            }
 
         item_def = ITEM_DEFINITIONS.get(item_id)
         if not item_def:
             return {"success": False, "message": "Item definition not found."}
 
-        remove_success, remove_msg = self.player.storage_inventory.remove_item(item_id, quantity)
+        remove_success, remove_msg = self.player.storage_inventory.remove_item(
+            item_id, quantity
+        )
         if not remove_success:
             return {"success": False, "message": remove_msg}
 
@@ -1859,23 +2299,41 @@ A staircase leads up to the rooms for rent.
         if not add_success:
             # Rollback: add back to storage
             self.player.storage_inventory.add_item(item_def, quantity)
-            return {"success": False, "message": f"Failed to add item to inventory: {add_msg}"}
+            return {
+                "success": False,
+                "message": f"Failed to add item to inventory: {add_msg}",
+            }
 
-        return {"success": True, "message": f"Retrieved {quantity} x {item_def.name} from your chest."}
+        return {
+            "success": True,
+            "message": f"Retrieved {quantity} x {item_def.name} from your chest.",
+        }
 
     def _handle_check_storage(self) -> Dict[str, Any]:
         if not self.player.has_room or not self.player.room_id:
-            return {"success": False, "message": "You need to be in your rented room to access storage."}
+            return {
+                "success": False,
+                "message": "You need to be in your rented room to access storage.",
+            }
         room = self.room_manager.get_room(self.player.room_id)
         if not room or not room.has_storage_chest:
-            return {"success": False, "message": "Your current room doesn't have a storage chest."}
+            return {
+                "success": False,
+                "message": "Your current room doesn't have a storage chest.",
+            }
 
         if self.player.storage_inventory.is_empty():
             return {"success": True, "message": "Your storage chest is empty."}
 
         items_in_storage = self.player.storage_inventory.list_items_for_display()
-        storage_list = [f"{item_data['name']} (x{item_data['quantity']})" for item_data in items_in_storage]
-        return {"success": True, "message": "Items in your storage chest:\n" + "\n".join(storage_list)}
+        storage_list = [
+            f"{item_data['name']} (x{item_data['quantity']})"
+            for item_data in items_in_storage
+        ]
+        return {
+            "success": True,
+            "message": "Items in your storage chest:\n" + "\n".join(storage_list),
+        }
 
     def _create_initial_narrative_threads(self):
         """Create initial narrative threads based on game state"""
@@ -1941,9 +2399,15 @@ A staircase leads up to the rooms for rent.
             self._last_update_time = temp_gs._last_update_time
             self.travelling_merchant_active = temp_gs.travelling_merchant_active
             self.travelling_merchant_npc_id = temp_gs.travelling_merchant_npc_id
-            self.travelling_merchant_arrival_time = temp_gs.travelling_merchant_arrival_time
-            self.travelling_merchant_departure_time = temp_gs.travelling_merchant_departure_time
-            self.travelling_merchant_temporary_items = temp_gs.travelling_merchant_temporary_items
+            self.travelling_merchant_arrival_time = (
+                temp_gs.travelling_merchant_arrival_time
+            )
+            self.travelling_merchant_departure_time = (
+                temp_gs.travelling_merchant_departure_time
+            )
+            self.travelling_merchant_temporary_items = (
+                temp_gs.travelling_merchant_temporary_items
+            )
             self._data_dir = temp_gs._data_dir
             self.pending_command = temp_gs.pending_command
 
@@ -1995,14 +2459,18 @@ A staircase leads up to the rooms for rent.
         }
 
     @classmethod
-    def from_persistence_data(cls, data: Dict[str, Any], data_dir: str = "data") -> "GameState":
+    def from_persistence_data(
+        cls, data: Dict[str, Any], data_dir: str = "data"
+    ) -> "GameState":
         """Create from database persistence data."""
         session_id = data.get("session_id")
         db_id = data.get("id")
         game_data = data.get("game_data", {})
 
         # Create instance using from_dict with session info
-        instance = cls.from_dict(game_data, data_dir=data_dir, session_id=session_id, db_id=db_id)
+        instance = cls.from_dict(
+            game_data, data_dir=data_dir, session_id=session_id, db_id=db_id
+        )
         instance.set_db_id(db_id)
         instance.mark_clean()
         return instance
@@ -2014,7 +2482,10 @@ A staircase leads up to the rooms for rent.
         current_time = time.time()
 
         # Check cache validity
-        if self._present_npcs_cache and current_time - self._npc_cache_timestamp < self._npc_cache_ttl:
+        if (
+            self._present_npcs_cache
+            and current_time - self._npc_cache_timestamp < self._npc_cache_ttl
+        ):
             return list(self._present_npcs_cache.values())
 
         # Cache miss - rebuild cache
@@ -2060,9 +2531,9 @@ A staircase leads up to the rooms for rent.
 
         current_time = time.time()
         if (
-            len(self._event_batch) >= self._event_batch_size or current_time - self._last_event_process > 1.0
+            len(self._event_batch) >= self._event_batch_size
+            or current_time - self._last_event_process > 1.0
         ):  # Process every second at least
-
             # Process all batched events
             for event_data in self._event_batch:
                 # Could add batch event processing logic here
@@ -2072,12 +2543,20 @@ A staircase leads up to the rooms for rent.
             self._last_event_process = current_time
 
     def _add_event_optimized(
-        self, message: str, event_type: str = "info", data: Optional[Dict[str, Any]] = None
+        self,
+        message: str,
+        event_type: str = "info",
+        data: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Add event with batching optimization."""
         # Add to batch instead of immediate processing
         self._event_batch.append(
-            {"message": message, "event_type": event_type, "data": data or {}, "timestamp": time.time()}
+            {
+                "message": message,
+                "event_type": event_type,
+                "data": data or {},
+                "timestamp": time.time(),
+            }
         )
 
         # Also add to immediate events for backward compatibility
@@ -2193,7 +2672,9 @@ Type 'quit' to exit the game.
             + "\n\nUse 'help' for detailed descriptions."
         )
 
-    def _attempt_smart_retry(self, original_command: str, failed_result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _attempt_smart_retry(
+        self, original_command: str, failed_result: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Attempt intelligent retry based on failure type."""
 
         error_msg = failed_result.get("message", "").lower()
@@ -2208,7 +2689,9 @@ Type 'quit' to exit the game.
         if main_command == "move" and "available rooms:" in error_msg:
             # Extract available rooms from error message
             if "available rooms:" in failed_result["message"]:
-                rooms_part = failed_result["message"].split("Available rooms:")[1].strip()
+                rooms_part = (
+                    failed_result["message"].split("Available rooms:")[1].strip()
+                )
                 available_rooms = [r.strip() for r in rooms_part.split(",")]
 
                 if available_rooms and len(parts) > 1:
@@ -2216,15 +2699,18 @@ Type 'quit' to exit the game.
 
                     # Try fuzzy matching for common mistakes
                     for room in available_rooms:
-                        if requested_room in room.lower() or room.lower() in requested_room:
+                        if (
+                            requested_room in room.lower()
+                            or room.lower() in requested_room
+                        ):
                             # Found a likely match, auto-correct
                             retry_command = f"move {room}"
                             retry_result = self._process_command_internal(retry_command)
 
                             if retry_result["success"]:
-                                retry_result["message"] = (
-                                    f"[Auto-corrected] {retry_result['message']} (corrected from '{requested_room}')"
-                                )
+                                retry_result[
+                                    "message"
+                                ] = f"[Auto-corrected] {retry_result['message']} (corrected from '{requested_room}')"
                                 retry_result["retry_attempted"] = True
                                 return retry_result
 
@@ -2232,21 +2718,37 @@ Type 'quit' to exit the game.
                     suggestion = f"Room '{requested_room}' not found. Available rooms: {', '.join(available_rooms[:3])}"
                     if len(available_rooms) > 3:
                         suggestion += f" and {len(available_rooms) - 3} more"
-                    return {"success": False, "message": suggestion, "recent_events": [], "retry_attempted": True}
+                    return {
+                        "success": False,
+                        "message": suggestion,
+                        "recent_events": [],
+                        "retry_attempted": True,
+                    }
 
         # Item purchase failures - suggest checking what's available
         elif main_command == "buy" and "not available" in error_msg:
             # First check available items
             available_items = []
-            if hasattr(self, "economy") and hasattr(self.economy, "get_available_items"):
+            if hasattr(self, "economy") and hasattr(
+                self.economy, "get_available_items"
+            ):
                 # Get list of buyable items
                 available_items = ["ale", "bread", "cheese"]  # Default tavern items
 
             suggestion = f"Item '{parts[1] if len(parts) > 1 else 'unknown'}' not available. Available items: {', '.join(available_items)}"
-            return {"success": False, "message": suggestion, "recent_events": [], "retry_attempted": True}
+            return {
+                "success": False,
+                "message": suggestion,
+                "recent_events": [],
+                "retry_attempted": True,
+            }
 
         # Insufficient gold - suggest current balance
-        elif "not enough gold" in error_msg or "have" in error_msg and "need" in error_msg:
+        elif (
+            "not enough gold" in error_msg
+            or "have" in error_msg
+            and "need" in error_msg
+        ):
             # Extract current gold amount
             gold_match = re.search(r"have (\d+)", failed_result["message"])
             if gold_match and main_command == "gamble":
@@ -2258,25 +2760,30 @@ Type 'quit' to exit the game.
                     retry_result = self._process_command_internal(retry_command)
 
                     if retry_result["success"]:
-                        retry_result["message"] = (
-                            f"[Auto-adjusted] {retry_result['message']} (bet reduced to {safe_bet})"
-                        )
+                        retry_result[
+                            "message"
+                        ] = f"[Auto-adjusted] {retry_result['message']} (bet reduced to {safe_bet})"
                         retry_result["retry_attempted"] = True
                         return retry_result
 
         # NPC interaction failures - check who's around
-        elif main_command == "interact" and ("npc not" in error_msg or "not available" in error_msg):
+        elif main_command == "interact" and (
+            "npc not" in error_msg or "not available" in error_msg
+        ):
             # Check present NPCs
             present_npcs = self.npc_manager.get_present_npcs()
             if present_npcs:
                 npc_names = [npc.name for npc in present_npcs]
-                suggestion = (
-                    f"NPC '{parts[1] if len(parts) > 1 else 'unknown'}' not found. Present NPCs: {', '.join(npc_names)}"
-                )
+                suggestion = f"NPC '{parts[1] if len(parts) > 1 else 'unknown'}' not found. Present NPCs: {', '.join(npc_names)}"
             else:
                 suggestion = "No NPCs are present. Try waiting or moving to a different location."
 
-            return {"success": False, "message": suggestion, "recent_events": [], "retry_attempted": True}
+            return {
+                "success": False,
+                "message": suggestion,
+                "recent_events": [],
+                "retry_attempted": True,
+            }
 
         # Work/job failures - suggest available jobs
         elif main_command == "work" and "no such job" in error_msg:
@@ -2284,7 +2791,12 @@ Type 'quit' to exit the game.
             jobs_result = self._handle_available_jobs()
             if jobs_result["success"]:
                 suggestion = f"Job '{parts[1] if len(parts) > 1 else 'unknown'}' not found. {jobs_result['message']}"
-                return {"success": False, "message": suggestion, "recent_events": [], "retry_attempted": True}
+                return {
+                    "success": False,
+                    "message": suggestion,
+                    "recent_events": [],
+                    "retry_attempted": True,
+                }
 
         # Common command misspellings - "did you mean?"
         if not failed_result.get("retry_attempted", False):
@@ -2420,7 +2932,12 @@ Type 'quit' to exit the game.
 
         # Fix item names in buy/use commands
         if command.startswith(("buy ", "use ")):
-            item_fixes = {"beer": "ale", "drink": "ale", "food": "bread", "potion": "ale"}
+            item_fixes = {
+                "beer": "ale",
+                "drink": "ale",
+                "food": "bread",
+                "potion": "ale",
+            }
             parts = command.split()
             if len(parts) >= 2 and parts[1] in item_fixes:
                 parts[1] = item_fixes[parts[1]]
@@ -2457,7 +2974,13 @@ Type 'quit' to exit the game.
                 if hasattr(self.clock, "get_display_time")
                 else str(self.clock.get_current_time().total_hours)
             ),
-            visible_objects=[inv_item.item.name for inv_item in self.player.inventory.items.values()],
+            visible_objects=[
+                inv_item.item.name for inv_item in self.player.inventory.items.values()
+            ],
             visible_npcs=[npc.name for npc in present_npcs],
-            player_state={"gold": self.player.gold, "energy": self.player.energy, "tiredness": self.player.tiredness},
+            player_state={
+                "gold": self.player.gold,
+                "energy": self.player.energy,
+                "tiredness": self.player.tiredness,
+            },
         )

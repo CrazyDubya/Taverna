@@ -170,7 +170,9 @@ class SocialEvent:
     description: str
 
     # Effects on relationships
-    relationship_changes: Dict[Tuple[str, str], Dict[str, float]] = field(default_factory=dict)
+    relationship_changes: Dict[Tuple[str, str], Dict[str, float]] = field(
+        default_factory=dict
+    )
 
     # Witnesses
     witnesses: List[str] = field(default_factory=list)
@@ -191,7 +193,7 @@ class RelationshipWeb:
 
         # Social groups
         self.social_groups: Dict[str, Set[str]] = {
-            "staff": set(),
+            "staf": set(),
             "regulars": set(),
             "merchants": set(),
             "guards": set(),
@@ -241,7 +243,10 @@ class RelationshipWeb:
     ) -> Relationship:
         """Create a new relationship between NPCs."""
         relationship = Relationship(
-            character_id=npc2 if npc1 < npc2 else npc1, trust=trust, affection=affection, respect=respect
+            character_id=npc2 if npc1 < npc2 else npc1,
+            trust=trust,
+            affection=affection,
+            respect=respect,
         )
 
         self.set_relationship(npc1, npc2, relationship, rel_type)
@@ -296,13 +301,20 @@ class RelationshipWeb:
                     rel.modify_relationship(
                         trust_delta=-0.2 * intensity,
                         affection_delta=-0.15 * intensity,
-                        fear_delta=0.1 * intensity if conflict_type == ConflictType.PERSONAL else 0,
+                        fear_delta=0.1 * intensity
+                        if conflict_type == ConflictType.PERSONAL
+                        else 0,
                     )
 
         return conflict
 
     def create_alliance(
-        self, alliance_type: AllianceType, members: List[str], description: str, purpose: str, strength: float = 0.5
+        self,
+        alliance_type: AllianceType,
+        members: List[str],
+        description: str,
+        purpose: str,
+        strength: float = 0.5,
     ) -> Alliance:
         """Create a new alliance."""
         alliance_id = f"alliance_{len(self.alliances)}_{alliance_type.value}"
@@ -327,7 +339,9 @@ class RelationshipWeb:
 
                 # Alliances increase trust and affection
                 rel.modify_relationship(
-                    trust_delta=0.2 * strength, affection_delta=0.1 * strength, respect_delta=0.15 * strength
+                    trust_delta=0.2 * strength,
+                    affection_delta=0.1 * strength,
+                    respect_delta=0.15 * strength,
                 )
 
         return alliance
@@ -342,7 +356,9 @@ class RelationshipWeb:
         self.gossip_network[npc1].add(npc2)
         self.gossip_network[npc2].add(npc1)
 
-    def spread_gossip(self, source_npc: str, secret: Secret, reliability: float = 0.8) -> Set[str]:
+    def spread_gossip(
+        self, source_npc: str, secret: Secret, reliability: float = 0.8
+    ) -> Set[str]:
         """Spread gossip through the network."""
         informed = {source_npc}
         to_process = [source_npc]
@@ -381,7 +397,7 @@ class RelationshipWeb:
         groups = self.get_social_groups(npc_id)
         group_influence = {
             "nobility": 0.3,
-            "staff": 0.2,
+            "staf": 0.2,
             "merchants": 0.15,
             "guards": 0.2,
             "regulars": 0.1,
@@ -456,7 +472,12 @@ class RelationshipWeb:
         return enemies
 
     def record_social_event(
-        self, event_type: str, participants: List[str], location: str, description: str, public: bool = False
+        self,
+        event_type: str,
+        participants: List[str],
+        location: str,
+        description: str,
+        public: bool = False,
     ) -> SocialEvent:
         """Record a social event that affects relationships."""
         event = SocialEvent(
@@ -483,8 +504,14 @@ class RelationshipWeb:
                 for npc2 in event.participants[i + 1 :]:
                     rel = self.get_relationship(npc1, npc2)
                     if rel:
-                        rel.modify_relationship(trust_delta=-0.1, affection_delta=-0.15, respect_delta=-0.05)
-                        event.relationship_changes[(npc1, npc2)] = {"trust": -0.1, "affection": -0.15, "respect": -0.05}
+                        rel.modify_relationship(
+                            trust_delta=-0.1, affection_delta=-0.15, respect_delta=-0.05
+                        )
+                        event.relationship_changes[(npc1, npc2)] = {
+                            "trust": -0.1,
+                            "affection": -0.15,
+                            "respect": -0.05,
+                        }
 
         elif event.event_type == "shared_celebration":
             # Celebrations strengthen bonds
@@ -492,8 +519,14 @@ class RelationshipWeb:
                 for npc2 in event.participants[i + 1 :]:
                     rel = self.get_relationship(npc1, npc2)
                     if rel:
-                        rel.modify_relationship(trust_delta=0.05, affection_delta=0.1, respect_delta=0.05)
-                        event.relationship_changes[(npc1, npc2)] = {"trust": 0.05, "affection": 0.1, "respect": 0.05}
+                        rel.modify_relationship(
+                            trust_delta=0.05, affection_delta=0.1, respect_delta=0.05
+                        )
+                        event.relationship_changes[(npc1, npc2)] = {
+                            "trust": 0.05,
+                            "affection": 0.1,
+                            "respect": 0.05,
+                        }
 
         elif event.event_type == "betrayal":
             # Betrayals severely damage trust
@@ -503,14 +536,19 @@ class RelationshipWeb:
 
                 rel = self.get_relationship(betrayer, betrayed)
                 if rel:
-                    rel.modify_relationship(trust_delta=-0.5, affection_delta=-0.3, respect_delta=-0.4, fear_delta=0.2)
+                    rel.modify_relationship(
+                        trust_delta=-0.5,
+                        affection_delta=-0.3,
+                        respect_delta=-0.4,
+                        fear_delta=0.2,
+                    )
 
                     # May create conflict
                     if rel.trust < 0.3:
                         self.create_conflict(
                             ConflictType.PERSONAL,
                             [betrayer, betrayed],
-                            f"Conflict arising from betrayal",
+                            "Conflict arising from betrayal",
                             "Betrayal of trust",
                             intensity=0.7,
                         )
@@ -539,7 +577,11 @@ class RelationshipWeb:
                 if not rel:
                     continue
 
-                rel_info = {"npc": other_npc, "type": rel_type.value, "disposition": rel.get_overall_disposition()}
+                rel_info = {
+                    "npc": other_npc,
+                    "type": rel_type.value,
+                    "disposition": rel.get_overall_disposition(),
+                }
 
                 if rel_type == RelationshipType.ENEMY:
                     summary["enemies"].append(rel_info)
@@ -547,7 +589,10 @@ class RelationshipWeb:
                     summary["rivals"].append(rel_info)
                 elif rel_type in [RelationshipType.LOVER, RelationshipType.SPOUSE]:
                     summary["romantic"].append(rel_info)
-                elif rel_type in [RelationshipType.FRIEND, RelationshipType.BEST_FRIEND]:
+                elif rel_type in [
+                    RelationshipType.FRIEND,
+                    RelationshipType.BEST_FRIEND,
+                ]:
                     summary["friends"].append(rel_info)
                 elif rel_type == RelationshipType.ALLY:
                     summary["allies"].append(rel_info)

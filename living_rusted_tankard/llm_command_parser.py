@@ -4,21 +4,24 @@
 from typing import Dict, Any, Optional
 import json
 
+
 class LLMCommandParser:
     """Use LLM to parse natural language into game commands."""
-    
+
     def __init__(self, llm_client=None):
         self.llm_client = llm_client
-        
-    async def parse_natural_command(self, user_input: str, game_context: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def parse_natural_command(
+        self, user_input: str, game_context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Parse natural language into game command using LLM."""
-        
+
         # If no LLM available, fall back to basic parsing
         if not self.llm_client:
             return self._basic_parse(user_input)
-        
+
         # Create prompt for LLM
-        prompt = f"""You are parsing commands for a text adventure game set in a tavern.
+        prompt = """You are parsing commands for a text adventure game set in a tavern.
 
 Current context:
 - Player has {game_context.get('gold', 0)} gold
@@ -47,42 +50,43 @@ Respond in JSON format:
         try:
             response = await self.llm_client.complete(prompt)
             result = json.loads(response)
-            
-            if result['command'] and result['confidence'] > 0.7:
+
+            if result["command"] and result["confidence"] > 0.7:
                 return {
-                    'success': True,
-                    'parsed_command': result['command'],
-                    'llm_assisted': True
+                    "success": True,
+                    "parsed_command": result["command"],
+                    "llm_assisted": True,
                 }
             else:
                 # Use narrative to cover uncertainty
                 return {
-                    'success': False,
-                    'message': result.get('narrative', "I'm not sure what you mean. Try 'help' for commands."),
-                    'llm_narrative': True
+                    "success": False,
+                    "message": result.get(
+                        "narrative",
+                        "I'm not sure what you mean. Try 'help' for commands.",
+                    ),
+                    "llm_narrative": True,
                 }
-                
+
         except Exception as e:
             print(f"LLM parsing error: {e}")
             return self._basic_parse(user_input)
-    
+
     def _basic_parse(self, user_input: str) -> Dict[str, Any]:
         """Fallback basic parsing without LLM."""
-        
+
         # Natural language patterns to game commands
         patterns = {
             # Movement
             "go to": "move",
-            "walk to": "move", 
+            "walk to": "move",
             "head to": "move",
             "enter": "move",
-            
             # Interaction
             "talk to": "interact {} talk",
             "speak with": "interact {} talk",
             "chat with": "interact {} talk",
             "ask": "interact {} talk",
-            
             # Actions
             "pick up": "take",
             "grab": "take",
@@ -95,23 +99,21 @@ Respond in JSON format:
             "rest": "sleep",
             "take a nap": "sleep 2",
             "go to sleep": "sleep",
-            
             # Shopping
             "purchase": "buy",
             "order": "buy",
             "get me": "buy",
             "I want": "buy",
             "I'll have": "buy",
-            
             # Gambling
             "bet": "gamble",
             "wager": "gamble",
             "roll the dice": "gamble 5",
-            "try my luck": "gamble 5"
+            "try my luck": "gamble 5",
         }
-        
+
         user_lower = user_input.lower().strip()
-        
+
         # Check each pattern
         for pattern, command in patterns.items():
             if pattern in user_lower:
@@ -122,31 +124,29 @@ Respond in JSON format:
                     if len(parts) > 1:
                         target = parts[1].strip().split()[0] if parts[1].strip() else ""
                         return {
-                            'success': True,
-                            'parsed_command': command.format(target)
+                            "success": True,
+                            "parsed_command": command.format(target),
                         }
                 else:
                     # Simple replacement
                     remaining = user_lower.replace(pattern, "").strip()
                     if remaining:
                         return {
-                            'success': True,
-                            'parsed_command': f"{command} {remaining}"
+                            "success": True,
+                            "parsed_command": f"{command} {remaining}",
                         }
                     else:
-                        return {
-                            'success': True,
-                            'parsed_command': command
-                        }
-        
+                        return {"success": True, "parsed_command": command}
+
         # No pattern matched
         return {
-            'success': False,
-            'message': "I don't understand that. Try 'help' for valid commands."
+            "success": False,
+            "message": "I don't understand that. Try 'help' for valid commands.",
         }
 
+
 # Example of how this SHOULD be integrated into GameState
-example_integration = '''
+example_integration = """
 # In GameState.process_command():
 
 # First try LLM parsing for natural language
@@ -160,7 +160,7 @@ if self.llm_parser and not command.startswith(tuple(KNOWN_COMMANDS)):
             'npcs': [npc.name for npc in self.npc_manager.get_present_npcs()]
         }
     )
-    
+
     if parse_result.get('success') and parse_result.get('parsed_command'):
         # Use the parsed command
         command = parse_result['parsed_command']
@@ -172,7 +172,7 @@ if self.llm_parser and not command.startswith(tuple(KNOWN_COMMANDS)):
             'message': parse_result['message'],
             'llm_generated': True
         }
-'''
+"""
 
 if __name__ == "__main__":
     print("🤖 LLM COMMAND PARSER")
@@ -184,23 +184,23 @@ if __name__ == "__main__":
     print("\n✅ Natural language -> game command via LLM")
     print("✅ Narrative responses for ambiguous inputs")
     print("✅ Context-aware parsing")
-    
+
     # Test basic parser
     parser = LLMCommandParser()
-    
+
     test_inputs = [
         "go to the cellar",
         "talk to the bartender",
         "I want to buy some ale",
         "bet 10 gold",
         "take a nap",
-        "where am I?"
+        "where am I?",
     ]
-    
+
     print("\n🧪 Basic Parser Tests:")
     for inp in test_inputs:
         result = parser._basic_parse(inp)
-        if result['success']:
+        if result["success"]:
             print(f"✅ '{inp}' -> '{result['parsed_command']}'")
         else:
             print(f"❌ '{inp}' -> {result['message']}")

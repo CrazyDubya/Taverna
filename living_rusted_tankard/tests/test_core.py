@@ -88,7 +88,7 @@ def test_player_state():
         name="Gold Coin",
         description="Shiny gold coin",
         item_type=ItemType.MISC,
-        base_price=1
+        base_price=1,
     )
 
     # Add item to inventory

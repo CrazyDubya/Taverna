@@ -71,7 +71,9 @@ class ClimaticSequencer:
         self.min_climax_spacing = 1800  # 30 minutes minimum between major climaxes
         self.max_parallel_climaxes = 2
 
-    def schedule_climax(self, thread: StoryThread, target_time: Optional[float] = None) -> Optional[ClimaticMoment]:
+    def schedule_climax(
+        self, thread: StoryThread, target_time: Optional[float] = None
+    ) -> Optional[ClimaticMoment]:
         """Schedule a climactic moment for a thread"""
         if target_time is None:
             target_time = self._calculate_optimal_timing(thread)
@@ -81,7 +83,9 @@ class ClimaticSequencer:
             # Try to find alternative timing
             alternative_time = self._find_alternative_timing(target_time)
             if alternative_time is None:
-                logger.warning(f"Cannot schedule climax for thread {thread.id} - no available slots")
+                logger.warning(
+                    f"Cannot schedule climax for thread {thread.id} - no available slots"
+                )
                 return None
             target_time = alternative_time
 
@@ -103,13 +107,19 @@ class ClimaticSequencer:
         logger.info(f"Scheduled climax for thread {thread.id} at {target_time}")
         return climax
 
-    def find_convergence_opportunities(self, threads: List[StoryThread]) -> List[ClimaticMoment]:
+    def find_convergence_opportunities(
+        self, threads: List[StoryThread]
+    ) -> List[ClimaticMoment]:
         """Find opportunities for converging multiple threads into a single climax"""
         opportunities = []
         current_time = time.time()
 
         # Group threads by potential convergence windows
-        climax_ready_threads = [t for t in threads if t.stage == ThreadStage.RISING_ACTION and t.tension_level > 0.6]
+        climax_ready_threads = [
+            t
+            for t in threads
+            if t.stage == ThreadStage.RISING_ACTION and t.tension_level > 0.6
+        ]
 
         if len(climax_ready_threads) < 2:
             return opportunities
@@ -117,11 +127,16 @@ class ClimaticSequencer:
         # Find threads with overlapping participants
         for i, thread1 in enumerate(climax_ready_threads):
             for thread2 in climax_ready_threads[i + 1 :]:
-                shared_participants = set(thread1.primary_participants) & set(thread2.primary_participants)
-                if shared_participants or self._can_converge_thematically(thread1, thread2):
-
+                shared_participants = set(thread1.primary_participants) & set(
+                    thread2.primary_participants
+                )
+                if shared_participants or self._can_converge_thematically(
+                    thread1, thread2
+                ):
                     # Calculate optimal convergence time
-                    convergence_time = self._calculate_convergence_timing(thread1, thread2)
+                    convergence_time = self._calculate_convergence_timing(
+                        thread1, thread2
+                    )
 
                     convergence = ClimaticMoment(
                         id=f"convergence_{thread1.id}_{thread2.id}_{int(convergence_time)}",
@@ -129,8 +144,10 @@ class ClimaticSequencer:
                         primary_thread_id=thread1.id,
                         supporting_thread_ids=[thread2.id],
                         orchestration_type=OrchestrationType.CONVERGENT,
-                        intensity_level=(thread1.tension_level + thread2.tension_level) / 2,
-                        participants=set(thread1.primary_participants) | set(thread2.primary_participants),
+                        intensity_level=(thread1.tension_level + thread2.tension_level)
+                        / 2,
+                        participants=set(thread1.primary_participants)
+                        | set(thread2.primary_participants),
                         world_impact={},
                         resolution_effects={},
                     )
@@ -197,7 +214,9 @@ class ClimaticSequencer:
 
         return None
 
-    def _can_converge_thematically(self, thread1: StoryThread, thread2: StoryThread) -> bool:
+    def _can_converge_thematically(
+        self, thread1: StoryThread, thread2: StoryThread
+    ) -> bool:
         """Check if two threads can converge thematically"""
         # Certain thread types work well together
         compatible_pairs = {
@@ -209,9 +228,14 @@ class ClimaticSequencer:
         }
 
         thread_pair = (thread1.type, thread2.type)
-        return thread_pair in compatible_pairs or (thread_pair[1], thread_pair[0]) in compatible_pairs
+        return (
+            thread_pair in compatible_pairs
+            or (thread_pair[1], thread_pair[0]) in compatible_pairs
+        )
 
-    def _calculate_convergence_timing(self, thread1: StoryThread, thread2: StoryThread) -> float:
+    def _calculate_convergence_timing(
+        self, thread1: StoryThread, thread2: StoryThread
+    ) -> float:
         """Calculate optimal timing for converging two threads"""
         time1 = self._calculate_optimal_timing(thread1)
         time2 = self._calculate_optimal_timing(thread2)
@@ -223,7 +247,9 @@ class ClimaticSequencer:
 class NarrativeOrchestrator:
     """Main orchestrator for managing narrative arcs and climax coordination"""
 
-    def __init__(self, thread_manager: ThreadManager, rules_engine: NarrativeRulesEngine):
+    def __init__(
+        self, thread_manager: ThreadManager, rules_engine: NarrativeRulesEngine
+    ):
         self.thread_manager = thread_manager
         self.rules_engine = rules_engine
         self.sequencer = ClimaticSequencer()
@@ -236,17 +262,25 @@ class NarrativeOrchestrator:
         self.max_concurrent_arcs = 3
         self.arc_success_threshold = 0.7
 
-    def orchestrate_narrative(self, threads: List[StoryThread], world_state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def orchestrate_narrative(
+        self, threads: List[StoryThread], world_state: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Main orchestration method - coordinates all narrative elements"""
         orchestration_actions = []
 
         # Evaluate current narrative health
-        narrative_health = self.rules_engine.evaluate_narrative_health(threads, world_state)
+        narrative_health = self.rules_engine.evaluate_narrative_health(
+            threads, world_state
+        )
 
         # Generate and execute interventions if needed
         if narrative_health in [NarrativeHealth.POOR, NarrativeHealth.CRITICAL]:
-            interventions = self.rules_engine.generate_interventions(threads, narrative_health)
-            orchestration_actions.extend(self._execute_interventions(interventions, threads))
+            interventions = self.rules_engine.generate_interventions(
+                threads, narrative_health
+            )
+            orchestration_actions.extend(
+                self._execute_interventions(interventions, threads)
+            )
 
         # Plan new arcs if needed
         if len(self.active_arcs) < self.max_concurrent_arcs:
@@ -266,7 +300,9 @@ class NarrativeOrchestrator:
         climax_opportunities = self.sequencer.find_convergence_opportunities(threads)
         for opportunity in climax_opportunities[:2]:  # Limit to prevent overwhelm
             if self._should_execute_climax(opportunity, threads):
-                orchestration_actions.append(self._prepare_climactic_moment(opportunity, threads))
+                orchestration_actions.append(
+                    self._prepare_climactic_moment(opportunity, threads)
+                )
 
         # Advance active arcs
         for arc in self.active_arcs[:]:
@@ -304,7 +340,9 @@ class NarrativeOrchestrator:
                         {
                             "type": "pause_thread",
                             "thread_id": thread.id,
-                            "reason": intervention.parameters.get("reason", "health_intervention"),
+                            "reason": intervention.parameters.get(
+                                "reason", "health_intervention"
+                            ),
                         }
                     )
 
@@ -325,7 +363,9 @@ class NarrativeOrchestrator:
                 actions.append(
                     {
                         "type": "introduce_thread",
-                        "thread_type": intervention.parameters.get("type", "side_quest"),
+                        "thread_type": intervention.parameters.get(
+                            "type", "side_quest"
+                        ),
                         "initial_tension": intervention.parameters.get("tension", 0.3),
                     }
                 )
@@ -333,7 +373,9 @@ class NarrativeOrchestrator:
             elif intervention.type == "boost_involvement":
                 thread = self._find_thread(intervention.target_thread_id, threads)
                 if thread:
-                    target_involvement = intervention.parameters.get("target_involvement", 0.7)
+                    target_involvement = intervention.parameters.get(
+                        "target_involvement", 0.7
+                    )
                     actions.append(
                         {
                             "type": "boost_involvement",
@@ -345,7 +387,9 @@ class NarrativeOrchestrator:
 
         return actions
 
-    def _plan_new_arcs(self, threads: List[StoryThread], world_state: Dict[str, Any]) -> List[ArcPlan]:
+    def _plan_new_arcs(
+        self, threads: List[StoryThread], world_state: Dict[str, Any]
+    ) -> List[ArcPlan]:
         """Plan new narrative arcs based on current state"""
         new_arcs = []
 
@@ -371,7 +415,9 @@ class NarrativeOrchestrator:
 
         return new_arcs
 
-    def _should_execute_climax(self, climax: ClimaticMoment, threads: List[StoryThread]) -> bool:
+    def _should_execute_climax(
+        self, climax: ClimaticMoment, threads: List[StoryThread]
+    ) -> bool:
         """Determine if a climactic moment should be executed"""
         current_time = time.time()
 
@@ -390,7 +436,9 @@ class NarrativeOrchestrator:
 
         return True
 
-    def _prepare_climactic_moment(self, climax: ClimaticMoment, threads: List[StoryThread]) -> Dict[str, Any]:
+    def _prepare_climactic_moment(
+        self, climax: ClimaticMoment, threads: List[StoryThread]
+    ) -> Dict[str, Any]:
         """Prepare a climactic moment for execution"""
         primary_thread = self._find_thread(climax.primary_thread_id, threads)
 
@@ -402,7 +450,10 @@ class NarrativeOrchestrator:
             content=f"Climactic moment for {primary_thread.title}",
             participants=list(climax.participants),
             prerequisites={},
-            effects={"tension_change": -0.3, "stage_transition": "falling_action"},  # Tension release after climax
+            effects={
+                "tension_change": -0.3,
+                "stage_transition": "falling_action",
+            },  # Tension release after climax
             emotional_weight=0.9,
             narrative_significance=1.0,
         )
@@ -443,7 +494,9 @@ class NarrativeOrchestrator:
     def _is_arc_complete(self, arc: ArcPlan, threads: List[StoryThread]) -> bool:
         """Check if an arc has been completed"""
         arc_threads = [self._find_thread(tid, threads) for tid in arc.target_threads]
-        resolved_threads = [t for t in arc_threads if t and t.stage == ThreadStage.RESOLUTION]
+        resolved_threads = [
+            t for t in arc_threads if t and t.stage == ThreadStage.RESOLUTION
+        ]
 
         # Arc is complete if most threads are resolved
         completion_ratio = len(resolved_threads) / max(1, len(arc.target_threads))
@@ -456,7 +509,9 @@ class NarrativeOrchestrator:
 
         logger.info(f"Completed narrative arc: {arc.title}")
 
-    def _find_thread(self, thread_id: str, threads: List[StoryThread]) -> Optional[StoryThread]:
+    def _find_thread(
+        self, thread_id: str, threads: List[StoryThread]
+    ) -> Optional[StoryThread]:
         """Find a thread by ID"""
         return next((t for t in threads if t.id == thread_id), None)
 
@@ -467,7 +522,9 @@ class NarrativeOrchestrator:
                 return True
         return False
 
-    def _identify_arc_candidates(self, threads: List[StoryThread]) -> List[Dict[str, Any]]:
+    def _identify_arc_candidates(
+        self, threads: List[StoryThread]
+    ) -> List[Dict[str, Any]]:
         """Identify potential arc groupings from available threads"""
         candidates = []
 

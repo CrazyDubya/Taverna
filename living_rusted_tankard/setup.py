@@ -23,7 +23,7 @@ setup(
         "Topic :: Games/Entertainment",
         "Topic :: Games/Entertainment :: Role-Playing",
     ],
-    python_requires='>=3.8',
+    python_requires=">=3.8",
     install_requires=[
         "pydantic>=2.0.0",
         "typing-extensions>=4.7.1",

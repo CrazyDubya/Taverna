@@ -186,14 +186,18 @@ class AudioManager:
         """Map game events to audio triggers."""
         self.event_mappings = {
             # Gold/money events
-            "gold_gained": [AudioEvent("gold_gained", "coin_drop", volume=0.8, delay=0.1)],
+            "gold_gained": [
+                AudioEvent("gold_gained", "coin_drop", volume=0.8, delay=0.1)
+            ],
             "gold_lost": [AudioEvent("gold_lost", "coin_drop", volume=0.6, delay=0.1)],
             "purchase_made": [
                 AudioEvent("purchase_made", "coin_drop", volume=0.7),
                 AudioEvent("purchase_made", "drink_pour", volume=0.5, delay=0.5),
             ],
             # Quest events
-            "quest_completed": [AudioEvent("quest_completed", "quest_complete", volume=1.0)],
+            "quest_completed": [
+                AudioEvent("quest_completed", "quest_complete", volume=1.0)
+            ],
             "quest_started": [AudioEvent("quest_started", "footsteps", volume=0.6)],
             # Movement events
             "room_entered": [
@@ -201,11 +205,19 @@ class AudioManager:
                 AudioEvent("room_entered", "footsteps", volume=0.4, delay=0.3),
             ],
             # NPC events
-            "npc_interaction": [AudioEvent("npc_interaction", "crowd_chatter", volume=0.3, fade_in=0.5)],
+            "npc_interaction": [
+                AudioEvent("npc_interaction", "crowd_chatter", volume=0.3, fade_in=0.5)
+            ],
             # Ambient events
             "game_start": [
                 AudioEvent("game_start", "tavern_ambience", volume=0.4, fade_in=2.0),
-                AudioEvent("game_start", "fireplace_crackling", volume=0.2, delay=1.0, fade_in=1.5),
+                AudioEvent(
+                    "game_start",
+                    "fireplace_crackling",
+                    volume=0.2,
+                    delay=1.0,
+                    fade_in=1.5,
+                ),
             ],
         }
 
@@ -220,13 +232,17 @@ class AudioManager:
 
     def get_assets_by_type(self, audio_type: AudioType) -> List[AudioAsset]:
         """Get all assets of a specific type."""
-        return [asset for asset in self.assets.values() if asset.audio_type == audio_type]
+        return [
+            asset for asset in self.assets.values() if asset.audio_type == audio_type
+        ]
 
     def get_assets_by_tag(self, tag: str) -> List[AudioAsset]:
         """Get all assets with a specific tag."""
         return [asset for asset in self.assets.values() if tag in asset.tags]
 
-    def trigger_event(self, event_type: str, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    def trigger_event(
+        self, event_type: str, context: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
         """Trigger audio events for a game event."""
         if not self.enabled:
             return []
@@ -333,7 +349,9 @@ class GameAudioIntegration:
         self.audio_manager = audio_manager
         self.active_sessions: Dict[str, Dict[str, Any]] = {}
 
-    def process_game_events(self, events: List[Dict[str, Any]], session_id: str) -> List[Dict[str, Any]]:
+    def process_game_events(
+        self, events: List[Dict[str, Any]], session_id: str
+    ) -> List[Dict[str, Any]]:
         """Process game events and return audio commands."""
         audio_commands = []
 
@@ -344,9 +362,14 @@ class GameAudioIntegration:
             # Map different event types to audio events
             if event_type == "success" and "gold" in event.get("message", "").lower():
                 commands = self.audio_manager.trigger_event("gold_gained")
-            elif event_type == "quest" and "completed" in event.get("message", "").lower():
+            elif (
+                event_type == "quest"
+                and "completed" in event.get("message", "").lower()
+            ):
                 commands = self.audio_manager.trigger_event("quest_completed")
-            elif event_type == "quest" and "started" in event.get("message", "").lower():
+            elif (
+                event_type == "quest" and "started" in event.get("message", "").lower()
+            ):
                 commands = self.audio_manager.trigger_event("quest_started")
             elif event_type == "room_change":
                 commands = self.audio_manager.trigger_event("room_entered")
@@ -362,7 +385,11 @@ class GameAudioIntegration:
     def initialize_session_audio(self, session_id: str) -> List[Dict[str, Any]]:
         """Initialize audio for a new session."""
         if session_id not in self.active_sessions:
-            self.active_sessions[session_id] = {"initialized": True, "ambient_playing": [], "last_activity": 0}
+            self.active_sessions[session_id] = {
+                "initialized": True,
+                "ambient_playing": [],
+                "last_activity": 0,
+            }
 
             # Return initial ambient audio
             return self.audio_manager.trigger_event("game_start")
@@ -385,7 +412,9 @@ game_audio = GameAudioIntegration(audio_manager)
 
 
 # Utility functions for easy integration
-def trigger_audio_event(event_type: str, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+def trigger_audio_event(
+    event_type: str, context: Optional[Dict[str, Any]] = None
+) -> List[Dict[str, Any]]:
     """Trigger an audio event and return commands for the client."""
     return audio_manager.trigger_event(event_type, context)
 
@@ -395,7 +424,9 @@ def get_audio_config() -> Dict[str, Any]:
     return audio_manager.get_client_config()
 
 
-def process_game_audio(events: List[Dict[str, Any]], session_id: str) -> List[Dict[str, Any]]:
+def process_game_audio(
+    events: List[Dict[str, Any]], session_id: str
+) -> List[Dict[str, Any]]:
     """Process game events for audio triggers."""
     return game_audio.process_game_events(events, session_id)
 

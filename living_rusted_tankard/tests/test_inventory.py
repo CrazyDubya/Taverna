@@ -11,22 +11,22 @@ TEST_ITEMS = {
         name="Gold Coin",
         description="Shiny gold coin",
         item_type=ItemType.MISC,
-        base_price=1
+        base_price=1,
     ),
     "health_potion": Item(
         id="health_potion",
         name="Health Potion",
         description="Restores health when consumed",
         item_type=ItemType.DRINK,
-        base_price=10
+        base_price=10,
     ),
     "bread": Item(
         id="bread",
         name="Loaf of Bread",
         description="Freshly baked bread",
         item_type=ItemType.FOOD,
-        base_price=2
-    )
+        base_price=2,
+    ),
 }
 
 

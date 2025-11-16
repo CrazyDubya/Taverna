@@ -85,16 +85,25 @@ class NPCInteraction:
     relationship_changes: Dict[str, float] = field(default_factory=dict)
 
     # Side effects
-    goals_affected: List[Tuple[str, str]] = field(default_factory=list)  # (npc_id, goal_id)
+    goals_affected: List[Tuple[str, str]] = field(
+        default_factory=list
+    )  # (npc_id, goal_id)
     rumors_created: List[str] = field(default_factory=list)
     conflicts_triggered: List[str] = field(default_factory=list)
 
     # Witnesses reactions
     witness_reactions: Dict[str, str] = field(default_factory=dict)
 
-    def add_turn(self, speaker: str, action: str, dialogue: Optional[str] = None) -> None:
+    def add_turn(
+        self, speaker: str, action: str, dialogue: Optional[str] = None
+    ) -> None:
         """Add a turn to the interaction."""
-        turn = {"speaker": speaker, "action": action, "dialogue": dialogue, "timestamp": datetime.now()}
+        turn = {
+            "speaker": speaker,
+            "action": action,
+            "dialogue": dialogue,
+            "timestamp": datetime.now(),
+        }
         self.turns.append(turn)
 
     def calculate_duration(self) -> float:
@@ -109,14 +118,18 @@ class NPCInteraction:
 class InteractionManager:
     """Manages autonomous NPC-to-NPC interactions."""
 
-    def __init__(self, relationship_web: RelationshipWeb, gossip_network: GossipNetwork):
+    def __init__(
+        self, relationship_web: RelationshipWeb, gossip_network: GossipNetwork
+    ):
         self.relationship_web = relationship_web
         self.gossip_network = gossip_network
         self.dialogue_generator = DialogueGenerator()
 
         # Interaction history
         self.interactions: List[NPCInteraction] = []
-        self.pending_interactions: List[Tuple[str, str, str]] = []  # (initiator, responder, reason)
+        self.pending_interactions: List[
+            Tuple[str, str, str]
+        ] = []  # (initiator, responder, reason)
 
         # Interaction tendencies
         self.interaction_frequency: Dict[str, float] = {}  # How often NPC initiates
@@ -153,7 +166,11 @@ class InteractionManager:
                 options.append(InteractionType.COMPETITION)
         else:
             # Neutral
-            options = [InteractionType.GREETING, InteractionType.CONVERSATION, InteractionType.TRANSACTION]
+            options = [
+                InteractionType.GREETING,
+                InteractionType.CONVERSATION,
+                InteractionType.TRANSACTION,
+            ]
 
         # Consider goals
         if context.initiator_goal:
@@ -194,11 +211,15 @@ class InteractionManager:
         )
 
         # Generate opening
-        opening = self._generate_opening(initiator, responder, initiator_psych, interaction_type, context)
+        opening = self._generate_opening(
+            initiator, responder, initiator_psych, interaction_type, context
+        )
         interaction.add_turn(initiator, "speak", opening)
 
         # Get response
-        response = self._generate_response(responder, initiator, responder_psych, opening, interaction_type, context)
+        response = self._generate_response(
+            responder, initiator, responder_psych, opening, interaction_type, context
+        )
         interaction.add_turn(responder, "respond", response)
 
         # Continue interaction
@@ -250,7 +271,9 @@ class InteractionManager:
         )
 
         # Generate options
-        options = self.dialogue_generator.generate_dialogue_options(dialogue_context, psychology, num_options=1)
+        options = self.dialogue_generator.generate_dialogue_options(
+            dialogue_context, psychology, num_options=1
+        )
 
         if options:
             return options[0].text
@@ -295,7 +318,10 @@ class InteractionManager:
         return "I see what you mean."
 
     def _continue_interaction(
-        self, interaction: NPCInteraction, initiator_psych: NPCPsychology, responder_psych: NPCPsychology
+        self,
+        interaction: NPCInteraction,
+        initiator_psych: NPCPsychology,
+        responder_psych: NPCPsychology,
     ) -> None:
         """Continue interaction with additional turns."""
         # Determine number of turns based on interaction type
@@ -323,10 +349,16 @@ class InteractionManager:
             if interaction.type == InteractionType.CONVERSATION:
                 # Share gossip occasionally
                 if random.random() < 0.3:
-                    known_rumors = self.gossip_network.get_npc_known_rumors(current_speaker)
+                    known_rumors = self.gossip_network.get_npc_known_rumors(
+                        current_speaker
+                    )
                     if known_rumors:
                         rumor = random.choice(known_rumors)
-                        interaction.add_turn(current_speaker, "gossip", f"Did you hear? {rumor['content']}")
+                        interaction.add_turn(
+                            current_speaker,
+                            "gossip",
+                            f"Did you hear? {rumor['content']}",
+                        )
                         continue
 
             # Default continuation
@@ -342,7 +374,9 @@ class InteractionManager:
                 interaction.outcome = InteractionOutcome.RESOLVED
                 break
 
-    def _check_escalation(self, interaction: NPCInteraction, current_speaker_psych: NPCPsychology) -> bool:
+    def _check_escalation(
+        self, interaction: NPCInteraction, current_speaker_psych: NPCPsychology
+    ) -> bool:
         """Check if interaction should escalate."""
         if interaction.type == InteractionType.ARGUMENT:
             # Arguments can escalate to conflicts
@@ -364,12 +398,19 @@ class InteractionManager:
 
     def _determine_outcome(self, interaction: NPCInteraction) -> InteractionOutcome:
         """Determine final outcome of interaction."""
-        if interaction.outcome in [InteractionOutcome.ESCALATED, InteractionOutcome.RESOLVED]:
+        if interaction.outcome in [
+            InteractionOutcome.ESCALATED,
+            InteractionOutcome.RESOLVED,
+        ]:
             return interaction.outcome
 
         # Analyze turns for tone
-        positive_turns = sum(1 for turn in interaction.turns if "friendly" in str(turn.get("action", "")))
-        negative_turns = sum(1 for turn in interaction.turns if "hostile" in str(turn.get("action", "")))
+        positive_turns = sum(
+            1 for turn in interaction.turns if "friendly" in str(turn.get("action", ""))
+        )
+        negative_turns = sum(
+            1 for turn in interaction.turns if "hostile" in str(turn.get("action", ""))
+        )
 
         total_turns = len(interaction.turns)
 
@@ -383,12 +424,16 @@ class InteractionManager:
     def _apply_interaction_effects(self, interaction: NPCInteraction) -> None:
         """Apply effects of interaction."""
         # Get relationship
-        relationship = self.relationship_web.get_relationship(interaction.initiator, interaction.responder)
+        relationship = self.relationship_web.get_relationship(
+            interaction.initiator, interaction.responder
+        )
 
         if not relationship:
             # Create new relationship
             relationship = self.relationship_web.create_relationship(
-                interaction.initiator, interaction.responder, RelationshipType.ACQUAINTANCE
+                interaction.initiator,
+                interaction.responder,
+                RelationshipType.ACQUAINTANCE,
             )
 
         # Apply relationship changes based on outcome
@@ -413,13 +458,16 @@ class InteractionManager:
 
         if change != 0:
             relationship.modify_relationship(
-                trust_delta=change * 0.5, affection_delta=change * 0.7, respect_delta=change * 0.3
+                trust_delta=change * 0.5,
+                affection_delta=change * 0.7,
+                respect_delta=change * 0.3,
             )
             interaction.relationship_changes["overall"] = change
 
         # Record interaction in relationship
         relationship.record_interaction(
-            positive=interaction.outcome in [InteractionOutcome.POSITIVE, InteractionOutcome.RESOLVED]
+            positive=interaction.outcome
+            in [InteractionOutcome.POSITIVE, InteractionOutcome.RESOLVED]
         )
 
         # Create rumors if witnessed
@@ -429,14 +477,18 @@ class InteractionManager:
         # Update last interaction time
         interaction.context.last_interaction = datetime.now()
 
-    def _create_conflict_from_interaction(self, interaction: NPCInteraction) -> Optional[Conflict]:
+    def _create_conflict_from_interaction(
+        self, interaction: NPCInteraction
+    ) -> Optional[Conflict]:
         """Create a conflict from an escalated interaction."""
         if interaction.type == InteractionType.ARGUMENT:
             conflict_type = ConflictType.PERSONAL
             description = f"Heated argument between {interaction.initiator} and {interaction.responder}"
         elif interaction.type == InteractionType.COMPETITION:
             conflict_type = ConflictType.COMPETITION
-            description = f"Rivalry between {interaction.initiator} and {interaction.responder}"
+            description = (
+                f"Rivalry between {interaction.initiator} and {interaction.responder}"
+            )
         else:
             return None
 
@@ -455,23 +507,30 @@ class InteractionManager:
         for witness in interaction.context.witnesses:
             # Determine what they saw
             if interaction.type == InteractionType.ARGUMENT:
-                description = f"having a heated argument"
+                description = "having a heated argument"
             elif interaction.type == InteractionType.ROMANCE:
-                description = f"in a romantic moment"
+                description = "in a romantic moment"
             elif interaction.type == InteractionType.INTIMIDATION:
-                description = f"threatening each other"
+                description = "threatening each other"
             else:
                 continue  # Not interesting enough
 
             # Create rumor
             rumor = self.gossip_network.create_rumor_from_event(
-                interaction.type.value, [interaction.initiator, interaction.responder], witness, description
+                interaction.type.value,
+                [interaction.initiator, interaction.responder],
+                witness,
+                description,
             )
 
             interaction.rumors_created.append(rumor.id)
 
     def simulate_autonomous_interactions(
-        self, npcs: Dict[str, NPCPsychology], agencies: Dict[str, NPCAgency], location: str, time_of_day: str
+        self,
+        npcs: Dict[str, NPCPsychology],
+        agencies: Dict[str, NPCAgency],
+        location: str,
+        time_of_day: str,
     ) -> List[NPCInteraction]:
         """Simulate autonomous interactions between NPCs in a location."""
         interactions_created = []
@@ -506,12 +565,19 @@ class InteractionManager:
                         context.responder_goal = agencies[npc2].goals[0].name
 
                     # Check for interaction type
-                    interaction_type = self.check_interaction_opportunity(npc1, npc2, context)
+                    interaction_type = self.check_interaction_opportunity(
+                        npc1, npc2, context
+                    )
 
                     if interaction_type:
                         # Initiate interaction
                         interaction = self.initiate_interaction(
-                            npc1, npc2, npcs[npc1], npcs[npc2], interaction_type, context
+                            npc1,
+                            npc2,
+                            npcs[npc1],
+                            npcs[npc2],
+                            interaction_type,
+                            context,
                         )
 
                         interactions_created.append(interaction)
@@ -522,9 +588,15 @@ class InteractionManager:
 
         return interactions_created
 
-    def get_interaction_history(self, npc_id: str, limit: int = 10) -> List[NPCInteraction]:
+    def get_interaction_history(
+        self, npc_id: str, limit: int = 10
+    ) -> List[NPCInteraction]:
         """Get recent interactions involving an NPC."""
-        relevant = [i for i in self.interactions if i.initiator == npc_id or i.responder == npc_id]
+        relevant = [
+            i
+            for i in self.interactions
+            if i.initiator == npc_id or i.responder == npc_id
+        ]
 
         # Sort by timestamp
         relevant.sort(key=lambda x: x.timestamp, reverse=True)
@@ -539,25 +611,41 @@ class InteractionManager:
         # Count interaction types
         type_counts = {}
         for interaction in self.interactions:
-            type_counts[interaction.type.value] = type_counts.get(interaction.type.value, 0) + 1
+            type_counts[interaction.type.value] = (
+                type_counts.get(interaction.type.value, 0) + 1
+            )
 
         # Count outcomes
         outcome_counts = {}
         for interaction in self.interactions:
-            outcome_counts[interaction.outcome.value] = outcome_counts.get(interaction.outcome.value, 0) + 1
+            outcome_counts[interaction.outcome.value] = (
+                outcome_counts.get(interaction.outcome.value, 0) + 1
+            )
 
         # Find most interactive NPCs
         interaction_counts = {}
         for interaction in self.interactions:
-            interaction_counts[interaction.initiator] = interaction_counts.get(interaction.initiator, 0) + 1
-            interaction_counts[interaction.responder] = interaction_counts.get(interaction.responder, 0) + 0.5
+            interaction_counts[interaction.initiator] = (
+                interaction_counts.get(interaction.initiator, 0) + 1
+            )
+            interaction_counts[interaction.responder] = (
+                interaction_counts.get(interaction.responder, 0) + 0.5
+            )
 
-        most_interactive = sorted(interaction_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        most_interactive = sorted(
+            interaction_counts.items(), key=lambda x: x[1], reverse=True
+        )[:5]
 
         # Calculate social temperature
-        positive_ratio = outcome_counts.get(InteractionOutcome.POSITIVE.value, 0) / len(self.interactions)
-        negative_ratio = outcome_counts.get(InteractionOutcome.NEGATIVE.value, 0) / len(self.interactions)
-        escalated_ratio = outcome_counts.get(InteractionOutcome.ESCALATED.value, 0) / len(self.interactions)
+        positive_ratio = outcome_counts.get(InteractionOutcome.POSITIVE.value, 0) / len(
+            self.interactions
+        )
+        negative_ratio = outcome_counts.get(InteractionOutcome.NEGATIVE.value, 0) / len(
+            self.interactions
+        )
+        escalated_ratio = outcome_counts.get(
+            InteractionOutcome.ESCALATED.value, 0
+        ) / len(self.interactions)
 
         social_temperature = "peaceful"
         if escalated_ratio > 0.2:
@@ -573,6 +661,8 @@ class InteractionManager:
             "outcomes": outcome_counts,
             "most_interactive": most_interactive,
             "social_temperature": social_temperature,
-            "conflicts_created": sum(1 for i in self.interactions if i.conflicts_triggered),
+            "conflicts_created": sum(
+                1 for i in self.interactions if i.conflicts_triggered
+            ),
             "rumors_spread": sum(len(i.rumors_created) for i in self.interactions),
         }

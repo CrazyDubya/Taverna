@@ -38,7 +38,10 @@ class NPCInteractionEvent(NPCEvent):
     """Event triggered when a player interacts with an NPC."""
 
     def __init__(self, npc: NPC, player, interaction_type: str, **kwargs):
-        data = {"interaction_type": interaction_type, "player_id": getattr(player, "id", str(player))}
+        data = {
+            "interaction_type": interaction_type,
+            "player_id": getattr(player, "id", str(player)),
+        }
         data.update(kwargs)
         super().__init__(npc, "npc_interaction", data)
 
@@ -49,5 +52,7 @@ class NPCRelationshipChangeEvent(NPCEvent):
 
     def __init__(self, npc: NPC, player_id: str, change: float, new_value: float):
         super().__init__(
-            npc, "npc_relationship_change", {"player_id": player_id, "change": change, "new_value": new_value}
+            npc,
+            "npc_relationship_change",
+            {"player_id": player_id, "change": change, "new_value": new_value},
         )

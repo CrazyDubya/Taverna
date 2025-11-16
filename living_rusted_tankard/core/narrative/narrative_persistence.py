@@ -49,7 +49,9 @@ class NarrativePersistenceManager:
         self.components_to_save[component_name] = component_instance
         logger.debug(f"Registered narrative component: {component_name}")
 
-    def save_all_narrative_state(self, session_id: str, save_format: SerializationFormat = None) -> bool:
+    def save_all_narrative_state(
+        self, session_id: str, save_format: SerializationFormat = None
+    ) -> bool:
         """Save all registered narrative components."""
         if not self.save_enabled:
             return False
@@ -75,12 +77,17 @@ class NarrativePersistenceManager:
             # Save each component
             for component_name, component in self.components_to_save.items():
                 try:
-                    component_state = self._serialize_component(component, component_name)
+                    component_state = self._serialize_component(
+                        component, component_name
+                    )
                     narrative_state["components"][component_name] = component_state
                     logger.debug(f"Serialized component: {component_name}")
                 except Exception as e:
                     logger.error(f"Failed to serialize component {component_name}: {e}")
-                    narrative_state["components"][component_name] = {"error": str(e), "timestamp": timestamp}
+                    narrative_state["components"][component_name] = {
+                        "error": str(e),
+                        "timestamp": timestamp,
+                    }
 
             # Write to file
             success = self._write_narrative_file(narrative_state, filepath, save_format)
@@ -97,7 +104,9 @@ class NarrativePersistenceManager:
             logger.error(f"Error saving narrative state: {e}")
             return False
 
-    def load_narrative_state(self, session_id: str, specific_timestamp: Optional[int] = None) -> bool:
+    def load_narrative_state(
+        self, session_id: str, specific_timestamp: Optional[int] = None
+    ) -> bool:
         """Load narrative state from the most recent save or specific timestamp."""
         try:
             # Find the save file to load
@@ -109,12 +118,17 @@ class NarrativePersistenceManager:
             matching_files = list(self.save_directory.glob(pattern))
 
             if not matching_files:
-                logger.warning(f"No narrative save files found for session {session_id}")
+                logger.warning(
+                    f"No narrative save files found for session {session_id}"
+                )
                 return False
 
             # Sort by timestamp (newest first)
             if not specific_timestamp:
-                matching_files.sort(key=lambda f: self._extract_timestamp_from_filename(f.name), reverse=True)
+                matching_files.sort(
+                    key=lambda f: self._extract_timestamp_from_filename(f.name),
+                    reverse=True,
+                )
 
             load_file = matching_files[0]
             logger.info(f"Loading narrative state from {load_file}")
@@ -131,18 +145,26 @@ class NarrativePersistenceManager:
 
             # Restore each component
             loaded_components = 0
-            for component_name, component_state in narrative_state.get("components", {}).items():
+            for component_name, component_state in narrative_state.get(
+                "components", {}
+            ).items():
                 if component_name in self.components_to_save:
                     try:
                         self._deserialize_component(
-                            self.components_to_save[component_name], component_state, component_name
+                            self.components_to_save[component_name],
+                            component_state,
+                            component_name,
                         )
                         loaded_components += 1
                         logger.debug(f"Restored component: {component_name}")
                     except Exception as e:
-                        logger.error(f"Failed to restore component {component_name}: {e}")
+                        logger.error(
+                            f"Failed to restore component {component_name}: {e}"
+                        )
                 else:
-                    logger.warning(f"Component {component_name} not registered for loading")
+                    logger.warning(
+                        f"Component {component_name} not registered for loading"
+                    )
 
             logger.info(f"Loaded {loaded_components} narrative components")
             return loaded_components > 0
@@ -151,9 +173,14 @@ class NarrativePersistenceManager:
             logger.error(f"Error loading narrative state: {e}")
             return False
 
-    def _serialize_component(self, component: Any, component_name: str) -> Dict[str, Any]:
+    def _serialize_component(
+        self, component: Any, component_name: str
+    ) -> Dict[str, Any]:
         """Serialize a narrative component to a dictionary."""
-        component_data = {"component_type": type(component).__name__, "timestamp": time.time()}
+        component_data = {
+            "component_type": type(component).__name__,
+            "timestamp": time.time(),
+        }
 
         # Handle different component types
         if component_name == "character_memory_manager":
@@ -164,12 +191,16 @@ class NarrativePersistenceManager:
         elif component_name == "character_state_manager":
             component_data["states"] = {}
             for npc_id, state in component.character_states.items():
-                component_data["states"][npc_id] = self._serialize_character_state(state)
+                component_data["states"][npc_id] = self._serialize_character_state(
+                    state
+                )
 
         elif component_name == "personality_manager":
             component_data["personalities"] = {}
             for npc_id, personality in component.personalities.items():
-                component_data["personalities"][npc_id] = self._serialize_personality(personality)
+                component_data["personalities"][npc_id] = self._serialize_personality(
+                    personality
+                )
 
         elif component_name == "schedule_manager":
             component_data["schedules"] = {}
@@ -179,34 +210,45 @@ class NarrativePersistenceManager:
         elif component_name == "reputation_network":
             component_data["npc_reputations"] = {}
             for npc_id, reputation in component.npc_reputations.items():
-                component_data["npc_reputations"][npc_id] = self._serialize_reputation(reputation)
+                component_data["npc_reputations"][npc_id] = self._serialize_reputation(
+                    reputation
+                )
 
             component_data["social_connections"] = {}
             for connection_key, connection in component.social_connections.items():
-                component_data["social_connections"][str(connection_key)] = self._serialize_social_connection(
-                    connection
-                )
+                component_data["social_connections"][
+                    str(connection_key)
+                ] = self._serialize_social_connection(connection)
 
         elif component_name == "conversation_manager":
             component_data["conversation_memories"] = {}
             for npc_id, conv_memory in component.conversation_memories.items():
-                component_data["conversation_memories"][npc_id] = self._serialize_conversation_memory(conv_memory)
+                component_data["conversation_memories"][
+                    npc_id
+                ] = self._serialize_conversation_memory(conv_memory)
 
         elif component_name == "story_orchestrator":
             component_data["story_threads"] = {}
             for thread_id, thread in component.story_threads.items():
-                component_data["story_threads"][thread_id] = self._serialize_story_thread(thread)
+                component_data["story_threads"][
+                    thread_id
+                ] = self._serialize_story_thread(thread)
 
             component_data["current_arc"] = (
-                self._serialize_narrative_arc(component.current_arc) if component.current_arc else None
+                self._serialize_narrative_arc(component.current_arc)
+                if component.current_arc
+                else None
             )
             component_data["overall_tension"] = component.overall_tension
             component_data["current_pacing"] = component.current_pacing.value
-            component_data["player_engagement_score"] = component.player_engagement_score
+            component_data[
+                "player_engagement_score"
+            ] = component.player_engagement_score
 
             # Save recent story moments
             component_data["story_moments"] = [
-                self._serialize_story_moment(moment) for moment in component.story_moments[-50:]
+                self._serialize_story_moment(moment)
+                for moment in component.story_moments[-50:]
             ]
 
         elif component_name == "quest_generator":
@@ -216,7 +258,9 @@ class NarrativePersistenceManager:
 
             component_data["completed_quests"] = {}
             for quest_id, quest in component.completed_quests.items():
-                component_data["completed_quests"][quest_id] = self._serialize_quest(quest)
+                component_data["completed_quests"][quest_id] = self._serialize_quest(
+                    quest
+                )
 
             component_data["statistics"] = {
                 "total_quests_generated": component.total_quests_generated,
@@ -227,11 +271,15 @@ class NarrativePersistenceManager:
         elif component_name == "consequence_engine":
             component_data["tracked_actions"] = {}
             for action_id, action in component.tracked_actions.items():
-                component_data["tracked_actions"][action_id] = self._serialize_tracked_action(action)
+                component_data["tracked_actions"][
+                    action_id
+                ] = self._serialize_tracked_action(action)
 
             component_data["pending_consequences"] = {}
             for consequence_id, consequence in component.pending_consequences.items():
-                component_data["pending_consequences"][consequence_id] = self._serialize_consequence(consequence)
+                component_data["pending_consequences"][
+                    consequence_id
+                ] = self._serialize_consequence(consequence)
 
             component_data["statistics"] = {
                 "total_actions_tracked": component.total_actions_tracked,
@@ -242,7 +290,9 @@ class NarrativePersistenceManager:
             # Generic serialization for unknown components
             try:
                 if hasattr(component, "__dict__"):
-                    component_data["attributes"] = self._serialize_object_dict(component.__dict__)
+                    component_data["attributes"] = self._serialize_object_dict(
+                        component.__dict__
+                    )
                 else:
                     component_data["value"] = str(component)
             except Exception as e:
@@ -251,7 +301,9 @@ class NarrativePersistenceManager:
 
         return component_data
 
-    def _deserialize_component(self, component: Any, component_data: Dict[str, Any], component_name: str):
+    def _deserialize_component(
+        self, component: Any, component_data: Dict[str, Any], component_name: str
+    ):
         """Deserialize component data back into the component instance."""
 
         if component_name == "character_memory_manager":
@@ -259,7 +311,9 @@ class NarrativePersistenceManager:
             for npc_id, memory_data in component_data.get("memories", {}).items():
                 from .character_memory import CharacterMemory
 
-                component.character_memories[npc_id] = CharacterMemory.from_dict(memory_data)
+                component.character_memories[npc_id] = CharacterMemory.from_dict(
+                    memory_data
+                )
 
         elif component_name == "character_state_manager":
             component.character_states.clear()
@@ -270,7 +324,9 @@ class NarrativePersistenceManager:
 
         elif component_name == "personality_manager":
             component.personalities.clear()
-            for npc_id, personality_data in component_data.get("personalities", {}).items():
+            for npc_id, personality_data in component_data.get(
+                "personalities", {}
+            ).items():
                 personality = self._deserialize_personality(personality_data)
                 if personality:
                     component.personalities[npc_id] = personality
@@ -284,38 +340,52 @@ class NarrativePersistenceManager:
 
         elif component_name == "reputation_network":
             component.npc_reputations.clear()
-            for npc_id, reputation_data in component_data.get("npc_reputations", {}).items():
+            for npc_id, reputation_data in component_data.get(
+                "npc_reputations", {}
+            ).items():
                 reputation = self._deserialize_reputation(reputation_data)
                 if reputation:
                     component.npc_reputations[npc_id] = reputation
 
             component.social_connections.clear()
-            for connection_key_str, connection_data in component_data.get("social_connections", {}).items():
+            for connection_key_str, connection_data in component_data.get(
+                "social_connections", {}
+            ).items():
                 connection = self._deserialize_social_connection(connection_data)
                 if connection:
                     # Convert string key back to tuple
-                    connection_key = eval(connection_key_str)  # Safe since we control the format
+                    connection_key = eval(
+                        connection_key_str
+                    )  # Safe since we control the format
                     component.social_connections[connection_key] = connection
 
         elif component_name == "conversation_manager":
             component.conversation_memories.clear()
-            for npc_id, conv_data in component_data.get("conversation_memories", {}).items():
+            for npc_id, conv_data in component_data.get(
+                "conversation_memories", {}
+            ).items():
                 conv_memory = self._deserialize_conversation_memory(conv_data)
                 if conv_memory:
                     component.conversation_memories[npc_id] = conv_memory
 
         elif component_name == "story_orchestrator":
             component.story_threads.clear()
-            for thread_id, thread_data in component_data.get("story_threads", {}).items():
+            for thread_id, thread_data in component_data.get(
+                "story_threads", {}
+            ).items():
                 thread = self._deserialize_story_thread(thread_data)
                 if thread:
                     component.story_threads[thread_id] = thread
 
             if component_data.get("current_arc"):
-                component.current_arc = self._deserialize_narrative_arc(component_data["current_arc"])
+                component.current_arc = self._deserialize_narrative_arc(
+                    component_data["current_arc"]
+                )
 
             component.overall_tension = component_data.get("overall_tension", 0.0)
-            component.player_engagement_score = component_data.get("player_engagement_score", 0.5)
+            component.player_engagement_score = component_data.get(
+                "player_engagement_score", 0.5
+            )
 
             # Restore pacing enum
             from .story_orchestrator import PacingMode
@@ -338,7 +408,9 @@ class NarrativePersistenceManager:
                     component.active_quests[quest_id] = quest
 
             component.completed_quests.clear()
-            for quest_id, quest_data in component_data.get("completed_quests", {}).items():
+            for quest_id, quest_data in component_data.get(
+                "completed_quests", {}
+            ).items():
                 quest = self._deserialize_quest(quest_data)
                 if quest:
                     component.completed_quests[quest_id] = quest
@@ -347,17 +419,23 @@ class NarrativePersistenceManager:
             stats = component_data.get("statistics", {})
             component.total_quests_generated = stats.get("total_quests_generated", 0)
             component.total_quests_completed = stats.get("total_quests_completed", 0)
-            component.player_quest_preferences = stats.get("player_quest_preferences", {})
+            component.player_quest_preferences = stats.get(
+                "player_quest_preferences", {}
+            )
 
         elif component_name == "consequence_engine":
             component.tracked_actions.clear()
-            for action_id, action_data in component_data.get("tracked_actions", {}).items():
+            for action_id, action_data in component_data.get(
+                "tracked_actions", {}
+            ).items():
                 action = self._deserialize_tracked_action(action_data)
                 if action:
                     component.tracked_actions[action_id] = action
 
             component.pending_consequences.clear()
-            for consequence_id, consequence_data in component_data.get("pending_consequences", {}).items():
+            for consequence_id, consequence_data in component_data.get(
+                "pending_consequences", {}
+            ).items():
                 consequence = self._deserialize_consequence(consequence_data)
                 if consequence:
                     component.pending_consequences[consequence_id] = consequence
@@ -365,12 +443,16 @@ class NarrativePersistenceManager:
             # Restore statistics
             stats = component_data.get("statistics", {})
             component.total_actions_tracked = stats.get("total_actions_tracked", 0)
-            component.total_consequences_triggered = stats.get("total_consequences_triggered", 0)
+            component.total_consequences_triggered = stats.get(
+                "total_consequences_triggered", 0
+            )
 
         else:
             # Generic deserialization
             if "attributes" in component_data and hasattr(component, "__dict__"):
-                self._deserialize_object_dict(component.__dict__, component_data["attributes"])
+                self._deserialize_object_dict(
+                    component.__dict__, component_data["attributes"]
+                )
 
     # Serialization helper methods for specific data types
     def _serialize_character_state(self, state) -> Dict[str, Any]:
@@ -381,7 +463,9 @@ class NarrativePersistenceManager:
             "mood": state.mood.value,
             "energy": state.energy,
             "stress": state.stress,
-            "concerns": [self._serialize_concern(concern) for concern in state.concerns],
+            "concerns": [
+                self._serialize_concern(concern) for concern in state.concerns
+            ],
             "goals": [self._serialize_goal(goal) for goal in state.goals],
             "is_busy": state.is_busy,
             "busy_reason": state.busy_reason,
@@ -420,7 +504,9 @@ class NarrativePersistenceManager:
             "intensity": concern.intensity,
             "source": concern.source,
             "created_at": concern.created_at.timestamp(),
-            "expires_at": concern.expires_at.timestamp() if concern.expires_at else None,
+            "expires_at": concern.expires_at.timestamp()
+            if concern.expires_at
+            else None,
         }
 
     def _serialize_goal(self, goal) -> Dict[str, Any]:
@@ -444,7 +530,9 @@ class NarrativePersistenceManager:
                 elif isinstance(value, (list, tuple)):
                     serialized[key] = [self._serialize_value(item) for item in value]
                 elif isinstance(value, dict):
-                    serialized[key] = {k: self._serialize_value(v) for k, v in value.items()}
+                    serialized[key] = {
+                        k: self._serialize_value(v) for k, v in value.items()
+                    }
                 elif hasattr(value, "__dict__"):
                     serialized[key] = self._serialize_object_dict(value.__dict__)
                 else:
@@ -464,7 +552,9 @@ class NarrativePersistenceManager:
         else:
             return str(value)
 
-    def _deserialize_object_dict(self, target_dict: Dict[str, Any], source_dict: Dict[str, Any]):
+    def _deserialize_object_dict(
+        self, target_dict: Dict[str, Any], source_dict: Dict[str, Any]
+    ):
         """Generic deserialization for object dictionaries."""
         for key, value in source_dict.items():
             if key in target_dict:
@@ -533,18 +623,27 @@ class NarrativePersistenceManager:
         return None  # Would need full implementation
 
     def _serialize_tracked_action(self, action) -> Dict[str, Any]:
-        return {"action_id": action.action_id, "timestamp": action.timestamp, "description": action.description}
+        return {
+            "action_id": action.action_id,
+            "timestamp": action.timestamp,
+            "description": action.description,
+        }
 
     def _deserialize_tracked_action(self, data: Dict[str, Any]):
         return None  # Would need full implementation
 
     def _serialize_consequence(self, consequence) -> Dict[str, Any]:
-        return {"consequence_id": consequence.consequence_id, "description": consequence.description}
+        return {
+            "consequence_id": consequence.consequence_id,
+            "description": consequence.description,
+        }
 
     def _deserialize_consequence(self, data: Dict[str, Any]):
         return None  # Would need full implementation
 
-    def _write_narrative_file(self, data: Dict[str, Any], filepath: Path, save_format: SerializationFormat) -> bool:
+    def _write_narrative_file(
+        self, data: Dict[str, Any], filepath: Path, save_format: SerializationFormat
+    ) -> bool:
         """Write narrative data to file in the specified format."""
         try:
             if save_format == SerializationFormat.JSON:
@@ -565,7 +664,9 @@ class NarrativePersistenceManager:
             logger.error(f"Error writing narrative file {filepath}: {e}")
             return False
 
-    def _read_narrative_file(self, filepath: Path, save_format: SerializationFormat) -> Optional[Dict[str, Any]]:
+    def _read_narrative_file(
+        self, filepath: Path, save_format: SerializationFormat
+    ) -> Optional[Dict[str, Any]]:
         """Read narrative data from file."""
         try:
             if save_format == SerializationFormat.JSON:
@@ -602,7 +703,9 @@ class NarrativePersistenceManager:
 
         if len(matching_files) > self.max_save_files:
             # Sort by timestamp and remove oldest
-            matching_files.sort(key=lambda f: self._extract_timestamp_from_filename(f.name))
+            matching_files.sort(
+                key=lambda f: self._extract_timestamp_from_filename(f.name)
+            )
             files_to_remove = matching_files[: -self.max_save_files]
 
             for file_to_remove in files_to_remove:
@@ -610,13 +713,17 @@ class NarrativePersistenceManager:
                     file_to_remove.unlink()
                     logger.debug(f"Removed old save file: {file_to_remove}")
                 except Exception as e:
-                    logger.warning(f"Could not remove old save file {file_to_remove}: {e}")
+                    logger.warning(
+                        f"Could not remove old save file {file_to_remove}: {e}"
+                    )
 
     def should_auto_save(self) -> bool:
         """Check if it's time for an automatic save."""
         return (time.time() - self.last_auto_save) >= self.auto_save_interval
 
-    def get_save_file_list(self, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_save_file_list(
+        self, session_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Get list of available save files."""
         if session_id:
             pattern = f"narrative_state_{session_id}_*"

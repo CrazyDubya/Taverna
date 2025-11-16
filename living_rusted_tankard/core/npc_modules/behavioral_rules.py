@@ -75,7 +75,10 @@ class Condition:
             elif character_type:
                 # Check for any character of type (e.g., "guard", "patron")
                 for occupant in area_occupants:
-                    if context.get("character_types", {}).get(occupant) == character_type:
+                    if (
+                        context.get("character_types", {}).get(occupant)
+                        == character_type
+                    ):
                         return True
             return False
 
@@ -97,7 +100,11 @@ class Condition:
             elif operator == "less":
                 return actual_value < state_value
             elif operator == "contains":
-                return state_value in actual_value if hasattr(actual_value, "__contains__") else False
+                return (
+                    state_value in actual_value
+                    if hasattr(actual_value, "__contains__")
+                    else False
+                )
 
         elif self.type == ConditionType.RANDOM:
             probability = self.parameters.get("probability", 0.5)
@@ -198,11 +205,17 @@ class DailySchedule:
             name=f"{activity} at {location}",
             description=f"Regular {activity} routine",
             conditions=[
-                Condition(type=ConditionType.TIME, parameters={"start_hour": start_hour, "end_hour": end_hour})
+                Condition(
+                    type=ConditionType.TIME,
+                    parameters={"start_hour": start_hour, "end_hour": end_hour},
+                )
             ],
             actions=[
                 Action(
-                    name=f"Go to {location}", action_type="move", parameters={"destination": location}, duration=5.0
+                    name=f"Go to {location}",
+                    action_type="move",
+                    parameters={"destination": location},
+                    duration=5.0,
                 ),
                 Action(
                     name=activity,
@@ -225,7 +238,12 @@ class DailySchedule:
                     name=f"{var.get('activity', activity)} at {var.get('location', location)}",
                     description=f"Variation of {activity} routine",
                     conditions=routine_rule.conditions
-                    + [Condition(type=ConditionType.RANDOM, parameters={"probability": var.get("probability", 0.3)})],
+                    + [
+                        Condition(
+                            type=ConditionType.RANDOM,
+                            parameters={"probability": var.get("probability", 0.3)},
+                        )
+                    ],
                     actions=[
                         Action(
                             name=f"Go to {var.get('location', location)}",
@@ -289,18 +307,31 @@ class BehaviorEngine:
                     name="Greet Newcomer",
                     description="Greet new arrivals warmly",
                     conditions=[
-                        Condition(type=ConditionType.EVENT, parameters={"event_type": "character_arrived"}),
+                        Condition(
+                            type=ConditionType.EVENT,
+                            parameters={"event_type": "character_arrived"},
+                        ),
                         Condition(
                             type=ConditionType.STATE,
-                            parameters={"key": "energy_level", "value": 0.3, "operator": "greater"},
+                            parameters={
+                                "key": "energy_level",
+                                "value": 0.3,
+                                "operator": "greater",
+                            },
                         ),
                     ],
                     actions=[
-                        Action(name="Turn to newcomer", action_type="face", parameters={"target": "newcomer"}),
+                        Action(
+                            name="Turn to newcomer",
+                            action_type="face",
+                            parameters={"target": "newcomer"},
+                        ),
                         Action(
                             name="Greet warmly",
                             action_type="speak",
-                            parameters={"dialogue": "Welcome, friend! Come, warm yourself by the fire!"},
+                            parameters={
+                                "dialogue": "Welcome, friend! Come, warm yourself by the fire!"
+                            },
                             duration=0.5,
                         ),
                     ],
@@ -317,10 +348,17 @@ class BehaviorEngine:
                     name="Watch Stranger",
                     description="Keep an eye on unfamiliar faces",
                     conditions=[
-                        Condition(type=ConditionType.PRESENCE, parameters={"character_type": "stranger"}),
+                        Condition(
+                            type=ConditionType.PRESENCE,
+                            parameters={"character_type": "stranger"},
+                        ),
                         Condition(
                             type=ConditionType.STATE,
-                            parameters={"key": "relationship_trust", "value": 0.3, "operator": "less"},
+                            parameters={
+                                "key": "relationship_trust",
+                                "value": 0.3,
+                                "operator": "less",
+                            },
                         ),
                     ],
                     actions=[
@@ -362,7 +400,10 @@ class BehaviorEngine:
         # Check for interrupt conditions
         for rule in self.rules:
             if rule.interrupt_current and rule.can_trigger(context, current_mood):
-                if self.active_behavior and rule.priority.value > self.active_behavior.priority.value:
+                if (
+                    self.active_behavior
+                    and rule.priority.value > self.active_behavior.priority.value
+                ):
                     return rule
 
         # If already executing behavior, continue unless done
@@ -410,7 +451,9 @@ class BehaviorEngine:
             completed_action = self.current_actions[self.action_index - 1]
 
             # Apply energy cost
-            self.psychology.energy_level = max(0.0, self.psychology.energy_level - completed_action.energy_cost)
+            self.psychology.energy_level = max(
+                0.0, self.psychology.energy_level - completed_action.energy_cost
+            )
 
     def get_idle_behavior(self) -> Action:
         """Get a default idle behavior."""
@@ -425,15 +468,30 @@ class BehaviorEngine:
         if self.psychology.base_personality == Personality.FRIENDLY:
             idle_behaviors.extend(
                 [
-                    Action("Smile at someone", "emote", {"emotion": "friendly"}, duration=1.0),
-                    Action("Wave to acquaintance", "gesture", {"type": "wave"}, duration=1.0),
+                    Action(
+                        "Smile at someone",
+                        "emote",
+                        {"emotion": "friendly"},
+                        duration=1.0,
+                    ),
+                    Action(
+                        "Wave to acquaintance",
+                        "gesture",
+                        {"type": "wave"},
+                        duration=1.0,
+                    ),
                 ]
             )
         elif self.psychology.base_personality == Personality.SUSPICIOUS:
             idle_behaviors.extend(
                 [
                     Action("Check exits", "observe", {"target": "exits"}, duration=2.0),
-                    Action("Watch crowd", "observe", {"target": "crowd", "subtle": True}, duration=3.0),
+                    Action(
+                        "Watch crowd",
+                        "observe",
+                        {"target": "crowd", "subtle": True},
+                        duration=3.0,
+                    ),
                 ]
             )
 
@@ -447,7 +505,11 @@ class BehaviorEngine:
         priority: BehaviorPriority = BehaviorPriority.HIGH,
     ) -> None:
         """Add a rule that reacts to specific events."""
-        rule_conditions = [Condition(type=ConditionType.EVENT, parameters={"event_type": trigger_event})]
+        rule_conditions = [
+            Condition(
+                type=ConditionType.EVENT, parameters={"event_type": trigger_event}
+            )
+        ]
 
         if conditions:
             rule_conditions.extend(conditions)
@@ -466,7 +528,11 @@ class BehaviorEngine:
 
     def get_behavior_description(self) -> str:
         """Get description of current behavior."""
-        if self.active_behavior and self.current_actions and self.action_index < len(self.current_actions):
+        if (
+            self.active_behavior
+            and self.current_actions
+            and self.action_index < len(self.current_actions)
+        ):
             current_action = self.current_actions[self.action_index]
             return f"{self.active_behavior.name}: {current_action.get_description()}"
         else:

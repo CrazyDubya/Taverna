@@ -75,7 +75,9 @@ class OngoingConversation:
     turns: List[ConversationTurn] = field(default_factory=list)
     topics_discussed: Set[ConversationTopic] = field(default_factory=set)
     interruption_count: int = 0
-    relationship_changes: List[Tuple[str, float]] = field(default_factory=list)  # What changed and by how much
+    relationship_changes: List[Tuple[str, float]] = field(
+        default_factory=list
+    )  # What changed and by how much
 
     # Context for continuing conversations
     last_question_asked: Optional[str] = None
@@ -130,7 +132,10 @@ class OngoingConversation:
             return True
 
         # If waiting for response, should continue up to a reasonable time
-        if self.current_state == ConversationState.WAITING_FOR_RESPONSE and time_since < 24:
+        if (
+            self.current_state == ConversationState.WAITING_FOR_RESPONSE
+            and time_since < 24
+        ):
             return True
 
         # If conversation was interrupted, might continue
@@ -245,8 +250,11 @@ class ConversationMemory:
             context.update(
                 {
                     "conversation_length": conv.get_conversation_length(),
-                    "recent_topics": [topic.value for topic in list(conv.topics_discussed)[-3:]],
-                    "waiting_for_response": conv.current_state == ConversationState.WAITING_FOR_RESPONSE,
+                    "recent_topics": [
+                        topic.value for topic in list(conv.topics_discussed)[-3:]
+                    ],
+                    "waiting_for_response": conv.current_state
+                    == ConversationState.WAITING_FOR_RESPONSE,
                     "question_asked": conv.last_question_asked,
                     "promised_topic": conv.promised_to_discuss,
                     "current_state": conv.current_state.value,
@@ -256,7 +264,9 @@ class ConversationMemory:
 
         return context
 
-    def should_reveal_secret(self, trust_level: float, relationship_length: int) -> bool:
+    def should_reveal_secret(
+        self, trust_level: float, relationship_length: int
+    ) -> bool:
         """Determine if NPC should reveal a secret based on relationship."""
         base_threshold = self.trust_threshold_for_secrets
 
@@ -268,28 +278,56 @@ class ConversationMemory:
 
         return trust_level > (adjusted_threshold + random_factor)
 
-    def get_appropriate_topics(self, relationship_level: str, current_mood: str) -> List[ConversationTopic]:
+    def get_appropriate_topics(
+        self, relationship_level: str, current_mood: str
+    ) -> List[ConversationTopic]:
         """Get topics appropriate for current relationship and mood."""
         topics = []
 
         # Always available topics
-        basic_topics = [ConversationTopic.WEATHER, ConversationTopic.BUSINESS, ConversationTopic.WORK]
+        basic_topics = [
+            ConversationTopic.WEATHER,
+            ConversationTopic.BUSINESS,
+            ConversationTopic.WORK,
+        ]
         topics.extend(basic_topics)
 
         # Relationship-gated topics
         if relationship_level in ["acquaintance", "friendly", "friend", "trusted"]:
-            topics.extend([ConversationTopic.LOCAL_NEWS, ConversationTopic.CURRENT_EVENTS, ConversationTopic.TRADE])
+            topics.extend(
+                [
+                    ConversationTopic.LOCAL_NEWS,
+                    ConversationTopic.CURRENT_EVENTS,
+                    ConversationTopic.TRADE,
+                ]
+            )
 
         if relationship_level in ["friendly", "friend", "trusted"]:
             topics.extend(
-                [ConversationTopic.HOBBIES, ConversationTopic.PAST_ADVENTURES, ConversationTopic.PERSONAL_LIFE]
+                [
+                    ConversationTopic.HOBBIES,
+                    ConversationTopic.PAST_ADVENTURES,
+                    ConversationTopic.PERSONAL_LIFE,
+                ]
             )
 
         if relationship_level in ["friend", "trusted"]:
-            topics.extend([ConversationTopic.FAMILY, ConversationTopic.DREAMS, ConversationTopic.PHILOSOPHY])
+            topics.extend(
+                [
+                    ConversationTopic.FAMILY,
+                    ConversationTopic.DREAMS,
+                    ConversationTopic.PHILOSOPHY,
+                ]
+            )
 
         if relationship_level == "trusted":
-            topics.extend([ConversationTopic.FEARS, ConversationTopic.GOSSIP, ConversationTopic.POLITICS])
+            topics.extend(
+                [
+                    ConversationTopic.FEARS,
+                    ConversationTopic.GOSSIP,
+                    ConversationTopic.POLITICS,
+                ]
+            )
 
         # Mood affects topic selection
         if current_mood in ["happy", "cheerful", "excited"]:
@@ -297,7 +335,9 @@ class ConversationMemory:
         elif current_mood in ["sad", "worried", "anxious"]:
             topics.extend([ConversationTopic.FEARS, ConversationTopic.PERSONAL_LIFE])
         elif current_mood == "angry":
-            topics.extend([ConversationTopic.POLITICS, ConversationTopic.CURRENT_EVENTS])
+            topics.extend(
+                [ConversationTopic.POLITICS, ConversationTopic.CURRENT_EVENTS]
+            )
 
         # Remove avoided topics
         topics = [t for t in topics if t not in self.avoided_topics]
@@ -363,7 +403,10 @@ class ConversationGenerator:
         ]
 
     def generate_greeting(
-        self, conversation_memory: ConversationMemory, relationship_level: str, time_since_last: float
+        self,
+        conversation_memory: ConversationMemory,
+        relationship_level: str,
+        time_since_last: float,
     ) -> str:
         """Generate an appropriate greeting."""
 
@@ -372,14 +415,13 @@ class ConversationGenerator:
             conversation_memory.current_conversation
             and conversation_memory.current_conversation.should_continue_previous_topic()
         ):
-            if conversation_memory.current_conversation.current_state == ConversationState.WAITING_FOR_RESPONSE:
-                return (
-                    f"So, about what I asked earlier... {conversation_memory.current_conversation.last_question_asked}"
-                )
+            if (
+                conversation_memory.current_conversation.current_state
+                == ConversationState.WAITING_FOR_RESPONSE
+            ):
+                return f"So, about what I asked earlier... {conversation_memory.current_conversation.last_question_asked}"
             elif conversation_memory.current_conversation.promised_to_discuss:
-                return (
-                    f"Ah, I promised to tell you about {conversation_memory.current_conversation.promised_to_discuss}."
-                )
+                return f"Ah, I promised to tell you about {conversation_memory.current_conversation.promised_to_discuss}."
             else:
                 return f"Where were we? Ah yes, we were talking about {conversation_memory.current_conversation.current_topic.value if conversation_memory.current_conversation.current_topic else 'various things'}."
 
@@ -390,10 +432,18 @@ class ConversationGenerator:
             if time_since_last < 24:
                 greetings = ["Back again, I see.", "Hello again.", "Good to see you."]
             else:
-                greetings = ["Well, hello there.", "Good to see you again.", "It's been a while."]
+                greetings = [
+                    "Well, hello there.",
+                    "Good to see you again.",
+                    "It's been a while.",
+                ]
         elif relationship_level in ["friendly", "friend"]:
             if time_since_last < 12:
-                greetings = ["Back so soon?", "Couldn't stay away, eh?", "Always a pleasure to see you."]
+                greetings = [
+                    "Back so soon?",
+                    "Couldn't stay away, eh?",
+                    "Always a pleasure to see you.",
+                ]
             else:
                 greetings = [
                     "My friend! Good to see you.",
@@ -410,22 +460,33 @@ class ConversationGenerator:
         return random.choice(greetings)
 
     def generate_topic_transition(
-        self, current_topic: Optional[ConversationTopic], new_topic: ConversationTopic, chattiness: float
+        self,
+        current_topic: Optional[ConversationTopic],
+        new_topic: ConversationTopic,
+        chattiness: float,
     ) -> str:
         """Generate a natural transition between topics."""
         if not current_topic or random.random() < 0.3:
             # Direct topic starter
-            return random.choice(self.topic_starters.get(new_topic, ["Let me tell you something interesting."]))
+            return random.choice(
+                self.topic_starters.get(
+                    new_topic, ["Let me tell you something interesting."]
+                )
+            )
 
         # Use continuation phrase for chattier NPCs
         if chattiness > 0.6:
             continuation = random.choice(self.continuation_phrases)
-            starter = random.choice(self.topic_starters.get(new_topic, ["something interesting happened"]))
+            starter = random.choice(
+                self.topic_starters.get(new_topic, ["something interesting happened"])
+            )
             return f"{continuation} {starter.lower()}"
         else:
             return random.choice(self.topic_starters.get(new_topic, ["Anyway,"]))
 
-    def should_ask_question(self, conversation_length: int, question_frequency: float) -> bool:
+    def should_ask_question(
+        self, conversation_length: int, question_frequency: float
+    ) -> bool:
         """Determine if NPC should ask a question."""
         # More likely to ask questions in longer conversations
         base_chance = question_frequency
@@ -450,7 +511,11 @@ class ConversationManager:
         return self.conversation_memories[npc_id]
 
     def start_conversation(
-        self, npc_id: str, npc_name: str, relationship_level: str, time_since_last_interaction: float
+        self,
+        npc_id: str,
+        npc_name: str,
+        relationship_level: str,
+        time_since_last_interaction: float,
     ) -> Tuple[str, Dict[str, Any]]:
         """Start or continue a conversation with an NPC."""
         memory = self.get_or_create_memory(npc_id, npc_name)
@@ -479,7 +544,11 @@ class ConversationManager:
         return greeting, context
 
     def continue_conversation(
-        self, npc_id: str, player_message: str, relationship_level: str, current_mood: str
+        self,
+        npc_id: str,
+        player_message: str,
+        relationship_level: str,
+        current_mood: str,
     ) -> Tuple[str, Dict[str, Any]]:
         """Continue an ongoing conversation."""
         if npc_id not in self.conversation_memories:
@@ -510,25 +579,39 @@ class ConversationManager:
         )
 
         conversation.add_turn(
-            speaker=npc_id, message=response, topic=new_topic, emotional_tone=current_mood, asks_question=should_ask
+            speaker=npc_id,
+            message=response,
+            topic=new_topic,
+            emotional_tone=current_mood,
+            asks_question=should_ask,
         )
 
         context = memory.get_conversation_context()
         return response, context
 
     def _generate_contextual_response(
-        self, memory: ConversationMemory, player_message: str, relationship_level: str, current_mood: str
+        self,
+        memory: ConversationMemory,
+        player_message: str,
+        relationship_level: str,
+        current_mood: str,
     ) -> Tuple[str, ConversationTopic]:
         """Generate contextual response based on conversation state."""
         conversation = memory.current_conversation
 
         # Get appropriate topics for this relationship level
-        available_topics = memory.get_appropriate_topics(relationship_level, current_mood)
+        available_topics = memory.get_appropriate_topics(
+            relationship_level, current_mood
+        )
 
         # Choose topic based on context
         if conversation.current_state == ConversationState.WAITING_FOR_RESPONSE:
             # Player answered a question
-            responses = ["I hadn't thought of it that way.", "That makes sense.", "I see your point."]
+            responses = [
+                "I hadn't thought of it that way.",
+                "That makes sense.",
+                "I see your point.",
+            ]
             response = f"Interesting perspective. {random.choice(responses)}"
             new_topic = conversation.current_topic or random.choice(available_topics)
             conversation.current_state = ConversationState.SMALL_TALK
@@ -581,9 +664,13 @@ class ConversationManager:
         summaries = {}
         for npc_id, memory in self.conversation_memories.items():
             if memory.current_conversation:
-                summaries[npc_id] = memory.current_conversation.get_conversation_summary()
+                summaries[
+                    npc_id
+                ] = memory.current_conversation.get_conversation_summary()
             elif memory.conversations:
                 last_conv = memory.conversations[-1]
-                summaries[npc_id] = f"Last conversation: {last_conv.get_conversation_summary()}"
+                summaries[
+                    npc_id
+                ] = f"Last conversation: {last_conv.get_conversation_summary()}"
 
         return summaries

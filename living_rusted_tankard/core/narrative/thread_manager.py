@@ -83,7 +83,9 @@ class ThreadManager:
     def _make_room_for_thread(self, new_thread: StoryThread) -> bool:
         """Make room for a new thread by pausing others."""
         # Find lowest priority active thread
-        lowest_priority = min(self.active_threads.values(), key=lambda t: t.priority, default=None)
+        lowest_priority = min(
+            self.active_threads.values(), key=lambda t: t.priority, default=None
+        )
 
         if lowest_priority and lowest_priority.priority < new_thread.priority:
             self.pause_thread(lowest_priority.id)
@@ -134,12 +136,18 @@ class ThreadManager:
 
     def _try_resume_paused_threads(self) -> None:
         """Try to resume paused threads if there's room."""
-        while len(self.active_threads) < self.max_active_threads and self.paused_threads:
+        while (
+            len(self.active_threads) < self.max_active_threads and self.paused_threads
+        ):
             # Resume highest priority paused thread
-            highest_priority = max(self.paused_threads.values(), key=lambda t: t.priority)
+            highest_priority = max(
+                self.paused_threads.values(), key=lambda t: t.priority
+            )
             self.resume_thread(highest_priority.id)
 
-    def advance_threads(self, available_participants: Set[str], world_state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def advance_threads(
+        self, available_participants: Set[str], world_state: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Advance all active threads and return events."""
         events = []
 
@@ -160,7 +168,9 @@ class ThreadManager:
 
             # Try to execute current beat
             current_beat = thread.get_current_beat()
-            if current_beat and current_beat.can_execute(world_state, available_participants):
+            if current_beat and current_beat.can_execute(
+                world_state, available_participants
+            ):
                 # Execute beat
                 results = current_beat.execute(list(available_participants))
 
@@ -183,7 +193,13 @@ class ThreadManager:
                 if not thread.advance_beat():
                     # Thread completed
                     self.complete_thread(thread.id, 0.7)  # Good completion
-                    events.append({"type": "thread_completed", "thread_id": thread.id, "title": thread.title})
+                    events.append(
+                        {
+                            "type": "thread_completed",
+                            "thread_id": thread.id,
+                            "title": thread.title,
+                        }
+                    )
 
         # Update tension levels
         for thread in self.active_threads.values():
@@ -202,7 +218,9 @@ class ThreadManager:
                 convergence_potential = thread1.check_convergence_potential(thread2)
 
                 if convergence_potential > 0.6:  # Threshold for convergence
-                    convergence = self._create_convergence(thread1, thread2, convergence_potential)
+                    convergence = self._create_convergence(
+                        thread1, thread2, convergence_potential
+                    )
                     new_convergences.append(convergence)
 
         # Filter out convergences that are too similar to existing ones
@@ -226,10 +244,16 @@ class ThreadManager:
                 if not self._is_similar_convergence(convergence):
                     self.detected_convergences.append(convergence)
 
-    def _create_convergence(self, thread1: StoryThread, thread2: StoryThread, potential: float) -> ThreadConvergence:
+    def _create_convergence(
+        self, thread1: StoryThread, thread2: StoryThread, potential: float
+    ) -> ThreadConvergence:
         """Create a convergence between two threads."""
-        shared_participants = list(thread1.get_all_participants() & thread2.get_all_participants())
-        all_participants = list(thread1.get_all_participants() | thread2.get_all_participants())
+        shared_participants = list(
+            thread1.get_all_participants() & thread2.get_all_participants()
+        )
+        all_participants = list(
+            thread1.get_all_participants() | thread2.get_all_participants()
+        )
 
         # Determine convergence type
         if thread1.type == ThreadType.CONFLICT or thread2.type == ThreadType.CONFLICT:
@@ -264,22 +288,32 @@ class ThreadManager:
             # Very similar participants
             existing_participants = set(existing.all_participants)
             new_participants = set(new_convergence.all_participants)
-            similarity = len(existing_participants & new_participants) / len(existing_participants | new_participants)
+            similarity = len(existing_participants & new_participants) / len(
+                existing_participants | new_participants
+            )
 
             if similarity > 0.8:
                 return True
 
         return False
 
-    def execute_convergence(self, convergence_id: str, world_state: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def execute_convergence(
+        self, convergence_id: str, world_state: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Execute a detected convergence."""
-        convergence = next((c for c in self.detected_convergences if c.id == convergence_id), None)
+        convergence = next(
+            (c for c in self.detected_convergences if c.id == convergence_id), None
+        )
 
         if not convergence or convergence.executed:
             return None
 
         # Get involved threads
-        threads = [self.active_threads[tid] for tid in convergence.thread_ids if tid in self.active_threads]
+        threads = [
+            self.active_threads[tid]
+            for tid in convergence.thread_ids
+            if tid in self.active_threads
+        ]
 
         if len(threads) != len(convergence.thread_ids):
             return None  # Some threads no longer active
@@ -308,13 +342,16 @@ class ThreadManager:
                 "convergence_id": convergence_id,
                 "threads": [t.id for t in threads],
                 "participants": convergence.all_participants,
-                "tension_change": results["tension_change"] * convergence.tension_multiplier,
+                "tension_change": results["tension_change"]
+                * convergence.tension_multiplier,
                 "new_beats": convergence.new_beats,
             }
 
         return None
 
-    def _create_convergence_beat(self, convergence: ThreadConvergence, threads: List[StoryThread]) -> "StoryBeat":
+    def _create_convergence_beat(
+        self, convergence: ThreadConvergence, threads: List[StoryThread]
+    ) -> "StoryBeat":
         """Create a story beat for the convergence."""
         from .story_thread import StoryBeat  # Import here to avoid circular import
 
@@ -326,7 +363,8 @@ class ThreadManager:
         }
 
         description = beat_descriptions.get(
-            convergence.convergence_type, f"The threads converge around {' and '.join(convergence.shared_participants)}"
+            convergence.convergence_type,
+            f"The threads converge around {' and '.join(convergence.shared_participants)}",
         )
 
         beat = StoryBeat(
@@ -350,7 +388,9 @@ class ThreadManager:
             "detected_convergences": len(self.detected_convergences),
             "executed_convergences": len(self.executed_convergences),
             "total_tension": sum(t.tension_level for t in self.active_threads.values()),
-            "average_tension": sum(t.tension_level for t in self.active_threads.values())
+            "average_tension": sum(
+                t.tension_level for t in self.active_threads.values()
+            )
             / max(len(self.active_threads), 1),
         }
 
@@ -369,13 +409,27 @@ class ThreadManager:
         return {
             "active_threads_by_stage": active_by_stage,
             "active_threads_by_type": active_by_type,
-            "threads_near_climax": len([t for t in self.active_threads.values() if t.stage == ThreadStage.CLIMAX]),
-            "high_tension_threads": len([t for t in self.active_threads.values() if t.tension_level > 0.7]),
-            "stalled_threads": len([t for t in self.active_threads.values() if t.is_stalled()]),
-            "pending_convergences": len([c for c in self.detected_convergences if not c.executed]),
+            "threads_near_climax": len(
+                [
+                    t
+                    for t in self.active_threads.values()
+                    if t.stage == ThreadStage.CLIMAX
+                ]
+            ),
+            "high_tension_threads": len(
+                [t for t in self.active_threads.values() if t.tension_level > 0.7]
+            ),
+            "stalled_threads": len(
+                [t for t in self.active_threads.values() if t.is_stalled()]
+            ),
+            "pending_convergences": len(
+                [c for c in self.detected_convergences if not c.executed]
+            ),
         }
 
-    def suggest_new_threads(self, available_participants: List[str], context: Dict[str, Any]) -> List[StoryThread]:
+    def suggest_new_threads(
+        self, available_participants: List[str], context: Dict[str, Any]
+    ) -> List[StoryThread]:
         """Suggest new threads based on current state."""
         suggestions = []
 
@@ -411,7 +465,9 @@ class ThreadManager:
 
         return suggestions[:2]  # Maximum 2 suggestions
 
-    def _log_thread_event(self, thread_id: str, event_type: str, details: Optional[Dict[str, Any]] = None) -> None:
+    def _log_thread_event(
+        self, thread_id: str, event_type: str, details: Optional[Dict[str, Any]] = None
+    ) -> None:
         """Log a thread event for analysis."""
         event = {
             "timestamp": datetime.now().isoformat(),
@@ -440,12 +496,16 @@ class ThreadManager:
 
         # Remove old convergences
         self.executed_convergences = [
-            conv for conv in self.executed_convergences if conv.scheduled_time is None or conv.scheduled_time > cutoff
+            conv
+            for conv in self.executed_convergences
+            if conv.scheduled_time is None or conv.scheduled_time > cutoff
         ]
 
         # Remove old history
         self.thread_history = [
-            event for event in self.thread_history if datetime.fromisoformat(event["timestamp"]) > cutoff
+            event
+            for event in self.thread_history
+            if datetime.fromisoformat(event["timestamp"]) > cutoff
         ]
 
     def get_active_threads(self) -> List[StoryThread]:
@@ -454,4 +514,6 @@ class ThreadManager:
 
     def get_thread(self, thread_id: str) -> Optional[StoryThread]:
         """Get a specific thread by ID"""
-        return self.active_threads.get(thread_id) or self.completed_threads.get(thread_id)
+        return self.active_threads.get(thread_id) or self.completed_threads.get(
+            thread_id
+        )

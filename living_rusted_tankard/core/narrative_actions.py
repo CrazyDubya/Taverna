@@ -76,7 +76,13 @@ class NarrativeActionProcessor:
             for match in matches:
                 try:
                     parameters = self._parse_parameters(match)
-                    actions.append(NarrativeAction(action_type=action_type, parameters=parameters, raw_text=match))
+                    actions.append(
+                        NarrativeAction(
+                            action_type=action_type,
+                            parameters=parameters,
+                            raw_text=match,
+                        )
+                    )
                 except Exception as e:
                     logger.error(f"Error parsing action '{match}': {e}")
 
@@ -145,7 +151,9 @@ class NarrativeActionProcessor:
 
         return cleaned
 
-    def process_actions(self, actions: List[NarrativeAction], game_state, session_id: str) -> List[Dict[str, Any]]:
+    def process_actions(
+        self, actions: List[NarrativeAction], game_state, session_id: str
+    ) -> List[Dict[str, Any]]:
         """Process actions and apply them to game state."""
         results = []
 
@@ -154,13 +162,19 @@ class NarrativeActionProcessor:
                 result = self._process_single_action(action, game_state, session_id)
                 if result:
                     results.append(result)
-                    logger.info(f"Processed action {action.action_type}: {action.raw_text}")
+                    logger.info(
+                        f"Processed action {action.action_type}: {action.raw_text}"
+                    )
             except Exception as e:
-                logger.error(f"Error processing action {action.action_type} '{action.raw_text}': {e}")
+                logger.error(
+                    f"Error processing action {action.action_type} '{action.raw_text}': {e}"
+                )
 
         return results
 
-    def _process_single_action(self, action: NarrativeAction, game_state, session_id: str) -> Optional[Dict[str, Any]]:
+    def _process_single_action(
+        self, action: NarrativeAction, game_state, session_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Process a single narrative action."""
 
         if action.action_type == ActionType.COMMAND:
@@ -185,7 +199,9 @@ class NarrativeActionProcessor:
 
         return None
 
-    def _handle_quest_start(self, action: NarrativeAction, game_state) -> Dict[str, Any]:
+    def _handle_quest_start(
+        self, action: NarrativeAction, game_state
+    ) -> Dict[str, Any]:
         """Handle quest start action."""
         quest_id = action.parameters.get("target")
         description = action.parameters.get("description", "New quest started")
@@ -201,7 +217,9 @@ class NarrativeActionProcessor:
             "quest_id": quest_id,
         }
 
-    def _handle_reputation_change(self, action: NarrativeAction, game_state) -> Dict[str, Any]:
+    def _handle_reputation_change(
+        self, action: NarrativeAction, game_state
+    ) -> Dict[str, Any]:
         """Handle reputation change action."""
         npc_name = action.parameters.get("target")
         modifier = action.parameters.get("modifier", 0)
@@ -209,7 +227,9 @@ class NarrativeActionProcessor:
 
         # For now, just log the reputation change
         # In the future, this could update an NPC relationship system
-        game_state._add_event(f"Reputation with {npc_name}: {modifier:+d} ({reason})", "reputation")
+        game_state._add_event(
+            f"Reputation with {npc_name}: {modifier:+d} ({reason})", "reputation"
+        )
 
         return {
             "success": True,
@@ -229,7 +249,9 @@ class NarrativeActionProcessor:
         success, message = game_state.player.inventory.add_item(item_id, quantity)
 
         if success:
-            game_state._add_event(f"Received {quantity}x {item_id} ({reason})", "item_received")
+            game_state._add_event(
+                f"Received {quantity}x {item_id} ({reason})", "item_received"
+            )
             return {
                 "success": True,
                 "message": message,
@@ -238,9 +260,15 @@ class NarrativeActionProcessor:
                 "quantity": quantity,
             }
         else:
-            return {"success": False, "message": f"Failed to give item: {message}", "action_type": "item_give"}
+            return {
+                "success": False,
+                "message": f"Failed to give item: {message}",
+                "action_type": "item_give",
+            }
 
-    def _handle_event_trigger(self, action: NarrativeAction, game_state) -> Dict[str, Any]:
+    def _handle_event_trigger(
+        self, action: NarrativeAction, game_state
+    ) -> Dict[str, Any]:
         """Handle event trigger action."""
         event_name = action.parameters.get("target")
         delay = action.parameters.get("delay", 0)

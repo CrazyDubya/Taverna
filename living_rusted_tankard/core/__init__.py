@@ -8,4 +8,13 @@ from .npc import NPC, NPCManager, NPCType
 from .economy import Economy
 
 # Define __all__ to control what's imported with `from core import *`
-__all__ = ["GameClock", "GameTime", "GameState", "PlayerState", "NPC", "NPCManager", "NPCType", "Economy"]
+__all__ = [
+    "GameClock",
+    "GameTime",
+    "GameState",
+    "PlayerState",
+    "NPC",
+    "NPCManager",
+    "NPCType",
+    "Economy",
+]

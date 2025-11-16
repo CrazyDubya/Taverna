@@ -100,13 +100,18 @@ class NPC(BaseModel):
         arbitrary_types_allowed = True
 
     def update_presence(
-        self, current_time: float, event_bus=None, npc_definitions: Optional[Dict[str, Any]] = None
+        self,
+        current_time: float,
+        event_bus=None,
+        npc_definitions: Optional[Dict[str, Any]] = None,
     ) -> bool:
         was_present = self.is_present
         current_hour = current_time % 24
         current_day = int(current_time // 24)
         scheduled_now = any(
-            (start <= current_hour < end) if start < end else (current_hour >= start or current_hour < end)
+            (start <= current_hour < end)
+            if start < end
+            else (current_hour >= start or current_hour < end)
             for start, end in self.schedule
         )
 
@@ -129,7 +134,11 @@ class NPC(BaseModel):
                 self.is_present = random.random() < self.visit_frequency
                 if self.is_present:  # Reset shared news for a new visit day
                     self.shared_news_ids = []
-            elif not self.is_present and self.last_visit_day == current_day and random.random() < self.visit_frequency:
+            elif (
+                not self.is_present
+                and self.last_visit_day == current_day
+                and random.random() < self.visit_frequency
+            ):
                 # If it's the same day, but they weren't present (e.g. game load), give a chance to appear if scheduled
                 self.is_present = True
                 if self.is_present:
@@ -145,7 +154,9 @@ class NPC(BaseModel):
             if self.is_present:
                 if self.id == "travelling_merchant_elara":
                     self._update_elara_inventory(npc_definitions)
-                event_bus.dispatch(NPCSpawnEvent(npc=self, location=self.current_room or "unknown"))
+                event_bus.dispatch(
+                    NPCSpawnEvent(npc=self, location=self.current_room or "unknown")
+                )
             else:
                 event_bus.dispatch(NPCDepartEvent(npc=self, reason="schedule_change"))
         return state_changed
@@ -155,12 +166,21 @@ class NPC(BaseModel):
 
         self.inventory = []
         item_ids_to_choose_from = list(self.base_inventory_ids)
-        if not item_ids_to_choose_from and npc_definitions and self.definition_id and self.definition_id in npc_definitions:
-            item_ids_to_choose_from = list(npc_definitions[self.definition_id].get("base_inventory_ids", []))
+        if (
+            not item_ids_to_choose_from
+            and npc_definitions
+            and self.definition_id
+            and self.definition_id in npc_definitions
+        ):
+            item_ids_to_choose_from = list(
+                npc_definitions[self.definition_id].get("base_inventory_ids", [])
+            )
         if not item_ids_to_choose_from:
             return
 
-        num_items = random.randint(min(3, len(item_ids_to_choose_from)), min(5, len(item_ids_to_choose_from)))
+        num_items = random.randint(
+            min(3, len(item_ids_to_choose_from)), min(5, len(item_ids_to_choose_from))
+        )
         selected_ids = random.sample(item_ids_to_choose_from, num_items)
 
         for item_id in selected_ids:
@@ -168,12 +188,20 @@ class NPC(BaseModel):
             if not item_def:
                 continue
             quantity = 1
-            if item_id in ["elixir_luck", "exotic_spices", "bread", "healing_potion_minor", "arrows"]:
+            if item_id in [
+                "elixir_luck",
+                "exotic_spices",
+                "bread",
+                "healing_potion_minor",
+                "arrows",
+            ]:
                 quantity = random.randint(1, 5)
             # Create inventory item in the proper format
             from .items import InventoryItem
 
-            inventory_item = InventoryItem(item=item_def.model_copy(deep=True), quantity=quantity)
+            inventory_item = InventoryItem(
+                item=item_def.model_copy(deep=True), quantity=quantity
+            )
             self.inventory.append(inventory_item)
 
         if self.current_event_modifier == "war_in_north":
@@ -185,10 +213,15 @@ class NPC(BaseModel):
                     # Create inventory item in the proper format
                     from .items import InventoryItem
 
-                    dagger_item = InventoryItem(item=dagger_def.model_copy(deep=True), quantity=random.randint(1, 2))
+                    dagger_item = InventoryItem(
+                        item=dagger_def.model_copy(deep=True),
+                        quantity=random.randint(1, 2),
+                    )
                     self.inventory.append(dagger_item)
 
-    def modify_relationship(self, player_id: str, change: float, event_bus=None) -> float:
+    def modify_relationship(
+        self, player_id: str, change: float, event_bus=None
+    ) -> float:
         old_value = self.relationships.get(player_id, 0.0)
         new_value = max(-1.0, min(1.0, old_value + change))
         self.relationships[player_id] = new_value
@@ -196,11 +229,18 @@ class NPC(BaseModel):
             from .events.npc_events import NPCRelationshipChangeEvent
 
             event_bus.dispatch(
-                NPCRelationshipChangeEvent(npc_id=self.id, player_id=player_id, change=change, new_value=new_value)
+                NPCRelationshipChangeEvent(
+                    npc_id=self.id,
+                    player_id=player_id,
+                    change=change,
+                    new_value=new_value,
+                )
             )
         return new_value
 
-    def _handle_conversation(self, game_state: "GameState", topic: Optional[str] = None) -> Dict[str, Any]:
+    def _handle_conversation(
+        self, game_state: "GameState", topic: Optional[str] = None
+    ) -> Dict[str, Any]:
         from .reputation import get_reputation, get_reputation_tier
 
         player_state = game_state.player
@@ -222,7 +262,9 @@ class NPC(BaseModel):
                 "distant_lands": f"{self.name} sighs. 'Aye, seen many a road. Each with its own dust and dangers.'",
                 "trade_secrets": f"{self.name} winks. 'Now, that'd be telling, wouldn't it?'",
             }
-            response_message = responses.get(topic, f"{self.name} considers {topic} for a moment.")
+            response_message = responses.get(
+                topic, f"{self.name} considers {topic} for a moment."
+            )
 
         # News Sharing Logic
         news_manager = game_state.news_manager
@@ -246,10 +288,16 @@ class NPC(BaseModel):
                 response_message += f"\n\nBy the way, {news_snippet.text}"
                 if news_snippet.id not in self.shared_news_ids:
                     self.shared_news_ids.append(news_snippet.id)
-                    if len(self.shared_news_ids) > 5:  # Keep list from growing too large
+                    if (
+                        len(self.shared_news_ids) > 5
+                    ):  # Keep list from growing too large
                         self.shared_news_ids.pop(0)
 
-        return {"success": True, "message": response_message, "topics": available_topics}
+        return {
+            "success": True,
+            "message": response_message,
+            "topics": available_topics,
+        }
 
 
 class NPCManager:
@@ -293,8 +341,12 @@ class NPCManager:
                 processed_data = npc_def_data.copy()
                 processed_data["definition_id"] = def_id
                 processed_data["npc_type"] = NPCType[processed_data["npc_type"].upper()]
-                processed_data["disposition"] = NPCDisposition[processed_data.get("disposition", "NEUTRAL").upper()]
-                processed_data["schedule"] = [tuple(p) for p in processed_data.get("schedule", [])]
+                processed_data["disposition"] = NPCDisposition[
+                    processed_data.get("disposition", "NEUTRAL").upper()
+                ]
+                processed_data["schedule"] = [
+                    tuple(p) for p in processed_data.get("schedule", [])
+                ]
 
                 inventory_objects = []
                 for item_data in processed_data.get("inventory", []):
@@ -304,14 +356,20 @@ class NPCManager:
                         from .items import InventoryItem
 
                         inv_item = InventoryItem(
-                            item=item_def.model_copy(deep=True), quantity=item_data.get("quantity", 1)
+                            item=item_def.model_copy(deep=True),
+                            quantity=item_data.get("quantity", 1),
                         )
                         inventory_objects.append(inv_item)
                 processed_data["inventory"] = inventory_objects
 
                 interactions_map = {}
-                for key, interact_data in processed_data.get("interactions", {}).items():
-                    if "reputation_requirement" in interact_data and interact_data["reputation_requirement"]:
+                for key, interact_data in processed_data.get(
+                    "interactions", {}
+                ).items():
+                    if (
+                        "reputation_requirement" in interact_data
+                        and interact_data["reputation_requirement"]
+                    ):
                         interact_data["reputation_requirement"] = ReputationRequirement(
                             **interact_data["reputation_requirement"]
                         )
@@ -338,19 +396,34 @@ class NPCManager:
 
         interactive_list = []
         for npc in self.get_present_npcs():
-            npc_data = {"id": npc.id, "name": npc.name, "description": npc.description, "interactions": []}
-            npc_data["interactions"].append({"id": "talk", "name": "Talk", "description": f"Talk to {npc.name}."})
+            npc_data = {
+                "id": npc.id,
+                "name": npc.name,
+                "description": npc.description,
+                "interactions": [],
+            }
+            npc_data["interactions"].append(
+                {"id": "talk", "name": "Talk", "description": f"Talk to {npc.name}."}
+            )
 
             player_rep_score = get_reputation(player_state, npc.id)
             player_tier_str = get_reputation_tier(player_rep_score)
-            tier_values = {tier_name: i for i, (_, tier_name) in enumerate(REPUTATION_TIERS)}
+            tier_values = {
+                tier_name: i for i, (_, tier_name) in enumerate(REPUTATION_TIERS)
+            }
             player_tier_value = tier_values.get(player_tier_str)
 
             for interact_id, interaction_obj in npc.interactions.items():
                 passes_rep_check = True
                 if interaction_obj.reputation_requirement:
-                    req_tier_value = tier_values.get(interaction_obj.reputation_requirement.min_tier)
-                    if req_tier_value is None or player_tier_value is None or player_tier_value < req_tier_value:
+                    req_tier_value = tier_values.get(
+                        interaction_obj.reputation_requirement.min_tier
+                    )
+                    if (
+                        req_tier_value is None
+                        or player_tier_value is None
+                        or player_tier_value < req_tier_value
+                    ):
                         passes_rep_check = False
 
                 if passes_rep_check:
@@ -369,7 +442,12 @@ class NPCManager:
         return interactive_list
 
     def interact_with_npc(
-        self, npc_id: str, player_state: "PlayerState", interaction_id: str, game_state: "GameState", **kwargs
+        self,
+        npc_id: str,
+        player_state: "PlayerState",
+        interaction_id: str,
+        game_state: "GameState",
+        **kwargs,
     ) -> Dict[str, Any]:
         # Changed economy to game_state for broader context access
         npc = self.get_npc(npc_id)
@@ -389,14 +467,28 @@ class NPCManager:
         if interaction.reputation_requirement:
             player_rep_score = get_reputation(player_state, npc.id)
             player_tier_str = get_reputation_tier(player_rep_score)
-            tier_values = {tier_name: i for i, (_, tier_name) in enumerate(REPUTATION_TIERS)}
+            tier_values = {
+                tier_name: i for i, (_, tier_name) in enumerate(REPUTATION_TIERS)
+            }
             player_tier_value = tier_values.get(player_tier_str)
-            req_tier_value = tier_values.get(interaction.reputation_requirement.min_tier)
-            if req_tier_value is None or player_tier_value is None or player_tier_value < req_tier_value:
-                return {"success": False, "message": f"You are not trusted enough by {npc.name} for that."}
+            req_tier_value = tier_values.get(
+                interaction.reputation_requirement.min_tier
+            )
+            if (
+                req_tier_value is None
+                or player_tier_value is None
+                or player_tier_value < req_tier_value
+            ):
+                return {
+                    "success": False,
+                    "message": f"You are not trusted enough by {npc.name} for that.",
+                }
 
         if interaction.condition and not interaction.condition(npc, player_state):
-            return {"success": False, "message": "Conditions not met for this interaction."}
+            return {
+                "success": False,
+                "message": "Conditions not met for this interaction.",
+            }
 
         action_result = interaction.action(
             npc, player_state, game_state.economy, **kwargs
@@ -406,7 +498,10 @@ class NPCManager:
 
             self._event_bus.dispatch(
                 NPCInteractionEvent(
-                    npc_id=npc.id, player_id=player_state.id, interaction_type=interaction_id, data=action_result
+                    npc_id=npc.id,
+                    player_id=player_state.id,
+                    interaction_type=interaction_id,
+                    data=action_result,
                 )
             )
         return action_result
@@ -425,7 +520,12 @@ class NPCManager:
         return {"npcs": {npc_id: npc.model_dump() for npc_id, npc in self.npcs.items()}}
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], data_dir: str = "data", event_bus: Optional[Any] = None) -> "NPCManager":
+    def from_dict(
+        cls,
+        data: Dict[str, Any],
+        data_dir: str = "data",
+        event_bus: Optional[Any] = None,
+    ) -> "NPCManager":
         """Create an NPCManager from serialized data."""
         manager = cls(data_dir=data_dir, event_bus=event_bus)
 

@@ -76,7 +76,9 @@ class StoryBeat:
     success: bool = False
     actual_participants: List[str] = field(default_factory=list)
 
-    def can_execute(self, world_state: Dict[str, Any], available_participants: Set[str]) -> bool:
+    def can_execute(
+        self, world_state: Dict[str, Any], available_participants: Set[str]
+    ) -> bool:
         """Check if beat can be executed."""
         if self.executed:
             return False
@@ -276,7 +278,12 @@ class StoryThread:
         if remaining_beats <= 0:
             return timedelta(0)
 
-        avg_duration = sum(beat.duration_estimate for beat in self.beats[self.current_beat_index :]) / remaining_beats
+        avg_duration = (
+            sum(
+                beat.duration_estimate for beat in self.beats[self.current_beat_index :]
+            )
+            / remaining_beats
+        )
         return timedelta(minutes=avg_duration * remaining_beats)
 
     def complete(self, quality: float = 0.5) -> None:
@@ -299,7 +306,9 @@ class StoryThread:
     def check_convergence_potential(self, other_thread: "StoryThread") -> float:
         """Check potential for convergence with another thread."""
         # Shared participants increase convergence potential
-        shared_participants = self.get_all_participants() & other_thread.get_all_participants()
+        shared_participants = (
+            self.get_all_participants() & other_thread.get_all_participants()
+        )
         participant_factor = len(shared_participants) * 0.3
 
         # Similar types converge better
@@ -310,14 +319,21 @@ class StoryThread:
         }
 
         type_factor = type_compatibility.get(
-            (self.type, other_thread.type), type_compatibility.get((other_thread.type, self.type), 0.3)
+            (self.type, other_thread.type),
+            type_compatibility.get((other_thread.type, self.type), 0.3),
         )
 
         # Stage alignment
         stage_factor = 0.5
         if self.stage == other_thread.stage:
             stage_factor = 0.8
-        elif abs(list(ThreadStage).index(self.stage) - list(ThreadStage).index(other_thread.stage)) <= 1:
+        elif (
+            abs(
+                list(ThreadStage).index(self.stage)
+                - list(ThreadStage).index(other_thread.stage)
+            )
+            <= 1
+        ):
             stage_factor = 0.6
 
         return min(1.0, participant_factor + type_factor * 0.5 + stage_factor * 0.2)
@@ -393,12 +409,19 @@ class StoryThread:
 class ThreadTemplate:
     """Template for generating story threads."""
 
-    def __init__(self, thread_type: ThreadType, title_template: str, beat_templates: List[Dict[str, Any]]):
+    def __init__(
+        self,
+        thread_type: ThreadType,
+        title_template: str,
+        beat_templates: List[Dict[str, Any]],
+    ):
         self.thread_type = thread_type
         self.title_template = title_template
         self.beat_templates = beat_templates
 
-    def create_thread(self, participants: List[str], context: Dict[str, Any]) -> StoryThread:
+    def create_thread(
+        self, participants: List[str], context: Dict[str, Any]
+    ) -> StoryThread:
         """Create a thread from this template."""
         # Fill in template variables
         title = self._fill_template(self.title_template, participants, context)
@@ -417,9 +440,13 @@ class ThreadTemplate:
             beat = StoryBeat(
                 id=f"{thread.id}_beat_{i}",
                 type=BeatType(beat_template["type"]),
-                description=self._fill_template(beat_template["description"], participants, context),
+                description=self._fill_template(
+                    beat_template["description"], participants, context
+                ),
                 participants=beat_template.get("participants", participants[:2]),
-                location=beat_template.get("location", context.get("default_location", "main_hall")),
+                location=beat_template.get(
+                    "location", context.get("default_location", "main_hall")
+                ),
                 tension_change=beat_template.get("tension_change", 0.0),
                 player_agency=beat_template.get("player_agency", 0.5),
             )
@@ -427,7 +454,9 @@ class ThreadTemplate:
 
         return thread
 
-    def _fill_template(self, template: str, participants: List[str], context: Dict[str, Any]) -> str:
+    def _fill_template(
+        self, template: str, participants: List[str], context: Dict[str, Any]
+    ) -> str:
         """Fill template with actual values."""
         result = template
 
@@ -438,7 +467,9 @@ class ThreadTemplate:
 
         if participants:
             result = result.replace("{participant}", participants[0])
-            result = result.replace("{other}", participants[1] if len(participants) > 1 else "someone")
+            result = result.replace(
+                "{other}", participants[1] if len(participants) > 1 else "someone"
+            )
 
         # Replace context variables
         for key, value in context.items():
@@ -505,7 +536,11 @@ class ThreadLibrary:
                     "description": "A crucial piece of evidence is discovered",
                     "tension_change": 0.5,
                 },
-                {"type": "confrontation", "description": "The truth is finally revealed", "tension_change": 0.8},
+                {
+                    "type": "confrontation",
+                    "description": "The truth is finally revealed",
+                    "tension_change": 0.8,
+                },
                 {
                     "type": "resolution",
                     "description": "The mystery is solved and justice served",
@@ -534,7 +569,11 @@ class ThreadLibrary:
                     "description": "{p0} and {p1} have their final confrontation",
                     "tension_change": 0.9,
                 },
-                {"type": "resolution", "description": "The conflict reaches its resolution", "tension_change": -0.7},
+                {
+                    "type": "resolution",
+                    "description": "The conflict reaches its resolution",
+                    "tension_change": -0.7,
+                },
             ],
         )
 
@@ -570,7 +609,9 @@ class ThreadLibrary:
         if not preferred_type:
             # Simple heuristic based on participant count and context
             if len(participants) == 2:
-                preferred_type = random.choice([ThreadType.ROMANCE, ThreadType.CONFLICT])
+                preferred_type = random.choice(
+                    [ThreadType.ROMANCE, ThreadType.CONFLICT]
+                )
             else:
                 preferred_type = random.choice([ThreadType.MYSTERY, ThreadType.QUEST])
 

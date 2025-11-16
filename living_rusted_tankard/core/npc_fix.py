@@ -7,7 +7,10 @@ import random
 
 
 def update_presence_fixed(
-    self, current_time: float, event_bus=None, npc_definitions: Optional[Dict[str, Any]] = None
+    self,
+    current_time: float,
+    event_bus=None,
+    npc_definitions: Optional[Dict[str, Any]] = None,
 ) -> bool:
     """Fixed update_presence that handles initial spawn better."""
     was_present = self.is_present
@@ -16,7 +19,9 @@ def update_presence_fixed(
 
     # Check if NPC is scheduled for current time
     scheduled_now = any(
-        (start <= current_hour < end) if start < end else (current_hour >= start or current_hour < end)
+        (start <= current_hour < end)
+        if start < end
+        else (current_hour >= start or current_hour < end)
         for start, end in self.schedule
     )
 
@@ -70,9 +75,15 @@ def update_presence_fixed(
         if self.is_present:
             if self.id == "travelling_merchant_elara":
                 self._update_elara_inventory(npc_definitions)
-            event_bus.dispatch(NPCSpawnEvent(npc_id=self.id, data={"location": self.current_room or "unknown"}))
+            event_bus.dispatch(
+                NPCSpawnEvent(
+                    npc_id=self.id, data={"location": self.current_room or "unknown"}
+                )
+            )
         else:
-            event_bus.dispatch(NPCDepartEvent(npc_id=self.id, data={"reason": "schedule_change"}))
+            event_bus.dispatch(
+                NPCDepartEvent(npc_id=self.id, data={"reason": "schedule_change"})
+            )
 
     return state_changed
 

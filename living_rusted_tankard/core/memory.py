@@ -94,7 +94,9 @@ class ConversationSummarizer:
             "general": "Player interacted with {npc}. Key points: {points}",
         }
 
-    def summarize_conversation_batch(self, messages: List[str], context: Dict[str, Any] = None) -> str:
+    def summarize_conversation_batch(
+        self, messages: List[str], context: Dict[str, Any] = None
+    ) -> str:
         """Summarize a batch of conversation messages."""
         if not messages:
             return ""
@@ -107,7 +109,9 @@ class ConversationSummarizer:
 
         # Generate summary based on conversation type
         conversation_type = self._classify_conversation(messages)
-        template = self.summary_templates.get(conversation_type, self.summary_templates["general"])
+        template = self.summary_templates.get(
+            conversation_type, self.summary_templates["general"]
+        )
 
         try:
             summary = template.format(**key_info)
@@ -120,14 +124,18 @@ class ConversationSummarizer:
 
         return summary
 
-    def _create_single_message_summary(self, message: str, context: Dict[str, Any] = None) -> str:
+    def _create_single_message_summary(
+        self, message: str, context: Dict[str, Any] = None
+    ) -> str:
         """Create summary for a single message."""
         # Truncate very long messages
         if len(message) > 200:
             return message[:197] + "..."
         return message
 
-    def _extract_key_information(self, messages: List[str], context: Dict[str, Any] = None) -> Dict[str, Any]:
+    def _extract_key_information(
+        self, messages: List[str], context: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
         """Extract key information from conversation messages."""
         combined_text = " ".join(messages).lower()
 
@@ -168,11 +176,19 @@ class ConversationSummarizer:
 
         if any(word in combined_text for word in ["quest", "mission", "task", "job"]):
             return "quest_interaction"
-        elif any(word in combined_text for word in ["buy", "purchase", "sell", "trade", "gold", "coin"]):
+        elif any(
+            word in combined_text
+            for word in ["buy", "purchase", "sell", "trade", "gold", "coin"]
+        ):
             return "purchase"
-        elif any(word in combined_text for word in ["explore", "look", "examine", "search"]):
+        elif any(
+            word in combined_text for word in ["explore", "look", "examine", "search"]
+        ):
             return "exploration"
-        elif any(word in combined_text for word in ["hello", "greet", "chat", "talk", "gossip"]):
+        elif any(
+            word in combined_text
+            for word in ["hello", "greet", "chat", "talk", "gossip"]
+        ):
             return "social"
         else:
             return "general"
@@ -181,7 +197,9 @@ class ConversationSummarizer:
 class MemoryManager:
     """Enhanced memory management system."""
 
-    def __init__(self, max_memories_per_session: int = 100, max_context_memories: int = 5):
+    def __init__(
+        self, max_memories_per_session: int = 100, max_context_memories: int = 5
+    ):
         self.max_memories_per_session = max_memories_per_session
         self.max_context_memories = max_context_memories
 
@@ -260,10 +278,14 @@ class MemoryManager:
 
         self.stats["context_retrievals"] += 1
 
-        logger.debug(f"Retrieved {len(relevant_memories)} relevant memories for session {session_id}")
+        logger.debug(
+            f"Retrieved {len(relevant_memories)} relevant memories for session {session_id}"
+        )
         return relevant_memories
 
-    def summarize_old_memories(self, session_id: str, age_threshold_hours: float = 24.0) -> int:
+    def summarize_old_memories(
+        self, session_id: str, age_threshold_hours: float = 24.0
+    ) -> int:
         """Summarize old memories to reduce storage space."""
         if session_id not in self.memories:
             return 0
@@ -276,7 +298,10 @@ class MemoryManager:
             age_hours = (current_time - memory.timestamp) / 3600.0
 
             # Keep critical memories and recent memories
-            if memory.importance == MemoryImportance.CRITICAL or age_hours < age_threshold_hours:
+            if (
+                memory.importance == MemoryImportance.CRITICAL
+                or age_hours < age_threshold_hours
+            ):
                 keep_memories.append(memory)
             else:
                 old_memories.append(memory)
@@ -297,7 +322,9 @@ class MemoryManager:
                 )
 
                 # Create summary memory with averaged importance
-                avg_importance = sum(mem.importance.value for mem in memories) // len(memories)
+                avg_importance = sum(mem.importance.value for mem in memories) // len(
+                    memories
+                )
                 summary_importance = MemoryImportance(max(1, min(5, avg_importance)))
 
                 summary_memory = Memory(
@@ -320,7 +347,9 @@ class MemoryManager:
         self.memories[session_id] = keep_memories
         self.stats["total_memories"] = sum(len(mems) for mems in self.memories.values())
 
-        logger.info(f"Summarized {summarized_count} old memories for session {session_id}")
+        logger.info(
+            f"Summarized {summarized_count} old memories for session {session_id}"
+        )
         return summarized_count
 
     def _prune_memories_if_needed(self, session_id: str) -> None:
@@ -337,7 +366,9 @@ class MemoryManager:
 
         # If still too many, remove least relevant memories
         if len(self.memories[session_id]) > self.max_memories_per_session:
-            memories_to_remove = len(self.memories[session_id]) - self.max_memories_per_session
+            memories_to_remove = (
+                len(self.memories[session_id]) - self.max_memories_per_session
+            )
 
             # Sort by relevance (keeping most relevant)
             scored_memories = []
@@ -348,13 +379,19 @@ class MemoryManager:
             scored_memories.sort(key=lambda x: x[0], reverse=True)
 
             # Keep the most relevant memories
-            self.memories[session_id] = [memory for score, memory in scored_memories[:-memories_to_remove]]
+            self.memories[session_id] = [
+                memory for score, memory in scored_memories[:-memories_to_remove]
+            ]
 
             self.stats["memories_pruned"] += memories_to_remove
 
-            logger.info(f"Pruned {memories_to_remove} memories for session {session_id}")
+            logger.info(
+                f"Pruned {memories_to_remove} memories for session {session_id}"
+            )
 
-    def _group_memories_by_time(self, memories: List[Memory]) -> Dict[str, List[Memory]]:
+    def _group_memories_by_time(
+        self, memories: List[Memory]
+    ) -> Dict[str, List[Memory]]:
         """Group memories by time periods for summarization."""
         groups = {}
 
@@ -374,7 +411,9 @@ class MemoryManager:
         combined = f"{session_id}:{content}:{time.time()}"
         return hashlib.md5(combined.encode()).hexdigest()[:16]
 
-    def get_memory_context_for_llm(self, session_id: str, current_input: str = "") -> str:
+    def get_memory_context_for_llm(
+        self, session_id: str, current_input: str = ""
+    ) -> str:
         """Get formatted memory context for LLM prompts."""
         relevant_memories = self.get_relevant_memories(session_id, current_input)
 
@@ -418,15 +457,25 @@ class MemoryManager:
         return {
             "total_memories": len(session_memories),
             "importance_breakdown": importance_counts,
-            "oldest_memory_age_hours": max(mem.get_age_hours() for mem in session_memories) if session_memories else 0,
-            "newest_memory_age_hours": min(mem.get_age_hours() for mem in session_memories) if session_memories else 0,
+            "oldest_memory_age_hours": max(
+                mem.get_age_hours() for mem in session_memories
+            )
+            if session_memories
+            else 0,
+            "newest_memory_age_hours": min(
+                mem.get_age_hours() for mem in session_memories
+            )
+            if session_memories
+            else 0,
         }
 
     def get_stats(self) -> Dict[str, Any]:
         """Get memory manager statistics."""
         stats = self.stats.copy()
         stats["active_sessions"] = len(self.memories)
-        stats["average_memories_per_session"] = stats["total_memories"] / max(1, stats["active_sessions"])
+        stats["average_memories_per_session"] = stats["total_memories"] / max(
+            1, stats["active_sessions"]
+        )
         return stats
 
 
@@ -479,9 +528,15 @@ if __name__ == "__main__":
     session_id = "test-session"
 
     # Add some test memories
-    manager.add_memory(session_id, "Player talked to Gene the bartender", MemoryImportance.NORMAL)
+    manager.add_memory(
+        session_id, "Player talked to Gene the bartender", MemoryImportance.NORMAL
+    )
     manager.add_memory(session_id, "Player bought ale for 2 gold", MemoryImportance.LOW)
-    manager.add_memory(session_id, "Player discovered secret quest about missing kegs", MemoryImportance.HIGH)
+    manager.add_memory(
+        session_id,
+        "Player discovered secret quest about missing kegs",
+        MemoryImportance.HIGH,
+    )
     manager.add_memory(session_id, "Player said hello", MemoryImportance.TRIVIAL)
 
     print(f"Added 4 memories. Total: {len(manager.memories[session_id])}")
@@ -490,7 +545,9 @@ if __name__ == "__main__":
     relevant = manager.get_relevant_memories(session_id, "bartender ale")
     print(f"Relevant memories for 'bartender ale': {len(relevant)}")
     for memory in relevant:
-        print(f"  - {memory.content} (score: {memory.get_relevance_score('bartender ale'):.2f})")
+        print(
+            f"  - {memory.content} (score: {memory.get_relevance_score('bartender ale'):.2f})"
+        )
 
     # Test LLM context
     context = manager.get_memory_context_for_llm(session_id, "talk to bartender")

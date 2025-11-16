@@ -180,7 +180,11 @@ class Relationship:
         return max(-1.0, min(1.0, positive - negative))
 
     def modify_relationship(
-        self, trust_delta: float = 0, affection_delta: float = 0, respect_delta: float = 0, fear_delta: float = 0
+        self,
+        trust_delta: float = 0,
+        affection_delta: float = 0,
+        respect_delta: float = 0,
+        fear_delta: float = 0,
     ) -> None:
         """Modify relationship values."""
         self.trust = max(0.0, min(1.0, self.trust + trust_delta))
@@ -200,7 +204,9 @@ class Relationship:
 class NPCPsychology:
     """Complete psychological model for an NPC."""
 
-    def __init__(self, npc_id: str, base_personality: Personality = Personality.NEUTRAL):
+    def __init__(
+        self, npc_id: str, base_personality: Personality = Personality.NEUTRAL
+    ):
         self.npc_id = npc_id
         self.base_personality = base_personality
         self.current_mood = Mood.CONTENT
@@ -226,11 +232,26 @@ class NPCPsychology:
     def _initialize_personality(self) -> None:
         """Set initial traits based on personality type."""
         if self.base_personality == Personality.FRIENDLY:
-            self.public_persona.traits = {"openness": 0.8, "agreeableness": 0.9, "trust": 0.7, "hostility": 0.1}
+            self.public_persona.traits = {
+                "openness": 0.8,
+                "agreeableness": 0.9,
+                "trust": 0.7,
+                "hostility": 0.1,
+            }
         elif self.base_personality == Personality.SUSPICIOUS:
-            self.public_persona.traits = {"openness": 0.3, "agreeableness": 0.4, "trust": 0.2, "paranoia": 0.8}
+            self.public_persona.traits = {
+                "openness": 0.3,
+                "agreeableness": 0.4,
+                "trust": 0.2,
+                "paranoia": 0.8,
+            }
         elif self.base_personality == Personality.AGGRESSIVE:
-            self.public_persona.traits = {"openness": 0.5, "agreeableness": 0.2, "hostility": 0.8, "dominance": 0.7}
+            self.public_persona.traits = {
+                "openness": 0.5,
+                "agreeableness": 0.2,
+                "hostility": 0.8,
+                "dominance": 0.7,
+            }
         # etc...
 
         # Private thoughts often differ from public persona
@@ -238,7 +259,9 @@ class NPCPsychology:
         # Add some variation
         for trait in self.private_thoughts.traits:
             self.private_thoughts.traits[trait] += random.uniform(-0.2, 0.2)
-            self.private_thoughts.traits[trait] = max(0.0, min(1.0, self.private_thoughts.traits[trait]))
+            self.private_thoughts.traits[trait] = max(
+                0.0, min(1.0, self.private_thoughts.traits[trait])
+            )
 
     def add_motivation(self, motivation: Motivation) -> None:
         """Add a new motivation."""
@@ -253,7 +276,12 @@ class NPCPsychology:
         self.stress_level = min(1.0, self.stress_level + secret.danger_level * 0.1)
 
     def remember_event(
-        self, event_type: str, participants: List[str], location: str, description: str, emotional_impact: float
+        self,
+        event_type: str,
+        participants: List[str],
+        location: str,
+        description: str,
+        emotional_impact: float,
     ) -> None:
         """Create a memory of an event."""
         memory = Memory(
@@ -293,7 +321,9 @@ class NPCPsychology:
             self.relationships[character_id] = Relationship(character_id)
         return self.relationships[character_id]
 
-    def interact_with(self, character_id: str, interaction_type: str, outcome: str) -> None:
+    def interact_with(
+        self, character_id: str, interaction_type: str, outcome: str
+    ) -> None:
         """Process an interaction with another character."""
         relationship = self.get_relationship(character_id)
 
@@ -310,7 +340,9 @@ class NPCPsychology:
         }
 
         if interaction_type in interaction_effects:
-            trust_d, affection_d, respect_d, fear_d = interaction_effects[interaction_type]
+            trust_d, affection_d, respect_d, fear_d = interaction_effects[
+                interaction_type
+            ]
             relationship.modify_relationship(trust_d, affection_d, respect_d, fear_d)
 
         # Record interaction
@@ -331,7 +363,9 @@ class NPCPsychology:
         """Get likely behavior in a situation based on psychology."""
         # Combine public and private traits for internal decision-making
         combined_traits = {}
-        for trait in set(self.public_persona.traits.keys()) | set(self.private_thoughts.traits.keys()):
+        for trait in set(self.public_persona.traits.keys()) | set(
+            self.private_thoughts.traits.keys()
+        ):
             public = self.public_persona.get_trait_strength(trait)
             private = self.private_thoughts.get_trait_strength(trait)
             combined_traits[trait] = (public + private * 2) / 3  # Weight private more
@@ -377,7 +411,9 @@ class NPCPsychology:
             # Default behavior
             return "neutral", 0.5
 
-    def should_reveal_secret(self, secret_id: str, to_character: str) -> Tuple[bool, str]:
+    def should_reveal_secret(
+        self, secret_id: str, to_character: str
+    ) -> Tuple[bool, str]:
         """Decide whether to reveal a secret."""
         secret = next((s for s in self.secrets if s.id == secret_id), None)
         if not secret:
@@ -392,7 +428,12 @@ class NPCPsychology:
         intox_factor = self.intoxication * 0.5  # Intoxication loosens tongues
 
         # Calculate probability
-        reveal_probability = trust_factor * 0.4 + danger_factor * 0.3 + stress_factor * 0.2 + intox_factor * 0.1
+        reveal_probability = (
+            trust_factor * 0.4
+            + danger_factor * 0.3
+            + stress_factor * 0.2
+            + intox_factor * 0.1
+        )
 
         # Personality modifiers
         if self.base_personality == Personality.SUSPICIOUS:
@@ -455,7 +496,9 @@ class NPCPsychology:
             if self.base_personality == Personality.FRIENDLY:
                 self.current_mood = Mood.CONTENT
             elif self.base_personality == Personality.AGGRESSIVE:
-                self.current_mood = Mood.ANGRY if self.stress_level > 0.5 else Mood.BORED
+                self.current_mood = (
+                    Mood.ANGRY if self.stress_level > 0.5 else Mood.BORED
+                )
             # etc...
 
 
@@ -476,17 +519,26 @@ class NPCPsychologyManager:
                 personality = Personality.NEUTRAL
 
         # Create psychology instance
-        self.npc_psychologies[npc_id] = NPCPsychology(npc_id=npc_id, base_personality=personality)
+        self.npc_psychologies[npc_id] = NPCPsychology(
+            npc_id=npc_id, base_personality=personality
+        )
 
         # Add any secrets as psychological secrets
         if hasattr(npc, "has_secret") and npc.has_secret:
-            secret = Secret(content="This NPC has a secret", importance=0.8, danger_level=0.5)
+            secret = Secret(
+                content="This NPC has a secret", importance=0.8, danger_level=0.5
+            )
             self.npc_psychologies[npc_id].secrets.append(secret)
 
     def get_npc_state(self, npc_id: str) -> Dict[str, Any]:
         """Get current psychological state of an NPC"""
         if npc_id not in self.npc_psychologies:
-            return {"mood": "neutral", "stress_level": 0.0, "energy_level": 1.0, "personality": "neutral"}
+            return {
+                "mood": "neutral",
+                "stress_level": 0.0,
+                "energy_level": 1.0,
+                "personality": "neutral",
+            }
 
         psych = self.npc_psychologies[npc_id]
         return {

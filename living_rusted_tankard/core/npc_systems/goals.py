@@ -7,7 +7,13 @@ from datetime import datetime, timedelta
 import random
 
 from .psychology import NPCPsychology, MotivationType, Personality
-from .behavioral_rules import BehaviorRule, Action, Condition, ConditionType, BehaviorPriority
+from .behavioral_rules import (
+    BehaviorRule,
+    Action,
+    Condition,
+    ConditionType,
+    BehaviorPriority,
+)
 
 
 class GoalType(Enum):
@@ -203,7 +209,11 @@ class Goal:
 
     def is_achievable(self) -> bool:
         """Check if goal can still be achieved."""
-        if self.status in [GoalStatus.COMPLETED, GoalStatus.FAILED, GoalStatus.ABANDONED]:
+        if self.status in [
+            GoalStatus.COMPLETED,
+            GoalStatus.FAILED,
+            GoalStatus.ABANDONED,
+        ]:
             return False
 
         # Check deadline
@@ -292,7 +302,11 @@ class GoalGenerator:
             elif motivation.type == MotivationType.SOCIAL:
                 goals.append(GoalGenerator._create_social_goal(npc_data["id"]))
             elif motivation.type == MotivationType.REVENGE:
-                goals.append(GoalGenerator._create_revenge_goal(npc_data["id"], motivation.target))
+                goals.append(
+                    GoalGenerator._create_revenge_goal(
+                        npc_data["id"], motivation.target
+                    )
+                )
 
         return goals
 
@@ -314,7 +328,9 @@ class GoalGenerator:
         goal.add_step(
             GoalStep(
                 description="Go to kitchen or bar",
-                action_required=Action("Move to food source", "move", {"destination": "kitchen"}),
+                action_required=Action(
+                    "Move to food source", "move", {"destination": "kitchen"}
+                ),
                 time_estimate=0.1,
             )
         )
@@ -322,7 +338,9 @@ class GoalGenerator:
         goal.add_step(
             GoalStep(
                 description="Order or obtain food",
-                action_required=Action("Get food", "interact", {"target": "food_source"}),
+                action_required=Action(
+                    "Get food", "interact", {"target": "food_source"}
+                ),
                 resources_needed={"gold": 5},
                 time_estimate=0.2,
             )
@@ -330,7 +348,9 @@ class GoalGenerator:
 
         goal.add_step(
             GoalStep(
-                description="Eat food", action_required=Action("Eat", "consume", {"item": "food"}), time_estimate=0.5
+                description="Eat food",
+                action_required=Action("Eat", "consume", {"item": "food"}),
+                time_estimate=0.5,
             )
         )
 
@@ -353,13 +373,19 @@ class GoalGenerator:
         goal.add_step(
             GoalStep(
                 description="Find a room or quiet place",
-                action_required=Action("Find rest spot", "move", {"destination": "guest_room"}),
+                action_required=Action(
+                    "Find rest spot", "move", {"destination": "guest_room"}
+                ),
                 time_estimate=0.2,
             )
         )
 
         goal.add_step(
-            GoalStep(description="Rest or sleep", action_required=Action("Rest", "rest", {}), time_estimate=6.0)
+            GoalStep(
+                description="Rest or sleep",
+                action_required=Action("Rest", "rest", {}),
+                time_estimate=6.0,
+            )
         )
 
         return goal
@@ -393,7 +419,9 @@ class GoalGenerator:
         profit_goal.add_step(
             GoalStep(
                 description="Attract customers",
-                action_required=Action("Advertise", "speak", {"dialogue": "Fine goods for sale!"}),
+                action_required=Action(
+                    "Advertise", "speak", {"dialogue": "Fine goods for sale!"}
+                ),
                 time_estimate=1.0,
             )
         )
@@ -461,7 +489,9 @@ class GoalGenerator:
         order_goal.add_step(
             GoalStep(
                 description="Check for troublemakers",
-                action_required=Action("Investigate", "observe", {"target": "suspicious_activity"}),
+                action_required=Action(
+                    "Investigate", "observe", {"target": "suspicious_activity"}
+                ),
                 time_estimate=1.0,
             )
         )
@@ -647,7 +677,9 @@ class GoalGenerator:
         goal.add_step(
             GoalStep(
                 description="Gather information on target",
-                action_required=Action("Investigate", "investigate", {"target": target or "enemy"}),
+                action_required=Action(
+                    "Investigate", "investigate", {"target": target or "enemy"}
+                ),
                 time_estimate=5.0,
                 difficulty=0.6,
             )
@@ -755,7 +787,9 @@ class NPCAgency:
             current_step = goal.get_current_step()
             if current_step and current_step.can_attempt(self.resources):
                 # Check if conditions are met
-                conditions_met = all(condition.evaluate(context) for condition in current_step.conditions)
+                conditions_met = all(
+                    condition.evaluate(context) for condition in current_step.conditions
+                )
 
                 if conditions_met:
                     return current_step.action_required
@@ -809,9 +843,13 @@ class NPCAgency:
                 if goal.status == GoalStatus.BLOCKED:
                     # Check if resource was blocking
                     required = goal.get_resource_requirements()
-                    if all(self.resources.get(r, 0) >= amt for r, amt in required.items()):
+                    if all(
+                        self.resources.get(r, 0) >= amt for r, amt in required.items()
+                    ):
                         goal.status = GoalStatus.ACTIVE
-                        goal.blockers = [b for b in goal.blockers if "resource" not in b.lower()]
+                        goal.blockers = [
+                            b for b in goal.blockers if "resource" not in b.lower()
+                        ]
 
     def evaluate_goal_progress(self) -> Dict[str, Any]:
         """Evaluate progress on all goals."""
@@ -822,8 +860,11 @@ class NPCAgency:
             "active_goals": len(active_goals),
             "completed_goals": len(self.completed_goals),
             "abandoned_goals": len(self.abandoned_goals),
-            "average_progress": sum(g.progress for g in self.goals) / max(len(self.goals), 1),
-            "blocked_goals": len([g for g in self.goals if g.status == GoalStatus.BLOCKED]),
+            "average_progress": sum(g.progress for g in self.goals)
+            / max(len(self.goals), 1),
+            "blocked_goals": len(
+                [g for g in self.goals if g.status == GoalStatus.BLOCKED]
+            ),
         }
 
     def generate_new_goals(self, context: Dict[str, Any]) -> List[Goal]:
@@ -832,16 +873,24 @@ class NPCAgency:
         if len(self.goals) >= 5:
             return []
 
-        npc_data = {"id": self.npc_id, "occupation": context.get("occupation", "patron")}
+        npc_data = {
+            "id": self.npc_id,
+            "occupation": context.get("occupation", "patron"),
+        }
 
         # Generate potential goals
-        potential_goals = GoalGenerator.generate_goals_for_npc(npc_data, self.psychology, context)
+        potential_goals = GoalGenerator.generate_goals_for_npc(
+            npc_data, self.psychology, context
+        )
 
         # Filter out conflicting or duplicate goals
         new_goals = []
         for potential in potential_goals:
             # Check if similar goal exists
-            similar = any(g.category == potential.category and g.type == potential.type for g in self.goals)
+            similar = any(
+                g.category == potential.category and g.type == potential.type
+                for g in self.goals
+            )
 
             if not similar:
                 new_goals.append(potential)
@@ -862,7 +911,7 @@ class GoalManager:
             # Create basic goals based on NPC type
             basic_goal = Goal(
                 id=f"{npc_id}_basic",
-                name=f"Basic Activities",
+                name="Basic Activities",
                 description=f"Basic activities for {npc_id}",
                 category=GoalCategory.SOCIAL,
                 type=GoalType.SHORT_TERM,
@@ -902,5 +951,5 @@ class GoalManager:
         elif goal.category == GoalCategory.ECONOMIC:
             return f"Business has been on my mind lately - {goal.description.lower()}"
         elif goal.category == GoalCategory.PERSONAL:
-            return f"There's something personal I need to take care of"
+            return "There's something personal I need to take care of"
         return None

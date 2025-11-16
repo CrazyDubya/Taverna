@@ -86,7 +86,9 @@ class Rumor:
     last_spread: Optional[datetime] = None
     expiry: Optional[datetime] = None  # When it becomes old news
 
-    def add_knower(self, npc_id: str, source: RumorSource, perceived_truth: float = 0.5) -> None:
+    def add_knower(
+        self, npc_id: str, source: RumorSource, perceived_truth: float = 0.5
+    ) -> None:
         """Add someone who knows this rumor."""
         self.known_by.add(npc_id)
         self.sources[npc_id] = source
@@ -172,7 +174,9 @@ class GossipNetwork:
         # Topics of interest
         self.interests: Dict[str, Set[RumorType]] = {}  # NPC -> interested topics
 
-    def create_rumor_from_secret(self, secret: EnhancedSecret, discovered_by: str, accuracy: float = 0.7) -> Rumor:
+    def create_rumor_from_secret(
+        self, secret: EnhancedSecret, discovered_by: str, accuracy: float = 0.7
+    ) -> Rumor:
         """Create a rumor based on a discovered secret."""
         # Determine rumor type and reliability
         if accuracy > 0.9:
@@ -276,7 +280,12 @@ class GossipNetwork:
         )
 
         # Set witness as initial knower
-        source = RumorSource(original_source=witness, current_source=witness, source_reliability=1.0, confidence=0.9)
+        source = RumorSource(
+            original_source=witness,
+            current_source=witness,
+            source_reliability=1.0,
+            confidence=0.9,
+        )
         rumor.add_knower(witness, source, 0.9)
 
         # Add to network
@@ -284,7 +293,9 @@ class GossipNetwork:
 
         return rumor
 
-    def spread_rumor(self, rumor_id: str, gossiper: str, listener: str, context: Dict[str, Any]) -> bool:
+    def spread_rumor(
+        self, rumor_id: str, gossiper: str, listener: str, context: Dict[str, Any]
+    ) -> bool:
         """Attempt to spread a rumor from one NPC to another."""
         rumor = self.rumors.get(rumor_id)
         if not rumor or listener in rumor.known_by:
@@ -326,7 +337,9 @@ class GossipNetwork:
 
         # Calculate listener's belief
         belief = (
-            source_trust * gossiper_belief * 0.5 + gullibility * rumor.scandalousness * 0.3 + rumor.importance * 0.2
+            source_trust * gossiper_belief * 0.5
+            + gullibility * rumor.scandalousness * 0.3
+            + rumor.importance * 0.2
         )
 
         # Add distortion
@@ -384,7 +397,12 @@ class GossipNetwork:
         }
 
         base_variations = variations.get(
-            rumor.type, ["The story gets worse", "There's more to it", "I heard something different"]
+            rumor.type,
+            [
+                "The story gets worse",
+                "There's more to it",
+                "I heard something different",
+            ],
         )
 
         if len(rumor.variations) < 5:  # Limit variations
@@ -400,7 +418,9 @@ class GossipNetwork:
 
         # Get NPC's known rumors
         known_rumors = [
-            rumor_id for rumor_id, rumor in self.rumors.items() if npc_id in rumor.known_by and rumor.is_fresh()
+            rumor_id
+            for rumor_id, rumor in self.rumors.items()
+            if npc_id in rumor.known_by and rumor.is_fresh()
         ]
 
         if not known_rumors:
@@ -418,14 +438,20 @@ class GossipNetwork:
 
             # Find rumors they don't know
             shareable_rumors = [
-                rumor_id for rumor_id in known_rumors if other_npc not in self.rumors[rumor_id].known_by
+                rumor_id
+                for rumor_id in known_rumors
+                if other_npc not in self.rumors[rumor_id].known_by
             ]
 
             if shareable_rumors:
                 # Filter by interest
                 other_interests = self.interests.get(other_npc, set())
                 if other_interests:
-                    prioritized = [r_id for r_id in shareable_rumors if self.rumors[r_id].type in other_interests]
+                    prioritized = [
+                        r_id
+                        for r_id in shareable_rumors
+                        if self.rumors[r_id].type in other_interests
+                    ]
                     if prioritized:
                         shareable_rumors = prioritized
 
@@ -445,17 +471,23 @@ class GossipNetwork:
             # For each knower
             for gossiper in list(rumor.known_by):  # Copy to avoid modification issues
                 # Check gossip probability based on time
-                gossip_chance = self.gossip_tendencies.get(gossiper, 0.5) * (hours / 24.0)
+                gossip_chance = self.gossip_tendencies.get(gossiper, 0.5) * (
+                    hours / 24.0
+                )
 
                 if random.random() < gossip_chance:
                     # Find someone to tell
-                    connections = self.relationship_web.gossip_network.get(gossiper, set())
+                    connections = self.relationship_web.gossip_network.get(
+                        gossiper, set()
+                    )
 
                     for potential_listener in connections:
                         if potential_listener not in rumor.known_by:
                             # Try to spread
                             context = {"location": "tavern", "time": "gossip_hour"}
-                            if self.spread_rumor(rumor_id, gossiper, potential_listener, context):
+                            if self.spread_rumor(
+                                rumor_id, gossiper, potential_listener, context
+                            ):
                                 spread_events.append(
                                     {
                                         "rumor": rumor_id,
@@ -472,7 +504,9 @@ class GossipNetwork:
             "active_rumors": len([r for r in self.rumors.values() if r.is_fresh()]),
         }
 
-    def get_npc_known_rumors(self, npc_id: str, include_beliefs: bool = True) -> List[Dict[str, Any]]:
+    def get_npc_known_rumors(
+        self, npc_id: str, include_beliefs: bool = True
+    ) -> List[Dict[str, Any]]:
         """Get all rumors known by an NPC."""
         known = []
 
@@ -488,17 +522,24 @@ class GossipNetwork:
                 }
 
                 if include_beliefs:
-                    rumor_info["belief"] = rumor.perceived_truth.get(npc_id, 0.5)
-                    rumor_info["trust_in_source"] = rumor.sources[npc_id].get_trust_factor()
+                    rumor_info["belie"] = rumor.perceived_truth.get(npc_id, 0.5)
+                    rumor_info["trust_in_source"] = rumor.sources[
+                        npc_id
+                    ].get_trust_factor()
 
                 known.append(rumor_info)
 
         # Sort by freshness and importance
-        known.sort(key=lambda x: (x["freshness"], self.rumors[x["id"]].importance), reverse=True)
+        known.sort(
+            key=lambda x: (x["freshness"], self.rumors[x["id"]].importance),
+            reverse=True,
+        )
 
         return known
 
-    def create_false_rumor(self, creator: str, target: str, rumor_type: RumorType = RumorType.ACCUSATION) -> Rumor:
+    def create_false_rumor(
+        self, creator: str, target: str, rumor_type: RumorType = RumorType.ACCUSATION
+    ) -> Rumor:
         """Create a deliberately false rumor."""
         templates = {
             RumorType.ACCUSATION: [
@@ -548,8 +589,10 @@ class GossipNetwork:
 
         impact = {
             "spread_reach": len(rumor.known_by),
-            "spread_percentage": len(rumor.known_by) / max(len(self.gossip_tendencies), 1),
-            "average_belief": sum(rumor.perceived_truth.values()) / max(len(rumor.perceived_truth), 1),
+            "spread_percentage": len(rumor.known_by)
+            / max(len(self.gossip_tendencies), 1),
+            "average_belie": sum(rumor.perceived_truth.values())
+            / max(len(rumor.perceived_truth), 1),
             "distortion_level": rumor.distortion_level,
             "variations_created": len(rumor.variations),
         }
@@ -565,7 +608,11 @@ class GossipNetwork:
                         if rumor.type in [RumorType.ACCUSATION, RumorType.WARNING]:
                             trust_impact = -rumor.perceived_truth[knower] * 0.2
                             affected_relationships.append(
-                                {"from": knower, "to": rumor.subject, "trust_change": trust_impact}
+                                {
+                                    "from": knower,
+                                    "to": rumor.subject,
+                                    "trust_change": trust_impact,
+                                }
                             )
 
             impact["relationship_impacts"] = affected_relationships

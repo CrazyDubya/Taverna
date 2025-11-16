@@ -23,7 +23,7 @@ class TestGoldAndRoomMechanics(unittest.TestCase):
         initial_gold = self.player.gold
         room_cost = 10  # Example cost
 
-        with patch('core.room.ROOM_COST', room_cost):
+        with patch("core.room.ROOM_COST", room_cost):
             success, _ = self.room_manager.rent_room(self.player)
 
         self.assertTrue(success)
@@ -35,7 +35,7 @@ class TestGoldAndRoomMechanics(unittest.TestCase):
         self.player.gold = 5
         room_cost = 10
 
-        with patch('core.room.ROOM_COST', room_cost):
+        with patch("core.room.ROOM_COST", room_cost):
             success, _ = self.room_manager.rent_room(self.player)
 
         self.assertFalse(success)
@@ -47,7 +47,7 @@ class TestGoldAndRoomMechanics(unittest.TestCase):
         self.player.gold = 20
         room_cost = 10
 
-        with patch('core.room.ROOM_COST', room_cost):
+        with patch("core.room.ROOM_COST", room_cost):
             # First rental should succeed
             success1, _ = self.room_manager.rent_room(self.player)
             gold_after_first = self.player.gold

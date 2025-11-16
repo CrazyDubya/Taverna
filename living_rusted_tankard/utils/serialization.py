@@ -11,18 +11,20 @@ from typing import Dict, Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from core.game_state import GameState
+
     # Assuming Narrator and CommandParser types would be imported if they were actual classes
-    # from core.llm.narrator import Narrator 
-    # from core.llm.parser import CommandParser 
+    # from core.llm.narrator import Narrator
+    # from core.llm.parser import CommandParser
 
 
 # The Serializable class and its direct usage can be phased out
 # as Pydantic models have their own to_dict (model_dump) and from_dict (model_validate).
 
+
 def save_game_state(
-    game_state_instance: 'GameState', 
-    save_dir: str = 'saves',
-    filename_base: Optional[str] = None
+    game_state_instance: "GameState",
+    save_dir: str = "saves",
+    filename_base: Optional[str] = None,
 ) -> str:
     """
     Save game state to a JSON file using GameState.to_dict().
@@ -40,21 +42,21 @@ def save_game_state(
 
     if filename_base:
         # Ensure it ends with .json, but first remove if it's already there to avoid .json.json
-        if filename_base.endswith('.json'):
+        if filename_base.endswith(".json"):
             filename_base = filename_base[:-5]
         filename = f"{filename_base}.json"
     else:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f'save_{timestamp}.json'
-    
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"save_{timestamp}.json"
+
     filepath = Path(save_dir) / filename
 
     try:
         # GameState.to_dict() should produce a JSON-serializable dictionary
         # Pydantic's model_dump(mode='json') handles complex types like datetime, enums.
         state_dict = game_state_instance.to_dict()
-        
-        with open(filepath, 'w') as f:
+
+        with open(filepath, "w") as f:
             json.dump(state_dict, f, indent=2)
 
         return str(filepath)
@@ -65,11 +67,11 @@ def save_game_state(
 
 
 def load_game_state(
-    filepath: str, 
+    filepath: str,
     narrator: Any,  # Replace Any with actual Narrator type hint
-    command_parser: Any, # Replace Any with actual CommandParser type hint
-    data_dir: str = "data" # data_dir needed for GameState.from_dict
-) -> 'GameState':
+    command_parser: Any,  # Replace Any with actual CommandParser type hint
+    data_dir: str = "data",  # data_dir needed for GameState.from_dict
+) -> "GameState":
     """
     Load game state from a JSON file using GameState.from_dict().
 
@@ -83,18 +85,18 @@ def load_game_state(
         Deserialized GameState object.
     """
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data_dict = json.load(f)
-        
+
         # Need to import GameState here to avoid circular imports at module level
         from core.game_state import GameState
-        
+
         # GameState.from_dict will handle reconstruction
         game_state_instance = GameState.from_dict(
-            data_dict, 
-            narrator=narrator, 
+            data_dict,
+            narrator=narrator,
             command_parser=command_parser,
-            data_dir=data_dir
+            data_dir=data_dir,
         )
         return game_state_instance
     except Exception as e:
@@ -103,7 +105,7 @@ def load_game_state(
         raise RuntimeError(f"Failed to load game state: {str(e)}")
 
 
-def get_latest_save(save_dir: str = 'saves') -> Optional[str]:
+def get_latest_save(save_dir: str = "saves") -> Optional[str]:
     """
     Get the most recent save file.
 
@@ -118,7 +120,7 @@ def get_latest_save(save_dir: str = 'saves') -> Optional[str]:
         if not save_dir.exists():
             return None
 
-        save_files = list(save_dir.glob('save_*.json'))
+        save_files = list(save_dir.glob("save_*.json"))
         if not save_files:
             return None
 
@@ -127,4 +129,3 @@ def get_latest_save(save_dir: str = 'saves') -> Optional[str]:
     except Exception as e:
         print(f"Warning: Failed to find latest save: {str(e)}")
         return None
-

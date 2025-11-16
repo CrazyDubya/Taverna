@@ -4,17 +4,21 @@ import unittest
 import random
 from datetime import datetime, timedelta
 from game.mechanics import (
-    EconomyMechanics, EconomyState,
-    PresenceManager, NPCPresence, TimeWindow
+    EconomyMechanics,
+    EconomyState,
+    PresenceManager,
+    NPCPresence,
+    TimeWindow,
 )
 from game.commands import (
-    handle_gamble, handle_earn_tip,
-    handle_look_npcs, handle_where_npc
+    handle_gamble,
+    handle_earn_tip,
+    handle_look_npcs,
+    handle_where_npc,
 )
 
 
 class MockClock:
-
     def __init__(self, current_time=0.0, days_elapsed=0):
         self.current_time = current_time
         self.days_elapsed = days_elapsed
@@ -25,7 +29,6 @@ class MockClock:
 
 
 class TestEconomySystem(unittest.TestCase):
-
     def setUp(self):
         self.clock = MockClock()
         self.economy = EconomyMechanics(self.clock)
@@ -59,27 +62,27 @@ class TestEconomySystem(unittest.TestCase):
 
 
 class TestNPCPresence(unittest.TestCase):
-
     def setUp(self):
         self.clock = MockClock(12.0)  # Noon
         self.presence = PresenceManager(self.clock)
 
         # Add a regular NPC (works 9-5, weekdays)
-        self.presence.add_npc("Barkeep", [
-            {"start_hour": 9, "end_hour": 17, "days": [0, 1, 2, 3, 4]}
-        ])
+        self.presence.add_npc(
+            "Barkeep", [{"start_hour": 9, "end_hour": 17, "days": [0, 1, 2, 3, 4]}]
+        )
 
         # Add an indefinite guest
-        self.presence.add_npc("Traveler", [
-            {"start_hour": 0, "end_hour": 24}
-        ], is_indefinite=True)
+        self.presence.add_npc(
+            "Traveler", [{"start_hour": 0, "end_hour": 24}], is_indefinite=True
+        )
 
     def test_initial_presence(self):
         # At noon on day 0 (Monday), both should be present
         self.presence.update_all()
         # Check that both NPCs are present in the results
-        present_ids = [npc_id for npc_id, npc in self.presence.npcs.items()
-                       if npc.is_present]
+        present_ids = [
+            npc_id for npc_id, npc in self.presence.npcs.items() if npc.is_present
+        ]
         self.assertIn("Barkeep", present_ids, f"Expected Barkeep in {present_ids}")
         self.assertIn("Traveler", present_ids, f"Expected Traveler in {present_ids}")
 
@@ -93,7 +96,7 @@ class TestNPCPresence(unittest.TestCase):
         self.assertIsNotNone(barkeep, "Barkeep NPC not found in test setup")
         self.assertFalse(
             barkeep.is_present,
-            f"Barkeep should not be present at 8am, but is_present={barkeep.is_present}"
+            f"Barkeep should not be present at 8am, but is_present={barkeep.is_present}",
         )
 
         # Check Traveler's presence (should be present all the time)
@@ -101,7 +104,7 @@ class TestNPCPresence(unittest.TestCase):
         self.assertIsNotNone(traveler, "Traveler NPC not found in test setup")
         self.assertTrue(
             traveler.is_present,
-            f"Traveler should be present but is_present={traveler.is_present}"
+            f"Traveler should be present but is_present={traveler.is_present}",
         )
 
     def test_indefinite_departure(self):
@@ -120,13 +123,12 @@ class TestNPCPresence(unittest.TestCase):
 
 
 class TestNPCCommands(unittest.TestCase):
-
     def setUp(self):
         self.clock = MockClock(12.0)
         self.presence = PresenceManager(self.clock)
-        self.presence.add_npc("Barkeep", [
-            {"start_hour": 9, "end_hour": 17, "days": [0, 1, 2, 3, 4]}
-        ])
+        self.presence.add_npc(
+            "Barkeep", [{"start_hour": 9, "end_hour": 17, "days": [0, 1, 2, 3, 4]}]
+        )
         self.presence.move_npc("Barkeep", "bar")
 
     def test_look_npcs(self):
@@ -134,8 +136,10 @@ class TestNPCCommands(unittest.TestCase):
         self.presence.update_all()
 
         # Get the Barkeep NPC and set their room
-        barkeep = next((npc for npc in self.presence.npcs.values()
-                        if npc.npc_id == "Barkeep"), None)
+        barkeep = next(
+            (npc for npc in self.presence.npcs.values() if npc.npc_id == "Barkeep"),
+            None,
+        )
         self.assertIsNotNone(barkeep, "Barkeep NPC not found in test setup")
         barkeep.current_room = "bar"
         barkeep.is_present = True
@@ -145,10 +149,16 @@ class TestNPCCommands(unittest.TestCase):
         self.assertTrue(result["success"], f"Expected success but got {result}")
 
         # Check if Barkeep is in the results
-        self.assertIn("Barkeep", result["npcs_present"],
-                      f"Expected Barkeep in {result['npcs_present']}")
-        self.assertIn("Barkeep", result["message"],
-                      f"Expected Barkeep in message: {result['message']}")
+        self.assertIn(
+            "Barkeep",
+            result["npcs_present"],
+            f"Expected Barkeep in {result['npcs_present']}",
+        )
+        self.assertIn(
+            "Barkeep",
+            result["message"],
+            f"Expected Barkeep in message: {result['message']}",
+        )
 
         # Test looking in a different room where no one is present
         result = handle_look_npcs(self.presence, "kitchen")

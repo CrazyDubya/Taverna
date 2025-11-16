@@ -46,7 +46,7 @@ def multiple_npcs():
         NPC("Gareth", "The friendly tavern keeper", room_id="main_hall"),
         NPC("Tobias", "A traveling merchant", room_id="main_hall"),
         NPC("Captain Marcus", "The tavern's security", room_id="main_hall"),
-        NPC("Elena", "A mysterious stranger", room_id="main_hall")
+        NPC("Elena", "A mysterious stranger", room_id="main_hall"),
     ]
 
 
@@ -57,7 +57,7 @@ def npc_with_dialogue():
     npc.dialogue_options = [
         "Tell me about the weather",
         "What's new in town?",
-        "Buy me a drink"
+        "Buy me a drink",
     ]
     return npc
 
@@ -69,7 +69,7 @@ def npc_with_inventory():
     npc.inventory = [
         {"name": "healing_potion", "quantity": 3, "price": 25},
         {"name": "rope", "quantity": 1, "price": 10},
-        {"name": "lantern", "quantity": 2, "price": 15}
+        {"name": "lantern", "quantity": 2, "price": 15},
     ]
     return npc
 
@@ -90,7 +90,7 @@ def npc_data_samples():
             "room_id": "main_hall",
             "disposition": "friendly",
             "dialogue_state": "greeting",
-            "stats": {"charisma": 15, "intelligence": 12}
+            "stats": {"charisma": 15, "intelligence": 12},
         },
         {
             "name": "Mysterious Figure",
@@ -98,8 +98,8 @@ def npc_data_samples():
             "room_id": "main_hall",
             "disposition": "mysterious",
             "dialogue_state": "observing",
-            "stats": {"charisma": 8, "intelligence": 18}
-        }
+            "stats": {"charisma": 8, "intelligence": 18},
+        },
     ]
 
 
@@ -112,13 +112,13 @@ def npc_interaction_history():
                 "npc_name": "Gareth",
                 "interaction_type": "dialogue",
                 "timestamp": "2024-01-01T12:00:00",
-                "outcome": "positive"
+                "outcome": "positive",
             },
             {
                 "npc_name": "Tobias",
                 "interaction_type": "trade",
                 "timestamp": "2024-01-01T12:30:00",
-                "outcome": "successful"
-            }
+                "outcome": "successful",
+            },
         ]
     }

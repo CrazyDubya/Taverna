@@ -12,7 +12,12 @@ This package provides:
 
 from .save_manager import SaveManager, SaveFormat, SaveMetadata
 from .migrations import SaveMigrator, Migration, DEFAULT_MIGRATIONS
-from .validation import SaveValidator, ValidationResult, ValidationIssue, ValidationSeverity
+from .validation import (
+    SaveValidator,
+    ValidationResult,
+    ValidationIssue,
+    ValidationSeverity,
+)
 
 __all__ = [
     # Main classes

@@ -24,11 +24,11 @@ def game_state_with_player():
     """Create a game state with a player."""
     game_state = GameState()
     game_state.initialize()
-    
+
     player = Player("TestPlayer")
     player.gold = 100
     game_state.add_player(player)
-    
+
     return game_state
 
 
@@ -37,14 +37,14 @@ def game_state_with_npcs():
     """Create a game state with NPCs."""
     game_state = GameState()
     game_state.initialize()
-    
+
     # Add some test NPCs
     npc1 = NPC("Bartender", "The friendly tavern keeper", room_id="main_hall")
     npc2 = NPC("Merchant", "A traveling trader", room_id="main_hall")
-    
+
     game_state.add_npc(npc1)
     game_state.add_npc(npc2)
-    
+
     return game_state
 
 
@@ -53,24 +53,24 @@ def complete_game_state():
     """Create a complete game state with player, NPCs, and items."""
     game_state = GameState()
     game_state.initialize()
-    
+
     # Add player
     player = Player("TestPlayer")
     player.gold = 100
     game_state.add_player(player)
-    
+
     # Add NPCs
     npc1 = NPC("Bartender", "The friendly tavern keeper", room_id="main_hall")
     npc2 = NPC("Merchant", "A traveling trader", room_id="main_hall")
     game_state.add_npc(npc1)
     game_state.add_npc(npc2)
-    
+
     # Add items
     item1 = Item("ale", "A frothy mug of ale", 5)
     item2 = Item("bread", "Fresh baked bread", 2)
     game_state.add_item(item1)
     game_state.add_item(item2)
-    
+
     return game_state
 
 
@@ -89,7 +89,11 @@ def economy():
 @pytest.fixture
 def sample_room():
     """Create a sample room for testing."""
-    room = Room("main_hall", "The Main Hall", "A cozy tavern hall with wooden tables and a warm fireplace.")
+    room = Room(
+        "main_hall",
+        "The Main Hall",
+        "A cozy tavern hall with wooden tables and a warm fireplace.",
+    )
     return room
 
 
@@ -100,7 +104,7 @@ def sample_items():
         Item("ale", "A frothy mug of ale", 5),
         Item("bread", "Fresh baked bread", 2),
         Item("cheese", "Aged tavern cheese", 3),
-        Item("wine", "Fine vintage wine", 10)
+        Item("wine", "Fine vintage wine", 10),
     ]
 
 
@@ -112,26 +116,22 @@ def sample_game_data():
             "name": "TestPlayer",
             "gold": 100,
             "location": "main_hall",
-            "inventory": []
+            "inventory": [],
         },
         "npcs": [
             {
                 "name": "Bartender",
                 "description": "The friendly tavern keeper",
                 "room_id": "main_hall",
-                "disposition": "friendly"
+                "disposition": "friendly",
             }
         ],
         "rooms": [
             {
                 "id": "main_hall",
                 "name": "The Main Hall",
-                "description": "A cozy tavern hall"
+                "description": "A cozy tavern hall",
             }
         ],
-        "time": {
-            "hour": 12,
-            "day": 1,
-            "season": "spring"
-        }
+        "time": {"hour": 12, "day": 1, "season": "spring"},
     }

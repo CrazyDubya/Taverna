@@ -2,4 +2,4 @@
 
 from .player import PlayerState, Inventory
 
-__all__ = ['PlayerState', 'Inventory']
+__all__ = ["PlayerState", "Inventory"]

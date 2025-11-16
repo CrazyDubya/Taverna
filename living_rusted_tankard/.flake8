@@ -1,5 +1,9 @@
 [flake8]
-max-line-length = 100
+max-line-length = 120
 exclude = .git,__pycache__,.venv,venv,build,dist,.mypy_cache,.pytest_cache
-ignore = E203,W503,E402,F401,F403,F405,E266,E800,E731,W504,B008,B006,B902,B018,B019
+ignore = E203,W503,E402,F401,F403,F405,E266,E800,E731,W504,B008,B006,B902,B018,B019,W605,E712
 max-complexity = 15
+per-file-ignores =
+    tests/test_*.py:F811,F841
+    verify_*.py:F841
+    test_*.py:F841

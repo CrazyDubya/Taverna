@@ -183,24 +183,32 @@ class StoryOrchestrator:
 
         return notifications
 
-    def process_player_action(self, command: str, result: Dict[str, Any], game_state: Any) -> List[str]:
+    def process_player_action(
+        self, command: str, result: Dict[str, Any], game_state: Any
+    ) -> List[str]:
         """Process a player action and update all narrative systems."""
         notifications = []
 
         # Track action for consequences
-        tracked_action = self.consequence_engine.create_action_from_command(command, result, game_state)
+        tracked_action = self.consequence_engine.create_action_from_command(
+            command, result, game_state
+        )
         if tracked_action:
             self.consequence_engine.track_action(tracked_action)
 
         # Update quest progress
-        quest_notifications = self.quest_generator.process_player_action(command, game_state)
+        quest_notifications = self.quest_generator.process_player_action(
+            command, game_state
+        )
         notifications.extend(quest_notifications)
 
         # Update player engagement
         self._update_player_engagement(command, result)
 
         # Check if this action creates new story opportunities
-        story_notifications = self._evaluate_story_opportunities(command, result, game_state)
+        story_notifications = self._evaluate_story_opportunities(
+            command, result, game_state
+        )
         notifications.extend(story_notifications)
 
         # Create story moment if significant
@@ -223,7 +231,11 @@ class StoryOrchestrator:
         active_thread_count = 0
 
         for thread in self.story_threads.values():
-            if thread.status in [ThreadStatus.ACTIVE, ThreadStatus.ESCALATING, ThreadStatus.CLIMAX]:
+            if thread.status in [
+                ThreadStatus.ACTIVE,
+                ThreadStatus.ESCALATING,
+                ThreadStatus.CLIMAX,
+            ]:
                 thread_tension += thread.tension_level * thread.priority.value * 0.2
                 active_thread_count += 1
 
@@ -240,7 +252,8 @@ class StoryOrchestrator:
 
         # Smooth tension changes
         self.overall_tension = (
-            self.overall_tension * (1 - self.tension_smoothing) + combined_tension * self.tension_smoothing
+            self.overall_tension * (1 - self.tension_smoothing)
+            + combined_tension * self.tension_smoothing
         )
 
         # Clamp to valid range
@@ -306,7 +319,11 @@ class StoryOrchestrator:
                     self.overall_tension = max(0.0, self.overall_tension - 0.3)
 
             # Remove completed or abandoned threads
-            if thread.status in [ThreadStatus.RESOLVED, ThreadStatus.ABANDONED, ThreadStatus.FAILED]:
+            if thread.status in [
+                ThreadStatus.RESOLVED,
+                ThreadStatus.ABANDONED,
+                ThreadStatus.FAILED,
+            ]:
                 if self.current_arc:
                     self.current_arc.completed_threads.add(thread.thread_id)
                     if thread.thread_id in self.current_arc.primary_threads:
@@ -329,7 +346,9 @@ class StoryOrchestrator:
                 new_thread = self._generate_tension_building_thread(game_state)
                 if new_thread:
                     self.add_story_thread(new_thread)
-                    notifications.append(f"Something interesting is developing: {new_thread.title}")
+                    notifications.append(
+                        f"Something interesting is developing: {new_thread.title}"
+                    )
                     self.last_major_event = current_time
 
         # Check if player seems disengaged (lowered threshold for Phase 1)
@@ -343,18 +362,24 @@ class StoryOrchestrator:
 
         # Check if there are too many threads (overwhelming)
         active_threads = [
-            t for t in self.story_threads.values() if t.status in [ThreadStatus.ACTIVE, ThreadStatus.ESCALATING]
+            t
+            for t in self.story_threads.values()
+            if t.status in [ThreadStatus.ACTIVE, ThreadStatus.ESCALATING]
         ]
         if len(active_threads) > 5:
             # Encourage resolution of some threads
             for thread in active_threads:
                 if thread.priority == ThreadPriority.LOW and random.random() < 0.3:
                     thread.status = ThreadStatus.RESOLVING
-                    notifications.append(f"The situation with {thread.title} seems to be settling down.")
+                    notifications.append(
+                        f"The situation with {thread.title} seems to be settling down."
+                    )
 
         return notifications
 
-    def _generate_tension_building_thread(self, game_state: Any) -> Optional[StoryThread]:
+    def _generate_tension_building_thread(
+        self, game_state: Any
+    ) -> Optional[StoryThread]:
         """Generate a new story thread to build tension."""
         from .story_threads import create_mystery_thread, create_business_thread
 
@@ -375,7 +400,10 @@ class StoryOrchestrator:
 
         if thread_type == "mystery":
             location = "tavern_main"  # Default location
-            if hasattr(game_state, "room_manager") and game_state.room_manager.current_room:
+            if (
+                hasattr(game_state, "room_manager")
+                and game_state.room_manager.current_room
+            ):
                 location = game_state.room_manager.current_room.id
 
             return create_mystery_thread("strange_sounds", location)
@@ -416,7 +444,9 @@ class StoryOrchestrator:
             # Exponential moving average
             alpha = 0.1
             action_rate = 1.0 / (time_since_last / 60.0)  # Actions per minute
-            self.player_action_frequency = self.player_action_frequency * (1 - alpha) + action_rate * alpha
+            self.player_action_frequency = (
+                self.player_action_frequency * (1 - alpha) + action_rate * alpha
+            )
 
         # Update engagement based on action type
         engagement_boost = 0.0
@@ -439,11 +469,15 @@ class StoryOrchestrator:
 
         # Update engagement score (with decay)
         decay = 0.05 * (time_since_last / 3600.0)  # Decay over time
-        self.player_engagement_score = max(0.0, min(1.0, self.player_engagement_score - decay + engagement_boost))
+        self.player_engagement_score = max(
+            0.0, min(1.0, self.player_engagement_score - decay + engagement_boost)
+        )
 
         self.last_player_action = current_time
 
-    def _evaluate_story_opportunities(self, command: str, result: Dict[str, Any], game_state: Any) -> List[str]:
+    def _evaluate_story_opportunities(
+        self, command: str, result: Dict[str, Any], game_state: Any
+    ) -> List[str]:
         """Evaluate if a player action creates new story opportunities."""
         notifications = []
 
@@ -458,10 +492,14 @@ class StoryOrchestrator:
                         # This could develop into a relationship thread
                         notifications.append("You sense a deepening connection...")
 
-        elif ("investigate" in command or "search" in command) and result.get("success"):
+        elif ("investigate" in command or "search" in command) and result.get(
+            "success"
+        ):
             # Investigation - potential mystery thread
             if random.random() < 0.3:  # 30% chance
-                notifications.append("Your investigation has uncovered something intriguing...")
+                notifications.append(
+                    "Your investigation has uncovered something intriguing..."
+                )
 
         elif "help" in command and result.get("success"):
             # Helping behavior - potential quest chain
@@ -473,7 +511,10 @@ class StoryOrchestrator:
     def _is_significant_action(self, command: str, result: Dict[str, Any]) -> bool:
         """Determine if an action is significant enough to create a story moment."""
         # Successful quest completions are always significant
-        if "quest" in result.get("message", "").lower() and "complet" in result.get("message", "").lower():
+        if (
+            "quest" in result.get("message", "").lower()
+            and "complet" in result.get("message", "").lower()
+        ):
             return True
 
         # First interactions with NPCs
@@ -486,12 +527,17 @@ class StoryOrchestrator:
             return True
 
         # Actions that mention consequences
-        if any(word in result.get("message", "").lower() for word in ["consequence", "result", "impact", "effect"]):
+        if any(
+            word in result.get("message", "").lower()
+            for word in ["consequence", "result", "impact", "effect"]
+        ):
             return True
 
         return False
 
-    def _create_story_moment(self, command: str, result: Dict[str, Any], game_state: Any):
+    def _create_story_moment(
+        self, command: str, result: Dict[str, Any], game_state: Any
+    ):
         """Create a story moment from a significant action."""
         moment_id = f"moment_{int(time.time() * 1000)}"
 
@@ -499,7 +545,9 @@ class StoryOrchestrator:
         emotional_impact = 0.0
         message = result.get("message", "").lower()
 
-        if any(word in message for word in ["happy", "pleased", "delighted", "grateful"]):
+        if any(
+            word in message for word in ["happy", "pleased", "delighted", "grateful"]
+        ):
             emotional_impact = 0.3
         elif any(word in message for word in ["sad", "disappointed", "upset", "angry"]):
             emotional_impact = -0.3
@@ -602,7 +650,8 @@ class StoryOrchestrator:
         active_threads = [
             thread.get_summary()
             for thread in self.story_threads.values()
-            if thread.status in [ThreadStatus.ACTIVE, ThreadStatus.ESCALATING, ThreadStatus.CLIMAX]
+            if thread.status
+            in [ThreadStatus.ACTIVE, ThreadStatus.ESCALATING, ThreadStatus.CLIMAX]
         ]
 
         return {
@@ -613,8 +662,12 @@ class StoryOrchestrator:
             "active_threads": len(active_threads),
             "story_threads": active_threads,
             "current_arc": self.current_arc.title if self.current_arc else None,
-            "arc_phase": self.current_arc.current_phase.value if self.current_arc else None,
-            "recent_moments": len([m for m in self.story_moments if m.age_in_hours() < 24]),
+            "arc_phase": self.current_arc.current_phase.value
+            if self.current_arc
+            else None,
+            "recent_moments": len(
+                [m for m in self.story_moments if m.age_in_hours() < 24]
+            ),
             "consequence_stats": self.consequence_engine.get_engine_statistics(),
             "quest_stats": self.quest_generator.get_generator_statistics(),
         }

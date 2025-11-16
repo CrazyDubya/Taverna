@@ -75,7 +75,9 @@ class NPCLoader:
         for item_data in npc_data.get("inventory", []):
             item_id = item_data["id"]
             if item_id not in TAVERN_ITEMS:
-                print(f"Warning: Unknown item {item_id} in NPC {npc_data['id']} inventory")
+                print(
+                    f"Warning: Unknown item {item_id} in NPC {npc_data['id']} inventory"
+                )
                 continue
 
             # Get the full item definition from TAVERN_ITEMS

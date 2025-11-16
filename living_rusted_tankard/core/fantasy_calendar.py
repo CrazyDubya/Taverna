@@ -209,7 +209,9 @@ class TavernCalendar:
         )
 
     @classmethod
-    def format_natural_time(cls, game_time_hours: float, style: str = "narrative") -> str:
+    def format_natural_time(
+        cls, game_time_hours: float, style: str = "narrative"
+    ) -> str:
         """Format time in a natural, immersive way.
 
         Args:
@@ -271,7 +273,9 @@ class TavernCalendar:
         return f"{n}{suffix}"
 
     @classmethod
-    def get_atmospheric_description(cls, game_time_hours: float, weather: Optional[str] = None) -> str:
+    def get_atmospheric_description(
+        cls, game_time_hours: float, weather: Optional[str] = None
+    ) -> str:
         """Get rich atmospheric description of current time.
 
         Args:
@@ -295,7 +299,9 @@ class TavernCalendar:
             TimeOfDay.NIGHT: "Night has fallen, and the tavern glows with warm light as patrons gather for drinks and tales.",
         }
 
-        base_description = atmosphere_map.get(time_of_day, "The tavern continues its timeless rhythm.")
+        base_description = atmosphere_map.get(
+            time_of_day, "The tavern continues its timeless rhythm."
+        )
 
         # Add weather if provided
         if weather:
@@ -319,7 +325,9 @@ def get_natural_time_display(game_time_hours: float, style: str = "bell") -> str
     return TavernCalendar.format_natural_time(game_time_hours, style)
 
 
-def get_time_context_for_llm(game_time_hours: float, weather: Optional[str] = None) -> str:
+def get_time_context_for_llm(
+    game_time_hours: float, weather: Optional[str] = None
+) -> str:
     """Get time context suitable for LLM prompts.
 
     Returns rich time and atmospheric information for LLM context.
@@ -344,7 +352,9 @@ if __name__ == "__main__":
         print(f"Formal: {get_natural_time_display(time_hours, 'formal')}")
 
         tavern_time = TavernCalendar.get_fantasy_time(time_hours)
-        print(f"Full Info: {tavern_time.day_of_week}, {tavern_time.day_of_month} {tavern_time.month}")
+        print(
+            f"Full Info: {tavern_time.day_of_week}, {tavern_time.day_of_month} {tavern_time.month}"
+        )
         print(f"LLM Context: {get_time_context_for_llm(time_hours, 'clear')}")
 
 # Compatibility aliases for tests

@@ -41,7 +41,9 @@ class ScheduleActivity:
     description: str
     priority: int = 5  # 1-10, higher = more important
     flexibility: float = 0.1  # How much the timing can vary (0.0-1.0)
-    prerequisites: List[str] = field(default_factory=list)  # Conditions that must be met
+    prerequisites: List[str] = field(
+        default_factory=list
+    )  # Conditions that must be met
     interruption_resistance: float = 0.5  # How hard it is to interrupt this activity
 
     def get_end_hour(self) -> float:
@@ -82,7 +84,9 @@ class NPCSchedule:
         self.npc_name = npc_name
         self.profession = profession
         self.activities: List[ScheduleActivity] = []
-        self.schedule_variations: Dict[str, List[ScheduleActivity]] = {}  # Special day schedules
+        self.schedule_variations: Dict[
+            str, List[ScheduleActivity]
+        ] = {}  # Special day schedules
         self.current_activity: Optional[ScheduleActivity] = None
         self.last_schedule_check: float = 0
 
@@ -94,14 +98,18 @@ class NPCSchedule:
 
         # Schedule flexibility
         self.punctuality: float = 0.8  # How strictly they follow schedule (0.0-1.0)
-        self.spontaneity: float = 0.2  # How likely to deviate for interesting opportunities
+        self.spontaneity: float = (
+            0.2  # How likely to deviate for interesting opportunities
+        )
 
     def add_activity(self, activity: ScheduleActivity) -> None:
         """Add an activity to the schedule."""
         self.activities.append(activity)
         # Sort activities by start time for easier processing
         self.activities.sort(key=lambda a: a.start_hour)
-        logger.debug(f"{self.npc_name} added activity: {activity.description} at {activity.start_hour:02.1f}")
+        logger.debug(
+            f"{self.npc_name} added activity: {activity.description} at {activity.start_hour:02.1f}"
+        )
 
     def get_current_activity(self, current_hour: float) -> Optional[ScheduleActivity]:
         """Get the activity the NPC should be doing now."""
@@ -123,7 +131,9 @@ class NPCSchedule:
 
         return None
 
-    def is_available_for_interaction(self, current_hour: float, interaction_urgency: float = 0.5) -> Tuple[bool, str]:
+    def is_available_for_interaction(
+        self, current_hour: float, interaction_urgency: float = 0.5
+    ) -> Tuple[bool, str]:
         """Check if NPC is available for player interaction."""
         current_activity = self.get_current_activity(current_hour)
 
@@ -131,7 +141,9 @@ class NPCSchedule:
             return True, "free time"
 
         # Check if current activity can be interrupted
-        if current_activity.can_be_interrupted_for("player_interaction", interaction_urgency):
+        if current_activity.can_be_interrupted_for(
+            "player_interaction", interaction_urgency
+        ):
             return True, f"can pause {current_activity.activity_type.value}"
 
         # Not available - provide reason and time estimate
@@ -149,7 +161,10 @@ class NPCSchedule:
             else:
                 time_desc = f"{hours} hours and {minutes} minutes"
 
-            return False, f"busy {current_activity.activity_type.value}, free in {time_desc}"
+            return (
+                False,
+                f"busy {current_activity.activity_type.value}, free in {time_desc}",
+            )
         else:
             return False, f"busy {current_activity.activity_type.value}"
 
@@ -194,7 +209,9 @@ class NPCSchedule:
             else:
                 return f"{self.npc_name} has no scheduled activities right now"
 
-    def adjust_for_world_event(self, event_type: str, event_data: Dict[str, Any]) -> List[str]:
+    def adjust_for_world_event(
+        self, event_type: str, event_data: Dict[str, Any]
+    ) -> List[str]:
         """Adjust schedule based on world events. Returns list of changes made."""
         changes = []
 
@@ -218,7 +235,9 @@ class NPCSchedule:
             if location in [a.location for a in self.activities]:
                 essential_types = {ActivityType.SLEEPING, ActivityType.EATING}
                 non_essential = [
-                    a for a in self.activities if a.activity_type not in essential_types and a.location == location
+                    a
+                    for a in self.activities
+                    if a.activity_type not in essential_types and a.location == location
                 ]
 
                 for activity in non_essential:
@@ -228,7 +247,11 @@ class NPCSchedule:
         elif event_type == "merchant_arrival":
             # Merchants might extend shopping hours
             if "merchant" in self.profession.lower():
-                work_activities = [a for a in self.activities if a.activity_type == ActivityType.WORKING]
+                work_activities = [
+                    a
+                    for a in self.activities
+                    if a.activity_type == ActivityType.WORKING
+                ]
                 for activity in work_activities:
                     activity.duration_hours += 2.0
                     changes.append("extended work hours for merchant arrival")
@@ -236,7 +259,9 @@ class NPCSchedule:
         return changes
 
 
-def create_schedule_for_profession(npc_id: str, npc_name: str, profession: str) -> NPCSchedule:
+def create_schedule_for_profession(
+    npc_id: str, npc_name: str, profession: str
+) -> NPCSchedule:
     """Create a realistic schedule based on NPC's profession."""
     schedule = NPCSchedule(npc_id, npc_name, profession)
 
@@ -415,7 +440,9 @@ def create_schedule_for_profession(npc_id: str, npc_name: str, profession: str) 
                 activity_type=ActivityType.EATING,
                 start_hour=meal_time,
                 duration_hours=meal_duration,
-                location="home" if i != 1 else "tavern_main",  # Lunch might be at tavern
+                location="home"
+                if i != 1
+                else "tavern_main",  # Lunch might be at tavern
                 description=meal_names[i],
                 priority=8,
                 interruption_resistance=0.3,
@@ -463,10 +490,14 @@ class ScheduleManager:
         self.schedules: Dict[str, NPCSchedule] = {}
         self.world_events_affecting_schedules: List[Tuple[str, Dict[str, Any]]] = []
 
-    def get_or_create_schedule(self, npc_id: str, npc_name: str, profession: str) -> NPCSchedule:
+    def get_or_create_schedule(
+        self, npc_id: str, npc_name: str, profession: str
+    ) -> NPCSchedule:
         """Get existing schedule or create new one."""
         if npc_id not in self.schedules:
-            self.schedules[npc_id] = create_schedule_for_profession(npc_id, npc_name, profession)
+            self.schedules[npc_id] = create_schedule_for_profession(
+                npc_id, npc_name, profession
+            )
             logger.info(f"Created schedule for {npc_name} ({profession})")
 
         return self.schedules[npc_id]
@@ -481,7 +512,9 @@ class ScheduleManager:
 
         return statuses
 
-    def apply_world_event_to_schedules(self, event_type: str, event_data: Dict[str, Any]) -> Dict[str, List[str]]:
+    def apply_world_event_to_schedules(
+        self, event_type: str, event_data: Dict[str, Any]
+    ) -> Dict[str, List[str]]:
         """Apply a world event to all schedules."""
         all_changes = {}
 
@@ -500,9 +533,14 @@ class ScheduleManager:
     ) -> Tuple[bool, str]:
         """Check if an NPC is available for interaction."""
         if npc_id in self.schedules:
-            return self.schedules[npc_id].is_available_for_interaction(current_hour, interaction_urgency)
+            return self.schedules[npc_id].is_available_for_interaction(
+                current_hour, interaction_urgency
+            )
         return True, "no schedule information"
 
     def get_schedule_summary(self, current_hour: float) -> Dict[str, str]:
         """Get current activity summary for all NPCs."""
-        return {npc_id: schedule.get_schedule_description(current_hour) for npc_id, schedule in self.schedules.items()}
+        return {
+            npc_id: schedule.get_schedule_description(current_hour)
+            for npc_id, schedule in self.schedules.items()
+        }

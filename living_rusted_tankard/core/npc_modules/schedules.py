@@ -6,7 +6,13 @@ from datetime import datetime, time, timedelta
 from enum import Enum
 import random
 
-from .behavioral_rules import BehaviorRule, Action, Condition, ConditionType, BehaviorPriority
+from .behavioral_rules import (
+    BehaviorRule,
+    Action,
+    Condition,
+    ConditionType,
+    BehaviorPriority,
+)
 
 
 class ActivityType(Enum):
@@ -84,7 +90,9 @@ class NPCSchedule:
         self.occupation = occupation
 
         # Base schedules for different day types
-        self.schedules: Dict[DayType, List[ScheduleBlock]] = {day_type: [] for day_type in DayType}
+        self.schedules: Dict[DayType, List[ScheduleBlock]] = {
+            day_type: [] for day_type in DayType
+        }
 
         # Variations based on conditions
         self.variations: List[ScheduleVariation] = []
@@ -116,10 +124,22 @@ class NPCSchedule:
         """Create schedule for bartender."""
         normal_schedule = [
             ScheduleBlock(
-                time(6, 0), time(7, 0), ActivityType.PERSONAL, "quarters", "Morning routine", priority=8, flexible=True
+                time(6, 0),
+                time(7, 0),
+                ActivityType.PERSONAL,
+                "quarters",
+                "Morning routine",
+                priority=8,
+                flexible=True,
             ),
             ScheduleBlock(
-                time(7, 0), time(8, 0), ActivityType.EAT, "kitchen", "Breakfast", priority=7, interruptible=True
+                time(7, 0),
+                time(8, 0),
+                ActivityType.EAT,
+                "kitchen",
+                "Breakfast",
+                priority=7,
+                interruptible=True,
             ),
             ScheduleBlock(
                 time(8, 0),
@@ -131,7 +151,14 @@ class NPCSchedule:
                 interruptible=True,
                 energy_cost=0.2,
             ),
-            ScheduleBlock(time(12, 0), time(13, 0), ActivityType.EAT, "kitchen", "Lunch break", priority=7),
+            ScheduleBlock(
+                time(12, 0),
+                time(13, 0),
+                ActivityType.EAT,
+                "kitchen",
+                "Lunch break",
+                priority=7,
+            ),
             ScheduleBlock(
                 time(13, 0),
                 time(18, 0),
@@ -142,7 +169,14 @@ class NPCSchedule:
                 interruptible=False,
                 energy_cost=0.3,
             ),
-            ScheduleBlock(time(18, 0), time(19, 0), ActivityType.EAT, "kitchen", "Dinner break", priority=7),
+            ScheduleBlock(
+                time(18, 0),
+                time(19, 0),
+                ActivityType.EAT,
+                "kitchen",
+                "Dinner break",
+                priority=7,
+            ),
             ScheduleBlock(
                 time(19, 0),
                 time(23, 0),
@@ -153,9 +187,22 @@ class NPCSchedule:
                 interruptible=False,
                 energy_cost=0.4,
             ),
-            ScheduleBlock(time(23, 0), time(23, 30), ActivityType.WORK, "bar_area", "Closing duties", priority=8),
             ScheduleBlock(
-                time(23, 30), time(6, 0), ActivityType.SLEEP, "quarters", "Sleep", priority=10, interruptible=False
+                time(23, 0),
+                time(23, 30),
+                ActivityType.WORK,
+                "bar_area",
+                "Closing duties",
+                priority=8,
+            ),
+            ScheduleBlock(
+                time(23, 30),
+                time(6, 0),
+                ActivityType.SLEEP,
+                "quarters",
+                "Sleep",
+                priority=10,
+                interruptible=False,
             ),
         ]
 
@@ -174,7 +221,9 @@ class NPCSchedule:
         # Add variations
         self.variations.append(
             ScheduleVariation(
-                condition=Condition(ConditionType.STATE, {"key": "tavern_crowded", "value": True}),
+                condition=Condition(
+                    ConditionType.STATE, {"key": "tavern_crowded", "value": True}
+                ),
                 replacement_blocks=[
                     ScheduleBlock(
                         time(12, 0),
@@ -201,7 +250,14 @@ class NPCSchedule:
                 "Morning routine and equipment check",
                 priority=8,
             ),
-            ScheduleBlock(time(7, 0), time(7, 30), ActivityType.EAT, "kitchen", "Breakfast", priority=7),
+            ScheduleBlock(
+                time(7, 0),
+                time(7, 30),
+                ActivityType.EAT,
+                "kitchen",
+                "Breakfast",
+                priority=7,
+            ),
             ScheduleBlock(
                 time(7, 30),
                 time(12, 0),
@@ -211,7 +267,14 @@ class NPCSchedule:
                 priority=9,
                 energy_cost=0.2,
             ),
-            ScheduleBlock(time(12, 0), time(13, 0), ActivityType.EAT, "main_hall", "Lunch while watching", priority=7),
+            ScheduleBlock(
+                time(12, 0),
+                time(13, 0),
+                ActivityType.EAT,
+                "main_hall",
+                "Lunch while watching",
+                priority=7,
+            ),
             ScheduleBlock(
                 time(13, 0),
                 time(18, 0),
@@ -221,7 +284,14 @@ class NPCSchedule:
                 priority=9,
                 energy_cost=0.25,
             ),
-            ScheduleBlock(time(18, 0), time(19, 0), ActivityType.EAT, "kitchen", "Dinner", priority=7),
+            ScheduleBlock(
+                time(18, 0),
+                time(19, 0),
+                ActivityType.EAT,
+                "kitchen",
+                "Dinner",
+                priority=7,
+            ),
             ScheduleBlock(
                 time(19, 0),
                 time(2, 0),
@@ -232,7 +302,14 @@ class NPCSchedule:
                 interruptible=False,
                 energy_cost=0.3,
             ),
-            ScheduleBlock(time(2, 0), time(6, 0), ActivityType.SLEEP, "quarters", "Sleep", priority=10),
+            ScheduleBlock(
+                time(2, 0),
+                time(6, 0),
+                ActivityType.SLEEP,
+                "quarters",
+                "Sleep",
+                priority=10,
+            ),
         ]
 
         self.schedules[DayType.NORMAL] = normal_schedule
@@ -240,19 +317,41 @@ class NPCSchedule:
         # Create rotating patrol locations
         self.variations.append(
             ScheduleVariation(
-                condition=Condition(ConditionType.TIME, {"start_hour": 13, "end_hour": 18}),
+                condition=Condition(
+                    ConditionType.TIME, {"start_hour": 13, "end_hour": 18}
+                ),
                 replacement_blocks=[
                     ScheduleBlock(
-                        time(13, 0), time(14, 0), ActivityType.PATROL, "gambling_den", "Check gambling den", priority=9
+                        time(13, 0),
+                        time(14, 0),
+                        ActivityType.PATROL,
+                        "gambling_den",
+                        "Check gambling den",
+                        priority=9,
                     ),
                     ScheduleBlock(
-                        time(14, 0), time(15, 0), ActivityType.PATROL, "wine_cellar", "Check cellars", priority=9
+                        time(14, 0),
+                        time(15, 0),
+                        ActivityType.PATROL,
+                        "wine_cellar",
+                        "Check cellars",
+                        priority=9,
                     ),
                     ScheduleBlock(
-                        time(15, 0), time(16, 0), ActivityType.PATROL, "guest_hallway", "Check guest floors", priority=9
+                        time(15, 0),
+                        time(16, 0),
+                        ActivityType.PATROL,
+                        "guest_hallway",
+                        "Check guest floors",
+                        priority=9,
                     ),
                     ScheduleBlock(
-                        time(16, 0), time(18, 0), ActivityType.PATROL, "main_hall", "Return to main hall", priority=9
+                        time(16, 0),
+                        time(18, 0),
+                        ActivityType.PATROL,
+                        "main_hall",
+                        "Return to main hall",
+                        priority=9,
                     ),
                 ],
                 description="Afternoon patrol route",
@@ -262,9 +361,21 @@ class NPCSchedule:
     def _create_merchant_schedule(self) -> None:
         """Create schedule for merchant."""
         normal_schedule = [
-            ScheduleBlock(time(7, 0), time(8, 0), ActivityType.PERSONAL, "guest_room_2", "Morning routine", priority=7),
             ScheduleBlock(
-                time(8, 0), time(9, 0), ActivityType.EAT, "main_hall", "Breakfast in common room", priority=7
+                time(7, 0),
+                time(8, 0),
+                ActivityType.PERSONAL,
+                "guest_room_2",
+                "Morning routine",
+                priority=7,
+            ),
+            ScheduleBlock(
+                time(8, 0),
+                time(9, 0),
+                ActivityType.EAT,
+                "main_hall",
+                "Breakfast in common room",
+                priority=7,
             ),
             ScheduleBlock(
                 time(9, 0),
@@ -275,7 +386,14 @@ class NPCSchedule:
                 priority=8,
                 energy_cost=0.15,
             ),
-            ScheduleBlock(time(12, 0), time(13, 0), ActivityType.EAT, "main_hall", "Lunch", priority=7),
+            ScheduleBlock(
+                time(12, 0),
+                time(13, 0),
+                ActivityType.EAT,
+                "main_hall",
+                "Lunch",
+                priority=7,
+            ),
             ScheduleBlock(
                 time(13, 0),
                 time(17, 0),
@@ -293,7 +411,14 @@ class NPCSchedule:
                 "Socializing and networking",
                 priority=6,
             ),
-            ScheduleBlock(time(19, 0), time(20, 0), ActivityType.EAT, "main_hall", "Dinner", priority=7),
+            ScheduleBlock(
+                time(19, 0),
+                time(20, 0),
+                ActivityType.EAT,
+                "main_hall",
+                "Dinner",
+                priority=7,
+            ),
             ScheduleBlock(
                 time(20, 0),
                 time(22, 0),
@@ -303,7 +428,14 @@ class NPCSchedule:
                 priority=5,
                 flexible=True,
             ),
-            ScheduleBlock(time(22, 0), time(7, 0), ActivityType.SLEEP, "guest_room_2", "Sleep", priority=10),
+            ScheduleBlock(
+                time(22, 0),
+                time(7, 0),
+                ActivityType.SLEEP,
+                "guest_room_2",
+                "Sleep",
+                priority=10,
+            ),
         ]
 
         self.schedules[DayType.NORMAL] = normal_schedule
@@ -336,7 +468,13 @@ class NPCSchedule:
                 flexible=True,
             ),
             ScheduleBlock(
-                time(9, 0), time(10, 0), ActivityType.EAT, "main_hall", "Late breakfast", priority=6, flexible=True
+                time(9, 0),
+                time(10, 0),
+                ActivityType.EAT,
+                "main_hall",
+                "Late breakfast",
+                priority=6,
+                flexible=True,
             ),
             ScheduleBlock(
                 time(10, 0),
@@ -347,14 +485,38 @@ class NPCSchedule:
                 priority=4,
                 energy_cost=0.05,
             ),
-            ScheduleBlock(time(12, 0), time(13, 0), ActivityType.EAT, "main_hall", "Lunch", priority=7),
             ScheduleBlock(
-                time(13, 0), time(15, 0), ActivityType.LEISURE, "fireplace_nook", "Afternoon relaxation", priority=3
+                time(12, 0),
+                time(13, 0),
+                ActivityType.EAT,
+                "main_hall",
+                "Lunch",
+                priority=7,
             ),
             ScheduleBlock(
-                time(15, 0), time(18, 0), ActivityType.SOCIAL, "main_hall", "Socializing with other patrons", priority=5
+                time(13, 0),
+                time(15, 0),
+                ActivityType.LEISURE,
+                "fireplace_nook",
+                "Afternoon relaxation",
+                priority=3,
             ),
-            ScheduleBlock(time(18, 0), time(19, 0), ActivityType.EAT, "main_hall", "Dinner", priority=7),
+            ScheduleBlock(
+                time(15, 0),
+                time(18, 0),
+                ActivityType.SOCIAL,
+                "main_hall",
+                "Socializing with other patrons",
+                priority=5,
+            ),
+            ScheduleBlock(
+                time(18, 0),
+                time(19, 0),
+                ActivityType.EAT,
+                "main_hall",
+                "Dinner",
+                priority=7,
+            ),
             ScheduleBlock(
                 time(19, 0),
                 time(22, 0),
@@ -373,7 +535,14 @@ class NPCSchedule:
                 priority=4,
                 flexible=True,
             ),
-            ScheduleBlock(time(23, 0), time(8, 0), ActivityType.SLEEP, "guest_room_1", "Sleep", priority=9),
+            ScheduleBlock(
+                time(23, 0),
+                time(8, 0),
+                ActivityType.SLEEP,
+                "guest_room_1",
+                "Sleep",
+                priority=9,
+            ),
         ]
 
         self.schedules[DayType.NORMAL] = normal_schedule
@@ -381,7 +550,9 @@ class NPCSchedule:
         # Add drinking buddy variation
         self.variations.append(
             ScheduleVariation(
-                condition=Condition(ConditionType.PRESENCE, {"character_type": "drinking_buddy"}),
+                condition=Condition(
+                    ConditionType.PRESENCE, {"character_type": "drinking_buddy"}
+                ),
                 replacement_blocks=[
                     ScheduleBlock(
                         time(19, 0),
@@ -401,7 +572,12 @@ class NPCSchedule:
         """Create schedule for cook."""
         normal_schedule = [
             ScheduleBlock(
-                time(4, 0), time(5, 0), ActivityType.PERSONAL, "quarters", "Early morning routine", priority=8
+                time(4, 0),
+                time(5, 0),
+                ActivityType.PERSONAL,
+                "quarters",
+                "Early morning routine",
+                priority=8,
             ),
             ScheduleBlock(
                 time(5, 0),
@@ -412,7 +588,14 @@ class NPCSchedule:
                 priority=10,
                 energy_cost=0.2,
             ),
-            ScheduleBlock(time(7, 0), time(8, 0), ActivityType.EAT, "kitchen", "Quick breakfast", priority=7),
+            ScheduleBlock(
+                time(7, 0),
+                time(8, 0),
+                ActivityType.EAT,
+                "kitchen",
+                "Quick breakfast",
+                priority=7,
+            ),
             ScheduleBlock(
                 time(8, 0),
                 time(12, 0),
@@ -422,7 +605,14 @@ class NPCSchedule:
                 priority=10,
                 energy_cost=0.3,
             ),
-            ScheduleBlock(time(12, 0), time(13, 0), ActivityType.EAT, "kitchen", "Lunch break", priority=8),
+            ScheduleBlock(
+                time(12, 0),
+                time(13, 0),
+                ActivityType.EAT,
+                "kitchen",
+                "Lunch break",
+                priority=8,
+            ),
             ScheduleBlock(
                 time(13, 0),
                 time(14, 0),
@@ -442,9 +632,30 @@ class NPCSchedule:
                 interruptible=False,
                 energy_cost=0.4,
             ),
-            ScheduleBlock(time(19, 0), time(20, 0), ActivityType.EAT, "kitchen", "Dinner", priority=8),
-            ScheduleBlock(time(20, 0), time(21, 0), ActivityType.WORK, "kitchen", "Kitchen cleanup", priority=8),
-            ScheduleBlock(time(21, 0), time(4, 0), ActivityType.SLEEP, "quarters", "Sleep", priority=10),
+            ScheduleBlock(
+                time(19, 0),
+                time(20, 0),
+                ActivityType.EAT,
+                "kitchen",
+                "Dinner",
+                priority=8,
+            ),
+            ScheduleBlock(
+                time(20, 0),
+                time(21, 0),
+                ActivityType.WORK,
+                "kitchen",
+                "Kitchen cleanup",
+                priority=8,
+            ),
+            ScheduleBlock(
+                time(21, 0),
+                time(4, 0),
+                ActivityType.SLEEP,
+                "quarters",
+                "Sleep",
+                priority=10,
+            ),
         ]
 
         self.schedules[DayType.NORMAL] = normal_schedule
@@ -452,26 +663,85 @@ class NPCSchedule:
     def _create_generic_schedule(self) -> None:
         """Create a generic schedule."""
         normal_schedule = [
-            ScheduleBlock(time(7, 0), time(8, 0), ActivityType.PERSONAL, "quarters", "Morning routine", priority=7),
-            ScheduleBlock(time(8, 0), time(9, 0), ActivityType.EAT, "main_hall", "Breakfast", priority=7),
-            ScheduleBlock(time(9, 0), time(12, 0), ActivityType.WORK, "main_hall", "Work or activities", priority=8),
-            ScheduleBlock(time(12, 0), time(13, 0), ActivityType.EAT, "main_hall", "Lunch", priority=7),
-            ScheduleBlock(time(13, 0), time(18, 0), ActivityType.WORK, "main_hall", "Afternoon activities", priority=8),
-            ScheduleBlock(time(18, 0), time(19, 0), ActivityType.EAT, "main_hall", "Dinner", priority=7),
             ScheduleBlock(
-                time(19, 0), time(22, 0), ActivityType.LEISURE, "main_hall", "Evening relaxation", priority=5
+                time(7, 0),
+                time(8, 0),
+                ActivityType.PERSONAL,
+                "quarters",
+                "Morning routine",
+                priority=7,
             ),
-            ScheduleBlock(time(22, 0), time(7, 0), ActivityType.SLEEP, "quarters", "Sleep", priority=10),
+            ScheduleBlock(
+                time(8, 0),
+                time(9, 0),
+                ActivityType.EAT,
+                "main_hall",
+                "Breakfast",
+                priority=7,
+            ),
+            ScheduleBlock(
+                time(9, 0),
+                time(12, 0),
+                ActivityType.WORK,
+                "main_hall",
+                "Work or activities",
+                priority=8,
+            ),
+            ScheduleBlock(
+                time(12, 0),
+                time(13, 0),
+                ActivityType.EAT,
+                "main_hall",
+                "Lunch",
+                priority=7,
+            ),
+            ScheduleBlock(
+                time(13, 0),
+                time(18, 0),
+                ActivityType.WORK,
+                "main_hall",
+                "Afternoon activities",
+                priority=8,
+            ),
+            ScheduleBlock(
+                time(18, 0),
+                time(19, 0),
+                ActivityType.EAT,
+                "main_hall",
+                "Dinner",
+                priority=7,
+            ),
+            ScheduleBlock(
+                time(19, 0),
+                time(22, 0),
+                ActivityType.LEISURE,
+                "main_hall",
+                "Evening relaxation",
+                priority=5,
+            ),
+            ScheduleBlock(
+                time(22, 0),
+                time(7, 0),
+                ActivityType.SLEEP,
+                "quarters",
+                "Sleep",
+                priority=10,
+            ),
         ]
 
         self.schedules[DayType.NORMAL] = normal_schedule
 
-    def get_schedule_for_day(self, day_type: DayType = DayType.NORMAL) -> List[ScheduleBlock]:
+    def get_schedule_for_day(
+        self, day_type: DayType = DayType.NORMAL
+    ) -> List[ScheduleBlock]:
         """Get schedule for specific day type."""
         return self.schedules.get(day_type, self.schedules[DayType.NORMAL])
 
     def get_current_block(
-        self, current_time: datetime, day_type: DayType = DayType.NORMAL, context: Optional[Dict[str, Any]] = None
+        self,
+        current_time: datetime,
+        day_type: DayType = DayType.NORMAL,
+        context: Optional[Dict[str, Any]] = None,
     ) -> Optional[ScheduleBlock]:
         """Get the schedule block for current time."""
         schedule = self.get_schedule_for_day(day_type)
@@ -492,7 +762,9 @@ class NPCSchedule:
 
         return None
 
-    def get_next_block(self, current_time: datetime, day_type: DayType = DayType.NORMAL) -> Optional[ScheduleBlock]:
+    def get_next_block(
+        self, current_time: datetime, day_type: DayType = DayType.NORMAL
+    ) -> Optional[ScheduleBlock]:
         """Get the next scheduled block."""
         schedule = self.get_schedule_for_day(day_type)
         current_time_only = current_time.time()
@@ -510,7 +782,10 @@ class NPCSchedule:
             return schedule[0] if schedule else None
 
     def should_transition(
-        self, current_time: datetime, day_type: DayType = DayType.NORMAL, context: Optional[Dict[str, Any]] = None
+        self,
+        current_time: datetime,
+        day_type: DayType = DayType.NORMAL,
+        context: Optional[Dict[str, Any]] = None,
     ) -> Tuple[bool, Optional[ScheduleBlock]]:
         """Check if it's time to transition to a new activity."""
         current_block = self.get_current_block(current_time, day_type, context)
@@ -536,7 +811,9 @@ class NPCSchedule:
                             ConditionType.TIME,
                             {
                                 "start_hour": block.start_time.hour,
-                                "end_hour": block.end_time.hour if block.end_time.hour > block.start_time.hour else 24,
+                                "end_hour": block.end_time.hour
+                                if block.end_time.hour > block.start_time.hour
+                                else 24,
                             },
                         )
                     ],
@@ -550,12 +827,17 @@ class NPCSchedule:
                         Action(
                             name=block.description,
                             action_type="scheduled_activity",
-                            parameters={"activity": block.activity.value, "location": block.location},
+                            parameters={
+                                "activity": block.activity.value,
+                                "location": block.location,
+                            },
                             duration=float(block.duration_minutes()),
                             energy_cost=block.energy_cost,
                         ),
                     ],
-                    priority=BehaviorPriority.MEDIUM if block.flexible else BehaviorPriority.HIGH,
+                    priority=BehaviorPriority.MEDIUM
+                    if block.flexible
+                    else BehaviorPriority.HIGH,
                     cooldown=0.0,  # No cooldown for scheduled activities
                 )
 

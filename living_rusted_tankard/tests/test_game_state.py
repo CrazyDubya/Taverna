@@ -54,9 +54,11 @@ class TestGameState:
 
         # Should only keep the last 100 events
         assert len(game_state.events) == 100
-        assert game_state.events[0].message == "Event 50"  # First 50 should be discarded
+        assert (
+            game_state.events[0].message == "Event 50"
+        )  # First 50 should be discarded
 
-    @patch('core.clock.GameClock.update')
+    @patch("core.clock.GameClock.update")
     def test_update_calls_advance_time(self, mock_update, game_state):
         """Test that update() calls the clock's update method."""
         game_state.update()
@@ -65,8 +67,9 @@ class TestGameState:
     def test_initial_events(self, game_state):
         """Test that initial game events are created on startup."""
         # Should have at least the welcome message
-        assert any("Welcome to The Rusted Tankard" in e.message
-                   for e in game_state.events)
+        assert any(
+            "Welcome to The Rusted Tankard" in e.message for e in game_state.events
+        )
 
 
 class TestGameTimeIntegration:

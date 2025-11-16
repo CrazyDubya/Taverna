@@ -10,10 +10,10 @@ def test_game_state_initialization():
     game = GameState()
 
     # Check that all core components are initialized
-    assert hasattr(game, 'clock')
-    assert hasattr(game, 'player')
-    assert hasattr(game, 'npc_manager')
-    assert hasattr(game, 'economy')
+    assert hasattr(game, "clock")
+    assert hasattr(game, "player")
+    assert hasattr(game, "npc_manager")
+    assert hasattr(game, "economy")
 
     # Verify player state
     assert isinstance(game.player, PlayerState)
@@ -36,7 +36,7 @@ def test_npc_scheduling():
         description="A test NPC",
         npc_type=NPCType.PATRON,
         schedule=[(10, 14)],  # 10 AM to 2 PM
-        departure_chance=0.0
+        departure_chance=0.0,
     )
 
     # Create a manager and add the NPC
@@ -65,7 +65,7 @@ def test_gambling_mechanics():
     initial_gold = player.gold
 
     # Test a winning bet (mock random to always win)
-    with patch('random.random', return_value=0.3):  # Will win (0.3 < 0.4 default odds)
+    with patch("random.random", return_value=0.3):  # Will win (0.3 < 0.4 default odds)
         result = economy.gamble(player.gold, 10)
         assert result.success is True
         assert result.amount == 10  # Net gain after getting back bet plus winnings
@@ -73,7 +73,7 @@ def test_gambling_mechanics():
         assert player.gold == initial_gold + 10
 
     # Test a losing bet (mock random to always lose)
-    with patch('random.random', return_value=0.7):  # Will lose (0.7 > 0.4 default odds)
+    with patch("random.random", return_value=0.7):  # Will lose (0.7 > 0.4 default odds)
         result = economy.gamble(player.gold, 10)
         assert result.success is True
         assert result.amount == -10

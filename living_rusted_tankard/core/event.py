@@ -24,7 +24,12 @@ class EventQueue:
         self.events: list[GameEvent] = []
 
     def schedule_event(
-        self, time: float, handler: Callable[[], None], name: str = "", repeats: bool = False, interval: float = 0.0
+        self,
+        time: float,
+        handler: Callable[[], None],
+        name: str = "",
+        repeats: bool = False,
+        interval: float = 0.0,
     ) -> GameEvent:
         """Schedule a new event."""
         event = GameEvent(time, handler, name, repeats, interval)

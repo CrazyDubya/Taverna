@@ -14,23 +14,27 @@ from pathlib import Path
 # Change to script directory
 os.chdir(Path(__file__).parent)
 
+
 def is_port_open(port):
     """Check if port is available"""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.settimeout(1)
-        result = s.connect_ex(('localhost', port))
+        result = s.connect_ex(("localhost", port))
         return result == 0
     finally:
         s.close()
+
 
 def kill_port(port):
     """Kill process on port"""
     try:
         # Try lsof first (macOS)
-        result = subprocess.run(f"lsof -ti:{port}", shell=True, capture_output=True, text=True)
+        result = subprocess.run(
+            f"lsof -ti:{port}", shell=True, capture_output=True, text=True
+        )
         if result.stdout:
-            pids = result.stdout.strip().split('\n')
+            pids = result.stdout.strip().split("\n")
             for pid in pids:
                 try:
                     os.kill(int(pid), signal.SIGTERM)
@@ -41,19 +45,20 @@ def kill_port(port):
         pass
     time.sleep(1)
 
+
 def find_python():
     """Find working Python command"""
     commands = [
         sys.executable,
-        'poetry run python',
-        'python3',
-        'python3.13',
-        'python3.12', 
-        'python3.11',
-        'python3.10',
-        'python'
+        "poetry run python",
+        "python3",
+        "python3.13",
+        "python3.12",
+        "python3.11",
+        "python3.10",
+        "python",
     ]
-    
+
     for cmd in commands:
         try:
             result = subprocess.run(f"{cmd} --version", shell=True, capture_output=True)
@@ -63,12 +68,13 @@ def find_python():
             continue
     return None
 
+
 def launch_simple_server():
     """Launch the simplest possible server"""
     print("\n🚀 Launching Simple HTTP Server...")
-    
+
     # Create a minimal game file
-    html_content = '''<!DOCTYPE html>
+    html_content = """<!DOCTYPE html>
 <html>
 <head>
     <title>The Living Rusted Tankard</title>
@@ -86,7 +92,7 @@ def launch_simple_server():
     <div id="game">
         <div id="output">Welcome to The Rusted Tankard!
 
-You are in the tavern's common room. The air is warm and filled with 
+You are in the tavern's common room. The air is warm and filled with
 the sounds of conversation and clinking mugs.
 
 Available commands:
@@ -103,11 +109,11 @@ What would you like to do?
         <input type="text" id="input" placeholder="Enter command..." autofocus>
         <button onclick="processCommand()">Send</button>
     </div>
-    
+
     <script>
         const output = document.getElementById('output');
         const input = document.getElementById('input');
-        
+
         // Simple command responses
         const responses = {
             'look': 'The tavern is bustling with activity. A large fireplace crackles in one corner, and the bar is lined with bottles of various spirits. Several patrons sit at wooden tables.',
@@ -118,13 +124,13 @@ What would you like to do?
             'inventory': 'You have: 20 gold, basic supplies',
             'wait': 'Time passes... An hour goes by.'
         };
-        
+
         function processCommand() {
             const cmd = input.value.trim().toLowerCase();
             if (!cmd) return;
-            
+
             output.textContent += ' ' + cmd + '\\n\\n';
-            
+
             // Check for gambling
             if (cmd.startsWith('gamble')) {
                 const amount = parseInt(cmd.split(' ')[1]) || 10;
@@ -139,79 +145,80 @@ What would you like to do?
             } else {
                 output.textContent += 'I don\'t understand that command. Type "help" for options.\\n\\n>';
             }
-            
+
             input.value = '';
             output.scrollTop = output.scrollHeight;
         }
-        
+
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') processCommand();
         });
     </script>
 </body>
-</html>'''
-    
+</html>"""
+
     # Write the HTML file
-    with open('tavern_game.html', 'w') as f:
+    with open("tavern_game.html", "w") as f:
         f.write(html_content)
-    
+
     # Find an available port
     port = None
     for p in [8888, 8080, 8000, 8001, 9000, 9001, 5000, 3000]:
         if not is_port_open(p):
             port = p
             break
-    
+
     if not port:
         port = 8888
         kill_port(port)
-    
+
     print(f"📍 Using port {port}")
-    
+
     # Start simple HTTP server
     python_cmd = find_python()
     if not python_cmd:
         print("❌ No Python found!")
         return False
-    
+
     print(f"🐍 Using Python: {python_cmd}")
-    
+
     # Launch server
     server_cmd = f"{python_cmd} -m http.server {port}"
     print(f"📡 Starting server: {server_cmd}")
-    
+
     process = subprocess.Popen(server_cmd, shell=True)
-    
+
     # Wait and check
     time.sleep(2)
-    
+
     if process.poll() is None and is_port_open(port):
         url = f"http://localhost:{port}/tavern_game.html"
-        print(f"\n✅ SUCCESS! Server is running!")
+        print("\n✅ SUCCESS! Server is running!")
         print(f"🌐 Opening {url}")
         webbrowser.open(url)
-        
-        print("\n" + "="*50)
+
+        print("\n" + "=" * 50)
         print("🍺 THE LIVING RUSTED TANKARD IS RUNNING!")
         print(f"📍 URL: {url}")
         print("🛑 Press Ctrl+C to stop")
-        print("="*50 + "\n")
-        
+        print("=" * 50 + "\n")
+
         try:
             process.wait()
         except KeyboardInterrupt:
             print("\n🛑 Stopping server...")
             process.terminate()
-        
+
         return True
     else:
         print("❌ Server failed to start")
         return False
 
+
 def main():
     print("🍺 THE LIVING RUSTED TANKARD - INSTANT LAUNCHER")
     print("=" * 50)
-    
+
     # Try to launch
     if not launch_simple_server():
         print("\n❌ Could not start server")
@@ -219,6 +226,7 @@ def main():
         print("1. Open tavern_game.html in your browser")
         print("2. Or run: python3 -m http.server 8888")
         print("   Then go to: http://localhost:8888/tavern_game.html")
+
 
 if __name__ == "__main__":
     main()

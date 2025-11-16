@@ -25,7 +25,9 @@ optimized_sessions: Dict[str, OptimizedGameState] = {}
 async def get_performance_metrics(session_id: str) -> Dict[str, Any]:
     """Get performance metrics for a specific session."""
     if session_id not in optimized_sessions:
-        raise HTTPException(status_code=404, detail="Session not found or not optimized")
+        raise HTTPException(
+            status_code=404, detail="Session not found or not optimized"
+        )
 
     game_state = optimized_sessions[session_id]
     return game_state.get_performance_metrics()
@@ -44,11 +46,18 @@ async def enable_optimizations(session_id: str) -> Dict[str, Any]:
             "status": "success",
             "message": "Performance optimizations enabled",
             "session_id": session_id,
-            "optimizations": ["NPC caching", "Snapshot optimization", "Event batching", "Memory optimization"],
+            "optimizations": [
+                "NPC caching",
+                "Snapshot optimization",
+                "Event batching",
+                "Memory optimization",
+            ],
         }
     except Exception as e:
         logger.error(f"Error enabling optimizations for session {session_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to enable optimizations: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to enable optimizations: {str(e)}"
+        )
 
 
 @performance_router.delete("/optimize/{session_id}")
@@ -60,7 +69,11 @@ async def disable_optimizations(session_id: str) -> Dict[str, Any]:
         game_state.optimize_memory_usage()
         del optimized_sessions[session_id]
 
-        return {"status": "success", "message": "Performance optimizations disabled", "session_id": session_id}
+        return {
+            "status": "success",
+            "message": "Performance optimizations disabled",
+            "session_id": session_id,
+        }
     else:
         raise HTTPException(status_code=404, detail="Optimized session not found")
 
@@ -180,7 +193,9 @@ def get_optimized_game_state(session_id: str) -> Optional[OptimizedGameState]:
     return optimized_sessions.get(session_id)
 
 
-def create_optimized_session(session_id: str, data_dir: str = "data") -> OptimizedGameState:
+def create_optimized_session(
+    session_id: str, data_dir: str = "data"
+) -> OptimizedGameState:
     """Create and register an optimized game state session."""
     game_state = OptimizedGameState(data_dir=data_dir, session_id=session_id)
     optimized_sessions[session_id] = game_state
@@ -211,12 +226,17 @@ def track_performance(func):
 
             # Add performance info if result is a dict
             if isinstance(result, dict):
-                result["_performance"] = {"processing_time_ms": processing_time * 1000, "optimized": True}
+                result["_performance"] = {
+                    "processing_time_ms": processing_time * 1000,
+                    "optimized": True,
+                }
 
             return result
         except Exception as e:
             processing_time = time.time() - start_time
-            logger.error(f"Performance tracked error in {func.__name__}: {e} (took {processing_time:.4f}s)")
+            logger.error(
+                f"Performance tracked error in {func.__name__}: {e} (took {processing_time:.4f}s)"
+            )
             raise
 
     return wrapper

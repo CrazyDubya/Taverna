@@ -9,7 +9,14 @@ from dataclasses import dataclass, field
 import random
 import time
 import logging
-from .story_threads import StoryThread, ThreadStage, ThreadCondition, ThreadType, ThreadPriority, ThreadStatus
+from .story_threads import (
+    StoryThread,
+    ThreadStage,
+    ThreadCondition,
+    ThreadType,
+    ThreadPriority,
+    ThreadStatus,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +58,9 @@ class QuestReward:
     gold: int = 0
     items: List[str] = field(default_factory=list)
     reputation_boost: float = 0.0
-    relationship_boost: Dict[str, float] = field(default_factory=dict)  # NPC ID -> boost
+    relationship_boost: Dict[str, float] = field(
+        default_factory=dict
+    )  # NPC ID -> boost
     special_rewards: List[str] = field(default_factory=list)  # Unique rewards
 
     def get_description(self) -> str:
@@ -104,7 +113,14 @@ class QuestObjective:
 class DynamicQuest:
     """A dynamically generated quest with adaptive objectives."""
 
-    def __init__(self, quest_id: str, title: str, quest_type: QuestType, description: str, giver_npc_id: str):
+    def __init__(
+        self,
+        quest_id: str,
+        title: str,
+        quest_type: QuestType,
+        description: str,
+        giver_npc_id: str,
+    ):
         self.quest_id = quest_id
         self.title = title
         self.quest_type = quest_type
@@ -175,7 +191,9 @@ class DynamicQuest:
 
         return False
 
-    def update_objective_progress(self, action_description: str, game_state: Any) -> bool:
+    def update_objective_progress(
+        self, action_description: str, game_state: Any
+    ) -> bool:
         """Update objective progress based on player action."""
         current_obj = self.get_current_objective()
         if not current_obj or current_obj.completed:
@@ -236,9 +254,13 @@ class DynamicQuest:
             "urgency": self.urgency.value,
             "difficulty": self.difficulty,
             "current_objective": current_obj.description if current_obj else None,
-            "objective_progress": current_obj.get_progress_description() if current_obj else None,
+            "objective_progress": current_obj.get_progress_description()
+            if current_obj
+            else None,
             "total_objectives": len(self.objectives),
-            "completed_objectives": len([obj for obj in self.objectives if obj.completed]),
+            "completed_objectives": len(
+                [obj for obj in self.objectives if obj.completed]
+            ),
             "rewards": self.rewards.get_description(),
             "estimated_time": f"{self.estimated_duration_hours:.1f} hours",
             "involved_npcs": list(self.involved_npcs),
@@ -251,7 +273,11 @@ class QuestTemplate:
     """Template for generating similar quests with variations."""
 
     def __init__(
-        self, template_id: str, quest_type: QuestType, title_templates: List[str], description_templates: List[str]
+        self,
+        template_id: str,
+        quest_type: QuestType,
+        title_templates: List[str],
+        description_templates: List[str],
     ):
         self.template_id = template_id
         self.quest_type = quest_type
@@ -267,7 +293,9 @@ class QuestTemplate:
         self.difficulty_range = (0.5, 1.5)
 
         # Context requirements
-        self.required_npc_types: List[str] = []  # Types of NPCs that can give this quest
+        self.required_npc_types: List[
+            str
+        ] = []  # Types of NPCs that can give this quest
         self.required_world_conditions: List[str] = []
         self.prohibited_conditions: List[str] = []
 
@@ -287,7 +315,9 @@ class QuestTemplate:
         title = self._generate_title(context)
         description = self._generate_description(context)
 
-        quest = DynamicQuest(quest_id, title, self.quest_type, description, giver_npc_id)
+        quest = DynamicQuest(
+            quest_id, title, self.quest_type, description, giver_npc_id
+        )
 
         # Generate objectives
         num_objectives = random.randint(self.min_objectives, self.max_objectives)
@@ -372,10 +402,18 @@ class QuestTemplate:
         replacements = {}
 
         # Add common replacements
-        replacements["item"] = random.choice(["rare book", "family heirloom", "special ingredient", "lost letter"])
-        replacements["location"] = random.choice(["the forest", "the market", "the old ruins", "the distant village"])
-        replacements["person"] = random.choice(["my cousin", "an old friend", "a traveling merchant", "my relative"])
-        replacements["problem"] = random.choice(["bandits", "wild animals", "strange occurrences", "missing supplies"])
+        replacements["item"] = random.choice(
+            ["rare book", "family heirloom", "special ingredient", "lost letter"]
+        )
+        replacements["location"] = random.choice(
+            ["the forest", "the market", "the old ruins", "the distant village"]
+        )
+        replacements["person"] = random.choice(
+            ["my cousin", "an old friend", "a traveling merchant", "my relative"]
+        )
+        replacements["problem"] = random.choice(
+            ["bandits", "wild animals", "strange occurrences", "missing supplies"]
+        )
 
         # Add context-specific replacements
         if "player_reputation" in context:
@@ -387,7 +425,9 @@ class QuestTemplate:
 
         return replacements
 
-    def _generate_objective(self, index: int, context: Dict[str, Any]) -> Optional[QuestObjective]:
+    def _generate_objective(
+        self, index: int, context: Dict[str, Any]
+    ) -> Optional[QuestObjective]:
         """Generate an objective for the quest."""
         if index >= len(self.objective_templates):
             return None
@@ -416,7 +456,9 @@ class QuestTemplate:
         weights = list(self.urgency_weights.values())
         return random.choices(urgencies, weights=weights)[0]
 
-    def _generate_rewards(self, difficulty: float, context: Dict[str, Any]) -> QuestReward:
+    def _generate_rewards(
+        self, difficulty: float, context: Dict[str, Any]
+    ) -> QuestReward:
         """Generate appropriate rewards for the quest."""
         if self.reward_templates:
             base_reward = random.choice(self.reward_templates)
@@ -491,7 +533,11 @@ class DynamicQuestGenerator:
         fetch_template = QuestTemplate(
             template_id="fetch_item",
             quest_type=QuestType.FETCH,
-            title_templates=["Retrieve the {item}", "Find My Lost {item}", "The Missing {item}"],
+            title_templates=[
+                "Retrieve the {item}",
+                "Find My Lost {item}",
+                "The Missing {item}",
+            ],
             description_templates=[
                 "I lost my {item} somewhere in {location}. Could you help me find it?",
                 "My precious {item} went missing. I think it might be in {location}.",
@@ -520,7 +566,11 @@ class DynamicQuestGenerator:
         delivery_template = QuestTemplate(
             template_id="delivery_message",
             quest_type=QuestType.DELIVERY,
-            title_templates=["Message for {person}", "Urgent Delivery", "Important News"],
+            title_templates=[
+                "Message for {person}",
+                "Urgent Delivery",
+                "Important News",
+            ],
             description_templates=[
                 "I need you to deliver this message to {person} in {location}.",
                 "This is urgent news that must reach {person} quickly.",
@@ -536,7 +586,9 @@ class DynamicQuestGenerator:
             }
         ]
 
-        delivery_template.reward_templates = [QuestReward(gold=15, reputation_boost=0.05)]
+        delivery_template.reward_templates = [
+            QuestReward(gold=15, reputation_boost=0.05)
+        ]
 
         delivery_template.urgency_weights = {
             QuestUrgency.LEISURELY: 0.2,
@@ -551,7 +603,11 @@ class DynamicQuestGenerator:
         investigation_template = QuestTemplate(
             template_id="investigate_mystery",
             quest_type=QuestType.INVESTIGATION,
-            title_templates=["Strange Happenings", "Investigate the Mystery", "Unusual Events"],
+            title_templates=[
+                "Strange Happenings",
+                "Investigate the Mystery",
+                "Unusual Events",
+            ],
             description_templates=[
                 "There have been strange occurrences around {location}. Could you investigate?",
                 "Something odd is happening and I need someone to look into it.",
@@ -578,7 +634,9 @@ class DynamicQuestGenerator:
         ]
 
         investigation_template.reward_templates = [
-            QuestReward(gold=40, reputation_boost=0.2, special_rewards=["local knowledge"])
+            QuestReward(
+                gold=40, reputation_boost=0.2, special_rewards=["local knowledge"]
+            )
         ]
 
         investigation_template.difficulty_range = (1.0, 2.0)
@@ -589,7 +647,11 @@ class DynamicQuestGenerator:
         mediation_template = QuestTemplate(
             template_id="resolve_conflict",
             quest_type=QuestType.MEDIATION,
-            title_templates=["Peaceful Resolution", "Settle the Dispute", "Mediate the Conflict"],
+            title_templates=[
+                "Peaceful Resolution",
+                "Settle the Dispute",
+                "Mediate the Conflict",
+            ],
             description_templates=[
                 "There's a disagreement between me and another person. Could you help us find a solution?",
                 "I'm having a conflict with someone and need a neutral party to help resolve it.",
@@ -611,7 +673,9 @@ class DynamicQuestGenerator:
         ]
 
         mediation_template.reward_templates = [
-            QuestReward(gold=30, reputation_boost=0.15, relationship_boost={"all_involved": 0.2})
+            QuestReward(
+                gold=30, reputation_boost=0.15, relationship_boost={"all_involved": 0.2}
+            )
         ]
 
         self.add_template(mediation_template)
@@ -636,7 +700,9 @@ class DynamicQuestGenerator:
             new_quest = self._generate_quest_for_context(game_state)
             if new_quest:
                 self.active_quests[new_quest.quest_id] = new_quest
-                notifications.append(f"New quest available: '{new_quest.title}' from {new_quest.giver_npc_id}")
+                notifications.append(
+                    f"New quest available: '{new_quest.title}' from {new_quest.giver_npc_id}"
+                )
                 self.total_quests_generated += 1
                 self.last_generation_time = time.time()
 
@@ -657,7 +723,8 @@ class DynamicQuestGenerator:
             [
                 q
                 for q in self.completed_quests.values()
-                if q.completed_at and (time.time() - q.completed_at) < 86400  # Last 24 hours
+                if q.completed_at
+                and (time.time() - q.completed_at) < 86400  # Last 24 hours
             ]
         )
 
@@ -702,7 +769,11 @@ class DynamicQuestGenerator:
         if hasattr(game_state, "npc_manager"):
             for npc_id, npc in game_state.npc_manager.npcs.items():
                 context["available_npcs"].append(
-                    {"id": npc_id, "name": npc.name, "profession": getattr(npc, "profession", "unknown")}
+                    {
+                        "id": npc_id,
+                        "name": npc.name,
+                        "profession": getattr(npc, "profession", "unknown"),
+                    }
                 )
 
         # Player reputation
@@ -712,7 +783,9 @@ class DynamicQuestGenerator:
 
         return context
 
-    def process_player_action(self, action_description: str, game_state: Any) -> List[str]:
+    def process_player_action(
+        self, action_description: str, game_state: Any
+    ) -> List[str]:
         """Process a player action and update relevant quests."""
         notifications = []
 
@@ -721,7 +794,9 @@ class DynamicQuestGenerator:
                 if quest.update_objective_progress(action_description, game_state):
                     current_obj = quest.get_current_objective()
                     if current_obj and current_obj.completed:
-                        notifications.append(f"Quest objective completed: {current_obj.description}")
+                        notifications.append(
+                            f"Quest objective completed: {current_obj.description}"
+                        )
 
                     if quest.status == "completed":
                         notifications.append(f"Quest completed: {quest.title}!")
@@ -765,11 +840,15 @@ class DynamicQuestGenerator:
             )
 
         # Give relationship boosts
-        if rewards.relationship_boost and hasattr(game_state, "character_memory_manager"):
+        if rewards.relationship_boost and hasattr(
+            game_state, "character_memory_manager"
+        ):
             for npc_id, boost in rewards.relationship_boost.items():
                 if npc_id == "all_involved":
                     for involved_npc in quest.involved_npcs:
-                        memory = game_state.character_memory_manager.get_memory(involved_npc)
+                        memory = game_state.character_memory_manager.get_memory(
+                            involved_npc
+                        )
                         if memory:
                             memory.improve_relationship(boost)
                 else:
@@ -785,11 +864,19 @@ class DynamicQuestGenerator:
 
     def get_available_quests(self) -> List[Dict[str, Any]]:
         """Get all quests available to the player."""
-        return [quest.get_quest_summary() for quest in self.active_quests.values() if quest.status == "available"]
+        return [
+            quest.get_quest_summary()
+            for quest in self.active_quests.values()
+            if quest.status == "available"
+        ]
 
     def get_active_quests(self) -> List[Dict[str, Any]]:
         """Get all active quests."""
-        return [quest.get_quest_summary() for quest in self.active_quests.values() if quest.status == "active"]
+        return [
+            quest.get_quest_summary()
+            for quest in self.active_quests.values()
+            if quest.status == "active"
+        ]
 
     def accept_quest(self, quest_id: str) -> bool:
         """Mark a quest as accepted by the player."""
@@ -808,9 +895,14 @@ class DynamicQuestGenerator:
             "total_completed": self.total_quests_completed,
             "active_quests": len(self.active_quests),
             "available_templates": len(self.templates),
-            "completion_rate": (self.total_quests_completed / max(1, self.total_quests_generated)) * 100,
+            "completion_rate": (
+                self.total_quests_completed / max(1, self.total_quests_generated)
+            )
+            * 100,
             "player_preferences": dict(self.player_quest_preferences),
             "most_popular_quest_type": max(
-                self.player_quest_preferences.items(), key=lambda x: x[1], default=(None, 0)
+                self.player_quest_preferences.items(),
+                key=lambda x: x[1],
+                default=(None, 0),
             )[0],
         }
