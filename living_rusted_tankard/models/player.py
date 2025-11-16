@@ -175,9 +175,34 @@ class PlayerState(BaseModel):
             self._handle_exhaustion(game_clock)
 
     def _handle_exhaustion(self, game_clock: "GameClock") -> None:
-        """Handle effects of extreme tiredness."""
-        # TODO: Implement exhaustion effects
-        pass
+        """Handle effects of extreme tiredness.
+
+        Exhaustion effects:
+        - Reduced energy (affects combat and task effectiveness)
+        - Slowed movement and actions
+        - Risk of collapsing if tiredness gets too high
+        """
+        # Calculate exhaustion severity (0.0 to 1.0)
+        exhaustion_severity = min(1.0, (self.tiredness - CONFIG.MAX_TIREDNESS) / (CONFIG.MAX_TIREDNESS * 0.5))
+
+        # Reduce energy based on exhaustion severity
+        # Energy drains faster the more exhausted you are
+        energy_drain = exhaustion_severity * 0.1
+        self.energy = max(0.0, self.energy - energy_drain)
+
+        # Set exhaustion flag for other systems to check
+        self.flags["exhausted"] = True
+        self.flags["exhaustion_severity"] = exhaustion_severity
+
+        # If severely exhausted (tiredness > 150% of max), apply additional penalties
+        if exhaustion_severity > 0.5:
+            self.flags["severely_exhausted"] = True
+
+        # If critically exhausted (tiredness > 200% of max), risk of collapse
+        if exhaustion_severity >= 1.0:
+            self.flags["critically_exhausted"] = True
+            # Force minimal energy to prevent any actions
+            self.energy = min(self.energy, 0.1)
 
     def rest(self, hours: float) -> None:
         """Rest for a number of hours, reducing tiredness."""
@@ -186,6 +211,15 @@ class PlayerState(BaseModel):
 
         # Resting reduces tiredness more effectively than just waiting
         self.tiredness = max(0, self.tiredness - hours * 2)
+
+        # Clear exhaustion flags if tiredness is back to normal
+        if self.tiredness < CONFIG.MAX_TIREDNESS:
+            self.flags.pop("exhausted", None)
+            self.flags.pop("exhaustion_severity", None)
+            self.flags.pop("severely_exhausted", None)
+            self.flags.pop("critically_exhausted", None)
+            # Restore some energy when resting
+            self.energy = min(1.0, self.energy + hours * 0.1)
 
     def sleep(self, hours: float) -> float:
         """Sleep for a number of hours, reducing tiredness and advancing time.
@@ -201,6 +235,17 @@ class PlayerState(BaseModel):
 
         # Reduce tiredness by hours slept (capped at 0)
         self.tiredness = max(0, self.tiredness - hours)
+
+        # Clear exhaustion flags if tiredness is back to normal
+        if self.tiredness < CONFIG.MAX_TIREDNESS:
+            self.flags.pop("exhausted", None)
+            self.flags.pop("exhaustion_severity", None)
+            self.flags.pop("severely_exhausted", None)
+            self.flags.pop("critically_exhausted", None)
+
+        # Restore energy significantly when sleeping
+        self.energy = min(1.0, self.energy + hours * 0.15)
+
         return hours
 
     def ask_about_sleep(self) -> str:

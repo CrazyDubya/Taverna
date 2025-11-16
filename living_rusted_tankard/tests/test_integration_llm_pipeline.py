@@ -435,10 +435,16 @@ class TestLLMIntegrationWithGameSystems:
     @pytest.mark.asyncio
     async def test_llm_npc_interaction_integration(self, clean_game_state):
         """Test LLM integration with NPC interaction system."""
-        from core.npc import NPC
+        from core.npc import NPC, NPCType
 
         # Create NPC with LLM integration
-        npc = NPC(name="Chatty Barkeeper", personality="friendly", location="tavern")
+        npc = NPC(
+            id="chatty_barkeeper",
+            name="Chatty Barkeeper",
+            description="A friendly and talkative barkeeper",
+            npc_type=NPCType.BARTENDER,
+            current_room="tavern"
+        )
 
         mock_service = MockLLMService()
         mock_service.queue_response(

@@ -64,28 +64,6 @@ def get_reputation_tier(score: int) -> str:
     # Ensure score is clamped for tier lookup, though update_reputation should handle clamping.
     score = max(MIN_REPUTATION, min(MAX_REPUTATION, score))
 
-    if score == 0:
-        return "Neutral"
-
-    # Iterate upwards for positive scores
-    if score > 0:
-        for threshold, name in reversed(REPUTATION_TIERS):
-            if name in [
-                "Neutral",
-                "Unfriendly",
-                "Disliked",
-                "Hated",
-                "Despised",
-            ]:  # Skip negative tiers
-                continue
-            if score >= threshold:  # This logic is a bit off for threshold based.
-                # Let's use the REPUTATION_TIER_MAP ranges.
-                pass  # Placeholder, will fix below
-
-    # Corrected logic using REPUTATION_TIER_MAP approach (conceptual)
-    # For simplicity, let's use the provided REPUTATION_TIERS list properly.
-    # Iterate from highest tier downwards.
-
     # If score is exactly 0, it's Neutral
     if score == 0:
         return "Neutral"

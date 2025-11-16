@@ -19,7 +19,7 @@ from tests.utils.assertion_helpers import (
 
 from core.game_state import GameState
 from core.player import Player
-from core.npc import NPC
+from core.npc import NPC, NPCType
 from core.economy import Economy
 from core.bounties import BountySystem
 from core.event_bus import EventBus
@@ -56,8 +56,20 @@ class TestGameStateManagement:
         game_state.update_from_dict(clean_game_state)
 
         # Create NPCs
-        barkeeper = NPC(name="Barkeeper Bob", personality="friendly", location="tavern")
-        guard = NPC(name="Town Guard", personality="stern", location="entrance")
+        barkeeper = NPC(
+            id="barkeeper_bob",
+            name="Barkeeper Bob",
+            description="A friendly barkeeper",
+            npc_type=NPCType.BARTENDER,
+            current_room="tavern"
+        )
+        guard = NPC(
+            id="town_guard",
+            name="Town Guard",
+            description="A stern town guard",
+            npc_type=NPCType.GUARD,
+            current_room="entrance"
+        )
 
         # Add NPCs to game state
         game_state.add_npc(barkeeper)
@@ -197,7 +209,13 @@ class TestNPCSystemIntegration:
         game_state.update_from_dict(clean_game_state)
 
         # Create NPC with schedule
-        npc = NPC(name="Shopkeeper", personality="businesslike", location="shop")
+        npc = NPC(
+            id="shopkeeper",
+            name="Shopkeeper",
+            description="A businesslike shopkeeper",
+            npc_type=NPCType.MERCHANT,
+            current_room="shop"
+        )
         npc.set_schedule(
             {
                 "morning": {"location": "shop", "activity": "open_shop"},
@@ -219,7 +237,13 @@ class TestNPCSystemIntegration:
 
     def test_npc_relationship_system(self, new_player):
         """Test NPC relationship system with player interactions."""
-        npc = NPC(name="Village Elder", personality="wise", location="village_center")
+        npc = NPC(
+            id="village_elder",
+            name="Village Elder",
+            description="A wise village elder",
+            npc_type=NPCType.PATRON,
+            current_room="village_center"
+        )
         player = new_player
 
         # Initial relationship
@@ -408,7 +432,13 @@ class TestFullGameSessionIntegration:
         game_state.player = player
 
         # Create initial game world
-        barkeeper = NPC(name="Barkeeper", personality="friendly", location="tavern")
+        barkeeper = NPC(
+            id="barkeeper",
+            name="Barkeeper",
+            description="A friendly barkeeper",
+            npc_type=NPCType.BARTENDER,
+            current_room="tavern"
+        )
         game_state.add_npc(barkeeper)
 
         # Session start - player enters tavern
