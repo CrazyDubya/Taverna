@@ -14,7 +14,10 @@ class GameStateBase(SQLModel):
     inventory: List[str] = Field(default_factory=list, sa_column=Column(JSON))
     flags: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime, onupdate=datetime.utcnow))
+    updated_at: datetime = Field(
+        default_factory=datetime.utcnow,
+        sa_column=Column(DateTime, onupdate=datetime.utcnow),
+    )
 
 
 class GameStatePersistence(GameStateBase, table=True):
@@ -22,7 +25,9 @@ class GameStatePersistence(GameStateBase, table=True):
 
     __tablename__ = "game_states"
 
-    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True, index=True)
+    id: Optional[str] = Field(
+        default_factory=lambda: str(uuid.uuid4()), primary_key=True, index=True
+    )
     session_id: str = Field(index=True)
     game_data: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
 
@@ -48,7 +53,9 @@ class GameStateUpdate(SQLModel):
 class GameSession(SQLModel, table=True):
     """Game session model."""
 
-    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True, index=True)
+    id: Optional[str] = Field(
+        default_factory=lambda: str(uuid.uuid4()), primary_key=True, index=True
+    )
     user_id: str = Field(index=True)
     game_state_id: str = Field(foreign_key="gamestate.id")
     is_active: bool = Field(default=True)

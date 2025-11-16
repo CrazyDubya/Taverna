@@ -57,7 +57,10 @@ class OptimizedNPCManager:
         current_time = time.time()
 
         # Check if cache needs update
-        if not self._cache_valid or current_time - self._last_update_time >= self._update_threshold:
+        if (
+            not self._cache_valid
+            or current_time - self._last_update_time >= self._update_threshold
+        ):
             self._update_present_npcs_cache()
             self._last_update_time = current_time
             self._cache_valid = True
@@ -113,7 +116,11 @@ class OptimizedSnapshotManager:
         current_time = time.time()
 
         # Check if cached snapshot is still valid
-        if not force_update and self._snapshot_cache and current_time - self._cache_timestamp < self._cache_ttl:
+        if (
+            not force_update
+            and self._snapshot_cache
+            and current_time - self._cache_timestamp < self._cache_ttl
+        ):
             return self._snapshot_cache.copy()
 
         # Create new snapshot
@@ -146,7 +153,11 @@ class OptimizedSnapshotManager:
         # Only include NPCs if there are any present
         if hasattr(game_state, "_present_npcs") and game_state._present_npcs:
             snapshot["present_npcs"] = [
-                {"id": npc.id, "name": npc.name, "description": npc.description[:100]}  # Truncate descriptions
+                {
+                    "id": npc.id,
+                    "name": npc.name,
+                    "description": npc.description[:100],
+                }  # Truncate descriptions
                 for npc in game_state._present_npcs.values()
             ]
         else:
@@ -161,7 +172,9 @@ class OptimizedSnapshotManager:
             "gold": getattr(player, "gold", 0),
             "has_room": getattr(player, "has_room", False),
             "tiredness": round(getattr(player, "tiredness", 0), 2),
-            "item_count": len(getattr(player.inventory, "items", {})) if hasattr(player, "inventory") else 0,
+            "item_count": len(getattr(player.inventory, "items", {}))
+            if hasattr(player, "inventory")
+            else 0,
         }
 
     def invalidate_snapshot_cache(self):
@@ -183,7 +196,9 @@ class OptimizedEventProcessor:
 
     def add_event_optimized(self, event_type: str, data: Dict[str, Any]):
         """Add event to optimized processing queue."""
-        self._event_batch.append({"type": event_type, "data": data, "timestamp": time.time()})
+        self._event_batch.append(
+            {"type": event_type, "data": data, "timestamp": time.time()}
+        )
 
         # Process batch if it's full or enough time has passed
         current_time = time.time()
@@ -341,7 +356,9 @@ class PerformanceOptimizer:
         # Override _add_event method
         original_add_event = getattr(game_state, "_add_event", None)
 
-        def optimized_add_event(message: str, event_type: str = "info", data: Optional[Dict] = None):
+        def optimized_add_event(
+            message: str, event_type: str = "info", data: Optional[Dict] = None
+        ):
             # Call original method for compatibility
             if original_add_event:
                 original_add_event(message, event_type, data)
@@ -360,7 +377,8 @@ class PerformanceOptimizer:
                 "event_processing_time": self.metrics.event_processing_time,
                 "cache_hits": self.metrics.cache_hits,
                 "cache_misses": self.metrics.cache_misses,
-                "cache_hit_rate": self.metrics.cache_hits / max(1, self.metrics.cache_hits + self.metrics.cache_misses),
+                "cache_hit_rate": self.metrics.cache_hits
+                / max(1, self.metrics.cache_hits + self.metrics.cache_misses),
             },
             "optimizations": {
                 "npc_management": self.optimize_npc_updates,
@@ -377,11 +395,19 @@ class PerformanceOptimizer:
             return {}
 
         return {
-            "present_npcs_cache_size": len(getattr(self.npc_manager, "_present_npcs_cache", {})),
-            "snapshot_cache_size": 1 if getattr(self.snapshot_manager, "_snapshot_cache", None) else 0,
+            "present_npcs_cache_size": len(
+                getattr(self.npc_manager, "_present_npcs_cache", {})
+            ),
+            "snapshot_cache_size": 1
+            if getattr(self.snapshot_manager, "_snapshot_cache", None)
+            else 0,
             "event_batch_size": len(getattr(self.event_processor, "_event_batch", [])),
-            "total_npcs": len(getattr(gs.npc_manager, "npcs", {})) if hasattr(gs, "npc_manager") else 0,
-            "total_events": len(getattr(gs, "events", [])) if hasattr(gs, "events") else 0,
+            "total_npcs": len(getattr(gs.npc_manager, "npcs", {}))
+            if hasattr(gs, "npc_manager")
+            else 0,
+            "total_events": len(getattr(gs, "events", []))
+            if hasattr(gs, "events")
+            else 0,
         }
 
 

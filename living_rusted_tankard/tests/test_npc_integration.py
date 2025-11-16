@@ -13,7 +13,7 @@ from core.events import (
     NPCSpawnEvent,
     NPCDepartEvent,
     NPCInteractionEvent,
-    NPCRelationshipChangeEvent
+    NPCRelationshipChangeEvent,
 )
 
 
@@ -36,13 +36,13 @@ def test_data_dir(tmp_path):
                 "visit_frequency": 1.0,
                 "departure_chance": 0.0,
                 "gold": 50,
-                "conversation_topics": ["tavern", "rumors"]
+                "conversation_topics": ["tavern", "rumors"],
             }
         ]
     }
 
     # Write the NPC data to a file
-    with open(data_dir / "npcs.json", 'w') as f:
+    with open(data_dir / "npcs.json", "w") as f:
         json.dump(npc_data, f)
 
     return data_dir
@@ -53,7 +53,7 @@ def game_state(test_data_dir):
     """Create a game state with test data."""
     gs = GameState(data_dir=str(test_data_dir))
     # Add SnapshotManager if not already added
-    if not hasattr(gs, 'snapshot_manager'):
+    if not hasattr(gs, "snapshot_manager"):
         gs.snapshot_manager = SnapshotManager(gs)
     return gs
 
@@ -109,16 +109,17 @@ def test_npc_relationships(game_state):
     # Create a test player
 
     from core.player import PlayerState, Inventory
+
     player = PlayerState(
         player_id="test_player",
         name="Test Player",
         gold=100,
         inventory=Inventory(),
-        has_room=False
+        has_room=False,
     )
 
     # Test initial relationship
-    assert player.id not in getattr(npc, 'relationships', {})
+    assert player.id not in getattr(npc, "relationships", {})
 
     # Test relationship modification
     npc.modify_relationship(player.id, 0.5)
@@ -149,35 +150,44 @@ def test_npc_interaction(game_state):
     # Create player with proper inventory
 
     from core.player import PlayerState, Inventory
+
     player = PlayerState(
         player_id="test_player",
         name="Test Player",
         gold=100,
         inventory=Inventory(),
-        has_room=False
+        has_room=False,
     )
 
     # Test conversation with no topic
     response = npc.interact(player, "talk", game_state)
-    assert response.get("success", False) is True, f"Basic talk should succeed: {response}"
+    assert (
+        response.get("success", False) is True
+    ), f"Basic talk should succeed: {response}"
     assert "message" in response, "Response should include a message"
     assert isinstance(response.get("message"), str), "Message should be a string"
     assert "topics" in response, "Response should include available topics"
 
     # Test conversation with valid topic
     response = npc.interact(player, "talk", game_state, topic="tavern")
-    assert response.get("success", False) is True, f"Topic talk should succeed: {response}"
+    assert (
+        response.get("success", False) is True
+    ), f"Topic talk should succeed: {response}"
     assert "message" in response, "Response should include a message"
     assert isinstance(response.get("message"), str), "Message should be a string"
 
     # Test invalid interaction type
     response = npc.interact(player, "invalid_type", game_state)
-    assert response.get("success", True) is False, "Invalid interaction type should fail"
+    assert (
+        response.get("success", True) is False
+    ), "Invalid interaction type should fail"
 
     # Test interaction when NPC is not present
     npc.is_present = False
     response = npc.interact(player, "talk", game_state)
-    assert response.get("success", True) is False, "Interaction should fail when NPC is not present"
+    assert (
+        response.get("success", True) is False
+    ), "Interaction should fail when NPC is not present"
 
     # Clean up
     game_state.clock.time = GameTime(hours=12)  # Reset time
@@ -203,15 +213,15 @@ def test_npc_events(game_state):
         depart_events.append(event)
 
     # Subscribe to events
-    if hasattr(game_state, 'event_bus') and hasattr(game_state.event_bus, 'subscribe'):
+    if hasattr(game_state, "event_bus") and hasattr(game_state.event_bus, "subscribe"):
         # Subscribe using the event bus directly
-        game_state.event_bus.subscribe('npc_spawn', on_spawn)
-        game_state.event_bus.subscribe('npc_depart', on_depart)
+        game_state.event_bus.subscribe("npc_spawn", on_spawn)
+        game_state.event_bus.subscribe("npc_depart", on_depart)
 
         # Also test the GameState's observer pattern if available
-        if hasattr(game_state, 'add_observer'):
-            _ = game_state.add_observer('npc_spawn', on_spawn)
-            depart_unsub = game_state.add_observer('npc_depart', on_depart)
+        if hasattr(game_state, "add_observer"):
+            _ = game_state.add_observer("npc_spawn", on_spawn)
+            depart_unsub = game_state.add_observer("npc_depart", on_depart)
     else:
         # Skip event testing if no event system is available
         return
@@ -230,11 +240,13 @@ def test_npc_events(game_state):
         # Check for spawn event
 
         import time
+
         time.sleep(0.1)  # Give events time to process
 
         assert len(spawn_events) > 0, "No spawn events were triggered"
-        assert any(hasattr(e, 'npc') and e.npc.id == 'test_npc' for e in spawn_events), \
-            f"No spawn event for test_npc. Got events: {spawn_events}"
+        assert any(
+            hasattr(e, "npc") and e.npc.id == "test_npc" for e in spawn_events
+        ), f"No spawn event for test_npc. Got events: {spawn_events}"
 
         # Clear events for the next check
         spawn_events.clear()
@@ -251,14 +263,17 @@ def test_npc_events(game_state):
         time.sleep(0.1)  # Give events time to process
 
         assert len(depart_events) > 0, "No depart events were triggered"
-        assert any(hasattr(e, 'npc') and e.npc.id == 'test_npc' for e in depart_events), \
-            f"No depart event for test_npc. Got events: {depart_events}"
+        assert any(
+            hasattr(e, "npc") and e.npc.id == "test_npc" for e in depart_events
+        ), f"No depart event for test_npc. Got events: {depart_events}"
 
     finally:
         # Clean up by unsubscribing if needed
-        if hasattr(game_state, 'event_bus') and hasattr(game_state.event_bus, 'unsubscribe'):
-            game_state.event_bus.unsubscribe('npc_spawn', on_spawn)
-            game_state.event_bus.unsubscribe('npc_depart', on_depart)
+        if hasattr(game_state, "event_bus") and hasattr(
+            game_state.event_bus, "unsubscribe"
+        ):
+            game_state.event_bus.unsubscribe("npc_spawn", on_spawn)
+            game_state.event_bus.unsubscribe("npc_depart", on_depart)
             depart_unsub()
 
 
@@ -277,18 +292,23 @@ def test_npc_room_presence(game_state):
     assert tavern_room is not None
 
     # Check if the NPC is in the room using the most appropriate method
-    if hasattr(tavern_room, 'is_occupant'):
-        assert tavern_room.is_occupant(npc.id), f"NPC {npc.id} not found in room using is_occupant"
-    elif hasattr(tavern_room, 'npcs'):
+    if hasattr(tavern_room, "is_occupant"):
+        assert tavern_room.is_occupant(
+            npc.id
+        ), f"NPC {npc.id} not found in room using is_occupant"
+    elif hasattr(tavern_room, "npcs"):
         assert npc.id in tavern_room.npcs, f"NPC {npc.id} not found in room.npcs"
-    elif hasattr(tavern_room, 'occupant_id'):
-        assert npc.id == tavern_room.occupant_id, f"NPC {npc.id} is not the room's occupant"
+    elif hasattr(tavern_room, "occupant_id"):
+        assert (
+            npc.id == tavern_room.occupant_id
+        ), f"NPC {npc.id} is not the room's occupant"
     else:
         # Last resort: check if the room has any way to list occupants
-        if hasattr(tavern_room, 'get_occupants'):
+        if hasattr(tavern_room, "get_occupants"):
             occupants = tavern_room.get_occupants()
-            assert any(occ.id == npc.id for occ in occupants), \
-                f"NPC {npc.id} not found in room occupants"
+            assert any(
+                occ.id == npc.id for occ in occupants
+            ), f"NPC {npc.id} not found in room occupants"
         else:
             pytest.skip("No way to verify NPC presence in room")
 
@@ -300,14 +320,18 @@ def test_npc_room_presence(game_state):
     game_state.update()
 
     # Verify NPC is no longer in the room
-    if hasattr(tavern_room, 'is_occupant'):
-        assert not tavern_room.is_occupant(npc.id), \
-            f"NPC {npc.id} is still in room according to is_occupant"
-    elif hasattr(tavern_room, 'npcs'):
+    if hasattr(tavern_room, "is_occupant"):
+        assert not tavern_room.is_occupant(
+            npc.id
+        ), f"NPC {npc.id} is still in room according to is_occupant"
+    elif hasattr(tavern_room, "npcs"):
         assert npc.id not in tavern_room.npcs, f"NPC {npc.id} is still in room.npcs"
-    elif hasattr(tavern_room, 'occupant_id'):
-        assert tavern_room.occupant_id != npc.id, f"NPC {npc.id} is still the room's occupant"
-    elif hasattr(tavern_room, 'get_occupants'):
+    elif hasattr(tavern_room, "occupant_id"):
+        assert (
+            tavern_room.occupant_id != npc.id
+        ), f"NPC {npc.id} is still the room's occupant"
+    elif hasattr(tavern_room, "get_occupants"):
         occupants = tavern_room.get_occupants()
-        assert not any(occ.id == npc.id for occ in occupants), \
-            f"NPC {npc.id} is still in room occupants"
+        assert not any(
+            occ.id == npc.id for occ in occupants
+        ), f"NPC {npc.id} is still in room occupants"

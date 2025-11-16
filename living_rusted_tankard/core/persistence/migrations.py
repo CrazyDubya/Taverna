@@ -27,7 +27,9 @@ class Migration:
     def apply(self, save_data: Dict[str, Any]) -> Dict[str, Any]:
         """Apply this migration to save data."""
         try:
-            logger.info(f"Applying migration {self.from_version} -> {self.to_version}: {self.description}")
+            logger.info(
+                f"Applying migration {self.from_version} -> {self.to_version}: {self.description}"
+            )
             migrated_data = self.migration_func(save_data.copy())
 
             # Update version in metadata
@@ -36,7 +38,9 @@ class Migration:
 
             return migrated_data
         except Exception as e:
-            logger.error(f"Migration {self.from_version} -> {self.to_version} failed: {e}")
+            logger.error(
+                f"Migration {self.from_version} -> {self.to_version} failed: {e}"
+            )
             raise
 
 
@@ -81,7 +85,9 @@ class SaveMigrator:
 
         logger.info(f"Registered migration: {from_version} -> {to_version}")
 
-    def migrate_save(self, save_data: Dict[str, Any], target_version: str) -> Optional[Dict[str, Any]]:
+    def migrate_save(
+        self, save_data: Dict[str, Any], target_version: str
+    ) -> Optional[Dict[str, Any]]:
         """
         Migrate save data to target version.
 
@@ -100,7 +106,9 @@ class SaveMigrator:
         # Find migration path
         migration_path = self._find_migration_path(current_version, target_version)
         if not migration_path:
-            logger.error(f"No migration path found from {current_version} to {target_version}")
+            logger.error(
+                f"No migration path found from {current_version} to {target_version}"
+            )
             return None
 
         # Apply migrations in sequence
@@ -125,14 +133,18 @@ class SaveMigrator:
                     )
                     return None
 
-            logger.info(f"Successfully migrated save from {current_version} to {target_version}")
+            logger.info(
+                f"Successfully migrated save from {current_version} to {target_version}"
+            )
             return current_data
 
         except Exception as e:
             logger.error(f"Migration failed: {e}")
             return None
 
-    def get_migration_path(self, from_version: str, to_version: str) -> Optional[List[Migration]]:
+    def get_migration_path(
+        self, from_version: str, to_version: str
+    ) -> Optional[List[Migration]]:
         """Get the migration path between two versions."""
         return self._find_migration_path(from_version, to_version)
 
@@ -140,7 +152,9 @@ class SaveMigrator:
         """Check if migration is possible between versions."""
         return self._find_migration_path(from_version, to_version) is not None
 
-    def _find_migration_path(self, from_version: str, to_version: str) -> Optional[List[Migration]]:
+    def _find_migration_path(
+        self, from_version: str, to_version: str
+    ) -> Optional[List[Migration]]:
         """
         Find the shortest migration path between versions using BFS.
 
@@ -177,7 +191,9 @@ class SaveMigrator:
 
         return None
 
-    def _validate_pre_migration(self, save_data: Dict[str, Any], migration: Migration) -> bool:
+    def _validate_pre_migration(
+        self, save_data: Dict[str, Any], migration: Migration
+    ) -> bool:
         """Validate save data before applying migration."""
         try:
             # Check required fields exist
@@ -190,7 +206,9 @@ class SaveMigrator:
             # Check version matches
             current_version = save_data["metadata"].get("version")
             if current_version != migration.from_version:
-                logger.warning(f"Version mismatch: expected {migration.from_version}, got {current_version}")
+                logger.warning(
+                    f"Version mismatch: expected {migration.from_version}, got {current_version}"
+                )
                 return False
 
             return True
@@ -199,7 +217,9 @@ class SaveMigrator:
             logger.error(f"Pre-migration validation error: {e}")
             return False
 
-    def _validate_post_migration(self, save_data: Dict[str, Any], migration: Migration) -> bool:
+    def _validate_post_migration(
+        self, save_data: Dict[str, Any], migration: Migration
+    ) -> bool:
         """Validate save data after applying migration."""
         try:
             # Check basic structure
@@ -212,7 +232,9 @@ class SaveMigrator:
             # Check version was updated
             new_version = save_data["metadata"].get("version")
             if new_version != migration.to_version:
-                logger.error(f"Version not updated: expected {migration.to_version}, got {new_version}")
+                logger.error(
+                    f"Version not updated: expected {migration.to_version}, got {new_version}"
+                )
                 return False
 
             return True
@@ -228,7 +250,15 @@ def migrate_game_state_structure(save_data: Dict[str, Any]) -> Dict[str, Any]:
     game_state = save_data["game_state"]
 
     # Ensure all required top-level keys exist
-    required_keys = ["player", "clock", "room_manager", "npc_manager", "economy", "bounty_manager", "news_manager"]
+    required_keys = [
+        "player",
+        "clock",
+        "room_manager",
+        "npc_manager",
+        "economy",
+        "bounty_manager",
+        "news_manager",
+    ]
 
     for key in required_keys:
         if key not in game_state:
@@ -353,7 +383,13 @@ def migrate_time_system(save_data: Dict[str, Any]) -> Dict[str, Any]:
 
         # Ensure all time fields exist
         if "current_time" not in clock:
-            clock["current_time"] = {"hour": 12, "day": 1, "month": 1, "year": 1, "minute": 0}
+            clock["current_time"] = {
+                "hour": 12,
+                "day": 1,
+                "month": 1,
+                "year": 1,
+                "minute": 0,
+            }
 
         if "scheduled_events" not in clock:
             clock["scheduled_events"] = []

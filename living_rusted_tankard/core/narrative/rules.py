@@ -58,9 +58,15 @@ class PacingMetrics:
         ideal_resolution = 0.8  # 80% resolution rate
 
         # Calculate component scores
-        tension_score = max(0, 1 - abs(self.tension_rate - ideal_tension_rate) / ideal_tension_rate)
-        climax_score = max(0, 1 - abs(self.climax_frequency - ideal_climax_freq) / ideal_climax_freq)
-        density_score = max(0, 1 - abs(self.thread_density - ideal_density) / ideal_density)
+        tension_score = max(
+            0, 1 - abs(self.tension_rate - ideal_tension_rate) / ideal_tension_rate
+        )
+        climax_score = max(
+            0, 1 - abs(self.climax_frequency - ideal_climax_freq) / ideal_climax_freq
+        )
+        density_score = max(
+            0, 1 - abs(self.thread_density - ideal_density) / ideal_density
+        )
         involvement_score = min(1.0, self.player_involvement / ideal_involvement)
         resolution_score = min(1.0, self.resolution_ratio / ideal_resolution)
 
@@ -114,7 +120,9 @@ class TensionManager:
             total_weight += weight
 
         if total_weight > 0:
-            self.global_tension = min(weighted_tension / total_weight, self.max_global_tension)
+            self.global_tension = min(
+                weighted_tension / total_weight, self.max_global_tension
+            )
         else:
             self.global_tension = 0.0
 
@@ -138,7 +146,9 @@ class TensionManager:
     def get_tension_trend(self, window_minutes: int = 30) -> float:
         """Get tension change trend over time window"""
         cutoff_time = time.time() - (window_minutes * 60)
-        recent_points = [(t, tension) for t, tension in self.tension_history if t >= cutoff_time]
+        recent_points = [
+            (t, tension) for t, tension in self.tension_history if t >= cutoff_time
+        ]
 
         if len(recent_points) < 2:
             return 0.0
@@ -219,7 +229,9 @@ class NarrativeRulesEngine:
             NarrativeHealth.CRITICAL: 0.0,
         }
 
-    def evaluate_narrative_health(self, threads: List[StoryThread], world_state: Dict[str, Any]) -> NarrativeHealth:
+    def evaluate_narrative_health(
+        self, threads: List[StoryThread], world_state: Dict[str, Any]
+    ) -> NarrativeHealth:
         """Evaluate overall narrative health"""
         self._update_pacing_metrics(threads, world_state)
 
@@ -229,7 +241,12 @@ class NarrativeRulesEngine:
         engagement_score = self._evaluate_player_engagement(threads)
 
         # Weighted overall score
-        overall_score = pacing_score * 0.3 + tension_score * 0.25 + diversity_score * 0.2 + engagement_score * 0.25
+        overall_score = (
+            pacing_score * 0.3
+            + tension_score * 0.25
+            + diversity_score * 0.2
+            + engagement_score * 0.25
+        )
 
         # Determine health level
         for health, threshold in self.health_thresholds.items():
@@ -238,7 +255,9 @@ class NarrativeRulesEngine:
 
         return NarrativeHealth.CRITICAL
 
-    def generate_interventions(self, threads: List[StoryThread], health: NarrativeHealth) -> List[InterventionAction]:
+    def generate_interventions(
+        self, threads: List[StoryThread], health: NarrativeHealth
+    ) -> List[InterventionAction]:
         """Generate intervention actions to improve narrative health"""
         interventions = []
 
@@ -287,23 +306,35 @@ class NarrativeRulesEngine:
 
         return violations
 
-    def _update_pacing_metrics(self, threads: List[StoryThread], world_state: Dict[str, Any]):
+    def _update_pacing_metrics(
+        self, threads: List[StoryThread], world_state: Dict[str, Any]
+    ):
         """Update pacing metrics based on current state"""
         current_time = time.time()
         time_diff = current_time - self.last_health_check
 
         if time_diff > 0:
             # Update tension rate
-            tension_change = self.tension_manager.global_tension - getattr(self, "_last_tension", 0)
-            self.pacing_metrics.tension_rate = tension_change / (time_diff / 60)  # Per minute
+            tension_change = self.tension_manager.global_tension - getattr(
+                self, "_last_tension", 0
+            )
+            self.pacing_metrics.tension_rate = tension_change / (
+                time_diff / 60
+            )  # Per minute
             self._last_tension = self.tension_manager.global_tension
 
         # Update other metrics
         active_threads = [t for t in threads if t.stage != ThreadStage.RESOLUTION]
-        total_participants = len(set().union(*[t.primary_participants + t.secondary_participants for t in threads]))
+        total_participants = len(
+            set().union(
+                *[t.primary_participants + t.secondary_participants for t in threads]
+            )
+        )
 
         if total_participants > 0:
-            self.pacing_metrics.thread_density = len(active_threads) / total_participants
+            self.pacing_metrics.thread_density = (
+                len(active_threads) / total_participants
+            )
 
         # Player involvement
         player_threads = [t for t in threads if "player" in t.primary_participants]
@@ -369,7 +400,9 @@ class NarrativeRulesEngine:
         variance = sum((t - mean_tension) ** 2 for t in tensions) / len(tensions)
         return variance**0.5  # Standard deviation
 
-    def _generate_emergency_interventions(self, threads: List[StoryThread]) -> List[InterventionAction]:
+    def _generate_emergency_interventions(
+        self, threads: List[StoryThread]
+    ) -> List[InterventionAction]:
         """Generate emergency interventions for critical narrative health"""
         interventions = []
 
@@ -403,7 +436,9 @@ class NarrativeRulesEngine:
 
         return interventions
 
-    def _generate_preventive_interventions(self, threads: List[StoryThread]) -> List[InterventionAction]:
+    def _generate_preventive_interventions(
+        self, threads: List[StoryThread]
+    ) -> List[InterventionAction]:
         """Generate preventive interventions for adequate/poor narrative health"""
         interventions = []
 
@@ -434,7 +469,9 @@ class NarrativeRulesEngine:
 
         return interventions
 
-    def _generate_pacing_interventions(self, threads: List[StoryThread]) -> List[InterventionAction]:
+    def _generate_pacing_interventions(
+        self, threads: List[StoryThread]
+    ) -> List[InterventionAction]:
         """Generate interventions for pacing issues"""
         interventions = []
 

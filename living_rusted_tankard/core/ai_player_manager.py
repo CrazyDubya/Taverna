@@ -79,17 +79,25 @@ class AIPlayerManager:
             raise ValueError(f"Session {session_id} already exists")
 
         # Create AI player instance
-        ai_player = AIPlayer(name=name or f"AI-{personality.value}", personality=personality, model=model)
+        ai_player = AIPlayer(
+            name=name or f"AI-{personality.value}", personality=personality, model=model
+        )
         ai_player.session_id = session_id
 
         # Create session
         now = datetime.now()
         session = AIPlayerSession(
-            session_id=session_id, ai_player=ai_player, created_at=now, last_activity=now, is_active=True
+            session_id=session_id,
+            ai_player=ai_player,
+            created_at=now,
+            last_activity=now,
+            is_active=True,
         )
 
         self._sessions[session_id] = session
-        logger.info(f"Created AI player session {session_id} with personality {personality.value}")
+        logger.info(
+            f"Created AI player session {session_id} with personality {personality.value}"
+        )
 
         return session
 
@@ -159,7 +167,11 @@ class AIPlayerManager:
         to_remove = []
 
         for session_id, session in self._sessions.items():
-            if not session.is_active and (now - session.last_activity).total_seconds() > self._cleanup_threshold:
+            if (
+                not session.is_active
+                and (now - session.last_activity).total_seconds()
+                > self._cleanup_threshold
+            ):
                 to_remove.append((session_id, session))
 
         for session_id, session in to_remove:
@@ -205,7 +217,9 @@ def get_ai_player_manager() -> AIPlayerManager:
 
 
 def create_ai_player_session(
-    personality: AIPlayerPersonality, name: Optional[str] = None, model: str = "gemma2:2b"
+    personality: AIPlayerPersonality,
+    name: Optional[str] = None,
+    model: str = "gemma2:2b",
 ) -> AIPlayerSession:
     """
     Convenience function to create an AI player session.
@@ -218,4 +232,6 @@ def create_ai_player_session(
     Returns:
         AIPlayerSession with the created AI player
     """
-    return get_ai_player_manager().create_ai_player_session(personality=personality, name=name, model=model)
+    return get_ai_player_manager().create_ai_player_session(
+        personality=personality, name=name, model=model
+    )

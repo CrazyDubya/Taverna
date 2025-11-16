@@ -47,7 +47,9 @@ app.add_middleware(
 # Set up templates directory
 # First, determine the templates directory path
 current_dir = Path(__file__).parent
-templates_dir = current_dir.parent.parent / "living_rusted_tankard" / "game" / "templates"
+templates_dir = (
+    current_dir.parent.parent / "living_rusted_tankard" / "game" / "templates"
+)
 if not templates_dir.exists():
     # Create the templates directory if it doesn't exist
     logger.info(f"Creating templates directory: {templates_dir}")
@@ -175,7 +177,11 @@ def get_or_create_session(session_id: Optional[str] = None) -> tuple[GameState, 
     if not ITEM_DEFINITIONS:
         load_item_definitions()
     game_state = GameState()
-    sessions[new_session_id] = {"game_state": game_state, "last_activity": current_time, "created_at": current_time}
+    sessions[new_session_id] = {
+        "game_state": game_state,
+        "last_activity": current_time,
+        "created_at": current_time,
+    }
     logger.info(f"Created new game session: {new_session_id}")
     return game_state, new_session_id
 
@@ -206,10 +212,14 @@ async def process_command(command: CommandRequest):
         CommandResponse with output, session ID, and game state
     """
     try:
-        logger.info(f"Processing command: '{command.input}' for session: {command.session_id}")
+        logger.info(
+            f"Processing command: '{command.input}' for session: {command.session_id}"
+        )
 
         # Check if this is a new session being created
-        is_new_session = command.session_id is None or command.session_id not in sessions
+        is_new_session = (
+            command.session_id is None or command.session_id not in sessions
+        )
 
         # Get or create game session
         game_state, session_id = get_or_create_session(command.session_id)
@@ -221,13 +231,20 @@ async def process_command(command: CommandRequest):
             if hasattr(game_state, "events") and game_state.events:
                 # Convert GameEvent objects to dictionaries
                 initial_events = [
-                    {"message": event.message, "event_type": event.event_type} for event in game_state.events
+                    {"message": event.message, "event_type": event.event_type}
+                    for event in game_state.events
                 ]
-                logger.info(f"New session created with {len(initial_events)} initial events")
+                logger.info(
+                    f"New session created with {len(initial_events)} initial events"
+                )
 
         # Process the input through the async LLM pipeline (with sync fallback)
         try:
-            narrative_response, command_to_execute, action_results = async_llm_pipeline.process_request_sync(
+            (
+                narrative_response,
+                command_to_execute,
+                action_results,
+            ) = async_llm_pipeline.process_request_sync(
                 command.input, game_state, session_id
             )
             logger.debug(
@@ -236,13 +253,17 @@ async def process_command(command: CommandRequest):
         except Exception as e:
             logger.error(f"Error in async pipeline, falling back to direct LLM: {e}")
             # Fallback to direct LLM processing
-            narrative_response, command_to_execute, action_results = llm_gm.process_input(
-                command.input, game_state, session_id
-            )
+            (
+                narrative_response,
+                command_to_execute,
+                action_results,
+            ) = llm_gm.process_input(command.input, game_state, session_id)
 
         # Check if the LLM identified a specific command to execute
         if command_to_execute:
-            logger.info(f"LLM identified command: '{command_to_execute}' from input: '{command.input}'")
+            logger.info(
+                f"LLM identified command: '{command_to_execute}' from input: '{command.input}'"
+            )
             # Process the identified command through the regular game logic
             result = game_state.process_command(command_to_execute)
             logger.debug(f"Command result: {result}")
@@ -267,7 +288,13 @@ async def process_command(command: CommandRequest):
                 or input_lower.startswith("look ")
                 or input_lower.startswith("examine ")
             ):
-                parts = input_lower.replace("look at ", "").replace("look ", "").replace("examine ", "").strip().split()
+                parts = (
+                    input_lower.replace("look at ", "")
+                    .replace("look ", "")
+                    .replace("examine ", "")
+                    .strip()
+                    .split()
+                )
                 if len(parts) > 0:
                     examining_object = parts[0]
 
@@ -280,11 +307,17 @@ async def process_command(command: CommandRequest):
                 logger.info(f"Using narrative response for input: '{command.input}'")
 
             # In either case, use the narrative response directly
-            result = {"success": True, "message": narrative_response, "recent_events": []}
+            result = {
+                "success": True,
+                "message": narrative_response,
+                "recent_events": [],
+            }
 
         # Get any events that were generated
         events = []
-        if hasattr(game_state, "event_formatter") and hasattr(game_state.event_formatter, "get_recent_events"):
+        if hasattr(game_state, "event_formatter") and hasattr(
+            game_state.event_formatter, "get_recent_events"
+        ):
             events = game_state.event_formatter.get_recent_events()
 
         # Include initial events for new sessions
@@ -309,23 +342,34 @@ async def process_command(command: CommandRequest):
 
         # Check if any memories were created during this interaction
         memories_created = 0
-        if hasattr(llm_gm, "session_memories") and session_id in llm_gm.session_memories:
+        if (
+            hasattr(llm_gm, "session_memories")
+            and session_id in llm_gm.session_memories
+        ):
             # Count memories created in the last few seconds (indicating new memories from this interaction)
             current_time = time.time()
             memories_created = sum(
-                1 for memory in llm_gm.session_memories[session_id] if current_time - memory.get("timestamp", 0) < 5
+                1
+                for memory in llm_gm.session_memories[session_id]
+                if current_time - memory.get("timestamp", 0) < 5
             )
 
         return CommandResponse(
             output=result.get("message", ""),
             session_id=session_id,
             game_state=game_state.get_snapshot(),
-            events=events + ([{"type": "memory", "count": memories_created}] if memories_created > 0 else []),
+            events=events
+            + (
+                [{"type": "memory", "count": memories_created}]
+                if memories_created > 0
+                else []
+            ),
         )
     except Exception as e:
         logger.error(f"Error processing command: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error processing command: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing command: {str(e)}",
         )
 
 
@@ -342,7 +386,9 @@ async def get_game_state(session_id: str):
     """
     if session_id not in sessions:
         logger.warning(f"Session not found: {session_id}")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
+        )
 
     # Update session last activity time
     sessions[session_id]["last_activity"] = time.time()
@@ -350,10 +396,14 @@ async def get_game_state(session_id: str):
 
     # Get any events that were generated
     events = []
-    if hasattr(game_state, "event_formatter") and hasattr(game_state.event_formatter, "get_recent_events"):
+    if hasattr(game_state, "event_formatter") and hasattr(
+        game_state.event_formatter, "get_recent_events"
+    ):
         events = game_state.event_formatter.get_recent_events()
 
-    return StateResponse(session_id=session_id, game_state=game_state.get_snapshot(), events=events)
+    return StateResponse(
+        session_id=session_id, game_state=game_state.get_snapshot(), events=events
+    )
 
 
 # Session management endpoints
@@ -378,20 +428,32 @@ async def list_sessions():
 async def reset_session(session_id: str):
     """Reset a game session to its initial state."""
     if session_id not in sessions:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
+        )
 
     current_time = time.time()
     game_state = GameState()
-    sessions[session_id] = {"game_state": game_state, "last_activity": current_time, "created_at": current_time}
+    sessions[session_id] = {
+        "game_state": game_state,
+        "last_activity": current_time,
+        "created_at": current_time,
+    }
 
-    return {"success": True, "message": "Session reset successfully", "session_id": session_id}
+    return {
+        "success": True,
+        "message": "Session reset successfully",
+        "session_id": session_id,
+    }
 
 
 @app.delete("/sessions/{session_id}")
 async def delete_session(session_id: str):
     """Delete a game session."""
     if session_id not in sessions:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
+        )
 
     del sessions[session_id]
 
@@ -433,7 +495,9 @@ async def update_llm_config(request: Request):
         models_data = models_response.json()
 
         # Get model names from response
-        available_models = [model.get("name") for model in models_data.get("models", [])]
+        available_models = [
+            model.get("name") for model in models_data.get("models", [])
+        ]
 
         # Check if our model is available
         model_available = llm_gm.model in available_models
@@ -495,12 +559,21 @@ async def llm_status():
         is_available = llm_gm.is_service_available()
         connection_test = {"available": is_available, "test_timestamp": time.time()}
     except Exception as e:
-        connection_test = {"available": False, "error": str(e), "test_timestamp": time.time()}
+        connection_test = {
+            "available": False,
+            "error": str(e),
+            "test_timestamp": time.time(),
+        }
 
     return {
         "service_status": status,
         "connection_test": connection_test,
-        "configuration": {"model": llm_gm.model, "ollama_url": llm_gm.ollama_url, "max_retries": 3, "timeout": 30},
+        "configuration": {
+            "model": llm_gm.model,
+            "ollama_url": llm_gm.ollama_url,
+            "max_retries": 3,
+            "timeout": 30,
+        },
     }
 
 

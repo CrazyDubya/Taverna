@@ -22,9 +22,13 @@ class PlayerState(BaseModel):
     tiredness: float = 0.0
     energy: float = 1.0
 
-    resolve: int = PydanticField(default=5, description="Player's mental fortitude or willpower.")
+    resolve: int = PydanticField(
+        default=5, description="Player's mental fortitude or willpower."
+    )
     max_stamina: int = PydanticField(default=100, description="Maximum stamina.")
-    current_stamina: int = PydanticField(default=100, description="Current stamina, can be temporarily boosted.")
+    current_stamina: int = PydanticField(
+        default=100, description="Current stamina, can be temporarily boosted."
+    )
 
     rest_immune: bool = False
     _no_sleep_quest_unlocked: bool = False
@@ -93,7 +97,8 @@ class PlayerState(BaseModel):
         if self.tiredness >= 0.8:
             self.no_sleep_quest_unlocked = True
             return (
-                "You feel an unusual energy despite your exhaustion. " "You've unlocked the No-Sleep Challenge quest!"
+                "You feel an unusual energy despite your exhaustion. "
+                "You've unlocked the No-Sleep Challenge quest!"
             )
         return "You're feeling a bit tired, but nothing unusual."
 
@@ -106,17 +111,47 @@ class PlayerState(BaseModel):
             self.energy = max(0.0, self.energy - 0.1)
 
     def add_effect(
-        self, effect_id: str, stat_affected: str, modifier: Any, duration_hours: float, current_game_time: float
+        self,
+        effect_id: str,
+        stat_affected: str,
+        modifier: Any,
+        duration_hours: float,
+        current_game_time: float,
     ):
         expiry_time = current_game_time + duration_hours
 
         if effect_id == "mystery_brew_random_effect":
             possible_effects = [
-                {"id_suffix": "temp_resolve_boost", "stat": "resolve", "mod": 1, "dur": 0.25},
-                {"id_suffix": "temp_resolve_drain", "stat": "resolve", "mod": -1, "dur": 0.25},
-                {"id_suffix": "temp_stamina_boost", "stat": "current_stamina", "mod": 10, "dur": 0.25},
-                {"id_suffix": "temp_stamina_drain", "stat": "current_stamina", "mod": -10, "dur": 0.25},
-                {"id_suffix": "temp_happiness_boost", "stat": "happiness", "mod": 0.2, "dur": 0.25},
+                {
+                    "id_suffix": "temp_resolve_boost",
+                    "stat": "resolve",
+                    "mod": 1,
+                    "dur": 0.25,
+                },
+                {
+                    "id_suffix": "temp_resolve_drain",
+                    "stat": "resolve",
+                    "mod": -1,
+                    "dur": 0.25,
+                },
+                {
+                    "id_suffix": "temp_stamina_boost",
+                    "stat": "current_stamina",
+                    "mod": 10,
+                    "dur": 0.25,
+                },
+                {
+                    "id_suffix": "temp_stamina_drain",
+                    "stat": "current_stamina",
+                    "mod": -10,
+                    "dur": 0.25,
+                },
+                {
+                    "id_suffix": "temp_happiness_boost",
+                    "stat": "happiness",
+                    "mod": 0.2,
+                    "dur": 0.25,
+                },
             ]
             chosen_effect_details = random.choice(possible_effects)
             effect_id = f"mystery_brew_{chosen_effect_details['id_suffix']}"
@@ -124,19 +159,34 @@ class PlayerState(BaseModel):
             modifier = chosen_effect_details["mod"]
             expiry_time = current_game_time + chosen_effect_details["dur"]
 
-        self.active_effects = [eff for eff in self.active_effects if eff.effect_id != effect_id]
+        self.active_effects = [
+            eff for eff in self.active_effects if eff.effect_id != effect_id
+        ]
         new_effect = ActiveEffect(
-            effect_id=effect_id, stat_affected=stat_affected, modifier=modifier, expiry_time=expiry_time
+            effect_id=effect_id,
+            stat_affected=stat_affected,
+            modifier=modifier,
+            expiry_time=expiry_time,
         )
         self.active_effects.append(new_effect)
 
         if duration_hours <= 0.01:
             if stat_affected == "heal":
-                setattr(self, "current_stamina", min(self.get_stat("max_stamina"), self.current_stamina + modifier))
-            self.active_effects = [eff for eff in self.active_effects if eff.effect_id != effect_id]
+                setattr(
+                    self,
+                    "current_stamina",
+                    min(self.get_stat("max_stamina"), self.current_stamina + modifier),
+                )
+            self.active_effects = [
+                eff for eff in self.active_effects if eff.effect_id != effect_id
+            ]
 
     def update_effects(self, current_game_time: float):
-        self.active_effects = [effect for effect in self.active_effects if effect.expiry_time > current_game_time]
+        self.active_effects = [
+            effect
+            for effect in self.active_effects
+            if effect.expiry_time > current_game_time
+        ]
         base_energy = 1.0 - self.tiredness
         energy_modifier = self.get_stat_modifier("energy")
         self.energy = max(0.0, min(1.0, base_energy + energy_modifier))
@@ -194,11 +244,15 @@ class PlayerState(BaseModel):
                 if "_from_" in effect.effect_id
                 else effect.effect_id.replace("_", " ").title()
             )
-            display_effects.append(f"{effect_name} ({effect.modifier:+g} to {effect.stat_affected})")
+            display_effects.append(
+                f"{effect_name} ({effect.modifier:+g} to {effect.stat_affected})"
+            )
 
         return display_effects if display_effects else ["Feeling normal."]
 
-    def consume_item_and_apply_effects(self, item: Item, current_game_time: float) -> bool:
+    def consume_item_and_apply_effects(
+        self, item: Item, current_game_time: float
+    ) -> bool:
         if not self.inventory.has_item(item.id):
             return False
 

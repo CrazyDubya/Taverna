@@ -154,7 +154,11 @@ class SaveManager:
                 raise ValueError(f"Save validation failed: {validation_result.errors}")
 
             # Determine save file path
-            file_extension = ".save.json.gz" if format == SaveFormat.COMPRESSED_JSON else ".save.json"
+            file_extension = (
+                ".save.json.gz"
+                if format == SaveFormat.COMPRESSED_JSON
+                else ".save.json"
+            )
             save_path = self.save_dir / f"{save_name}{file_extension}"
 
             # Create backup if file exists
@@ -225,13 +229,17 @@ class SaveManager:
             # Check if migration is needed
             save_version = save_data.get("metadata", {}).get("version", "0.0.0")
             if save_version != self.CURRENT_SAVE_VERSION:
-                print(f"Migrating save from version {save_version} to {self.CURRENT_SAVE_VERSION}")
+                print(
+                    f"Migrating save from version {save_version} to {self.CURRENT_SAVE_VERSION}"
+                )
 
                 # Create backup before migration
                 self._create_backup(save_path, f"pre_migration_{save_version}")
 
                 # Migrate save data
-                migrated_data = self.migrator.migrate_save(save_data, self.CURRENT_SAVE_VERSION)
+                migrated_data = self.migrator.migrate_save(
+                    save_data, self.CURRENT_SAVE_VERSION
+                )
                 if not migrated_data:
                     print(f"Failed to migrate save from version {save_version}")
                     return None
@@ -279,7 +287,9 @@ class SaveManager:
                 "name": save_path.stem.replace(".save", ""),
                 "path": str(save_path),
                 "size_bytes": save_path.stat().st_size,
-                "modified_at": datetime.fromtimestamp(save_path.stat().st_mtime).isoformat(),
+                "modified_at": datetime.fromtimestamp(
+                    save_path.stat().st_mtime
+                ).isoformat(),
                 "metadata": metadata.to_dict() if metadata else None,
             }
 
@@ -363,7 +373,9 @@ class SaveManager:
             # Find backup file
             backup_path = None
             for backup_file in self.backup_dir.glob(f"*{backup_name}*"):
-                if backup_file.suffix.endswith(".json") or backup_file.suffix.endswith(".gz"):
+                if backup_file.suffix.endswith(".json") or backup_file.suffix.endswith(
+                    ".gz"
+                ):
                     backup_path = backup_file
                     break
 
@@ -397,7 +409,10 @@ class SaveManager:
 
     def _find_save_file(self, save_name: str) -> Optional[Path]:
         """Find save file by name, checking different extensions."""
-        candidates = [self.save_dir / f"{save_name}.save.json.gz", self.save_dir / f"{save_name}.save.json"]
+        candidates = [
+            self.save_dir / f"{save_name}.save.json.gz",
+            self.save_dir / f"{save_name}.save.json",
+        ]
 
         for candidate in candidates:
             if candidate.exists():

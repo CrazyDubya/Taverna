@@ -13,13 +13,13 @@ from core.llm.narrative_decorators import cached_narrative, validate_state
 SAMPLE_STATE_1 = {
     "player": {"name": "Test Player", "location": "tavern"},
     "time": "morning",
-    "npc": {"name": "Barkeep", "mood": "friendly"}
+    "npc": {"name": "Barkeep", "mood": "friendly"},
 }
 
 SAMPLE_STATE_2 = {
     "player": {"name": "Test Player", "location": "tavern"},
     "time": "afternoon",  # Only this field is different
-    "npc": {"name": "Barkeep", "mood": "friendly"}
+    "npc": {"name": "Barkeep", "mood": "friendly"},
 }
 
 SAMPLE_STATE_INVALID = "not a dictionary"
@@ -101,6 +101,7 @@ def test_cache_decorator(tmp_path):
 
 def test_validate_state_decorator():
     """Test the @validate_state decorator."""
+
     @validate_state(required_keys=["player", "time"])
     def generate_narrative(state):
         return "Valid state"

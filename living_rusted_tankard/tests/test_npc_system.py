@@ -114,7 +114,7 @@ def test_npc_loader():
                 "gold": 100,
                 "inventory": [],
                 "relationships": {},
-                "conversation_topics": ["test"]
+                "conversation_topics": ["test"],
             }
         ]
     }
@@ -122,7 +122,7 @@ def test_npc_loader():
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create a test data file
         test_file = os.path.join(temp_dir, "npcs.json")
-        with open(test_file, 'w') as f:
+        with open(test_file, "w") as f:
             json.dump(test_data, f)
 
         # Test loading NPCs
@@ -157,4 +157,6 @@ def test_npc_interactions():
     interactive = manager.get_interactive_npcs()
     assert len(interactive) == 1
     assert interactive[0]["id"] == "test_npc"
-    assert len(interactive[0]["interactions"]) > 0  # At least the default "Talk" interaction
+    assert (
+        len(interactive[0]["interactions"]) > 0
+    )  # At least the default "Talk" interaction

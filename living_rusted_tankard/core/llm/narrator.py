@@ -57,7 +57,9 @@ class Narrator:
                 return self.cache[cache_key]
 
             # Format the prompt with the current context
-            prompt = NARRATOR_PROMPT.replace("{{context}}", json.dumps(context, indent=2))
+            prompt = NARRATOR_PROMPT.replace(
+                "{{context}}", json.dumps(context, indent=2)
+            )
 
             logger.debug(f"Generating narration for context: {context}")
 

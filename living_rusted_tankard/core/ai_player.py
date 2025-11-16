@@ -17,7 +17,9 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 
-def get_available_ollama_models(ollama_url: str = "http://localhost:11434") -> List[str]:
+def get_available_ollama_models(
+    ollama_url: str = "http://localhost:11434",
+) -> List[str]:
     """Get list of available models from Ollama."""
     try:
         response = requests.get(f"{ollama_url}/api/tags", timeout=5)
@@ -81,7 +83,14 @@ class AIPlayer:
         # Personality-based behavior patterns with VALID game commands
         self.personality_traits = {
             AIPlayerPersonality.CURIOUS_EXPLORER: {
-                "preferred_commands": ["look", "read notice board", "interact", "jobs", "status", "inventory"],
+                "preferred_commands": [
+                    "look",
+                    "read notice board",
+                    "interact",
+                    "jobs",
+                    "status",
+                    "inventory",
+                ],
                 "interaction_style": "eager and inquisitive",
                 "decision_pattern": "always chooses the most interesting option",
                 "greeting": f"Hello! I'm {name}, a curious traveler always seeking new adventures!",
@@ -113,21 +122,33 @@ class AIPlayer:
                 "interaction_style": "friendly and talkative",
                 "decision_pattern": "prioritizes social interactions and relationships",
                 "greeting": f"Hi there! I'm {name}! I love meeting new people and hearing their stories!",
-                "example_commands": ["interact gene_bartender talk", "read notice board", "look", "jobs", "help"],
+                "example_commands": [
+                    "interact gene_bartender talk",
+                    "read notice board",
+                    "look",
+                    "jobs",
+                    "help",
+                ],
             },
             AIPlayerPersonality.MYSTERIOUS_WANDERER: {
                 "preferred_commands": ["look", "wait", "status", "read notice board"],
                 "interaction_style": "cryptic and thoughtful",
                 "decision_pattern": "takes time to observe before acting",
                 "greeting": f"I am {name}... a wanderer seeking truths hidden in shadow and flame.",
-                "example_commands": ["look", "wait", "status", "read notice board", "interact gene_bartender talk"],
+                "example_commands": [
+                    "look",
+                    "wait",
+                    "status",
+                    "read notice board",
+                    "interact gene_bartender talk",
+                ],
             },
         }
 
     def get_personality_context(self) -> str:
         """Get personality-specific context for LLM prompts."""
         traits = self.personality_traits[self.personality]
-        return f"""
+        return """
 You are {self.name}, an AI character in The Living Rusted Tankard tavern game.
 
 PERSONALITY: {self.personality.value}
@@ -174,12 +195,14 @@ RESPONSE FORMAT:
 Respond with ONLY ONE valid command from the list above. Choose something different from your recent actions.
 """
 
-    async def generate_action_stream(self, game_context: str) -> AsyncGenerator[str, None]:
+    async def generate_action_stream(
+        self, game_context: str
+    ) -> AsyncGenerator[str, None]:
         """Generate an action using LLM with streaming response and proper resource cleanup."""
         try:
             personality_context = self.get_personality_context()
 
-            prompt = f"""{personality_context}
+            prompt = """{personality_context}
 
 CURRENT GAME STATE:
 {game_context}
@@ -235,7 +258,7 @@ What do you want to do next?"""
         try:
             personality_context = self.get_personality_context()
 
-            prompt = f"""{personality_context}
+            prompt = """{personality_context}
 
 CURRENT GAME STATE:
 {game_context}
@@ -294,7 +317,10 @@ What do you want to do next?"""
     def record_action(self, command: str, reasoning: str = ""):
         """Record an action taken by the AI player."""
         action = AIPlayerAction(
-            command=command, reasoning=reasoning, personality_trait=self.personality.value, timestamp=time.time()
+            command=command,
+            reasoning=reasoning,
+            personality_trait=self.personality.value,
+            timestamp=time.time(),
         )
         self.action_history.append(action)
 
@@ -335,14 +361,18 @@ What do you want to do next?"""
 
         # Board notes
         if "board_notes" in self.game_state and self.game_state["board_notes"]:
-            context_parts.append(f"Notice board has {len(self.game_state['board_notes'])} notices")
+            context_parts.append(
+                f"Notice board has {len(self.game_state['board_notes'])} notices"
+            )
 
         return "\n".join(context_parts) if context_parts else "You are in the tavern."
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create an HTTP session with proper resource management."""
         if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30))
+            self._session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=30)
+            )
         return self._session
 
     async def close(self):

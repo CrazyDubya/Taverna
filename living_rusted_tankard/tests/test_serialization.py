@@ -6,11 +6,7 @@ import json
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from utils.serialization import (
-    save_game_state,
-    load_game_state,
-    get_latest_save
-)
+from utils.serialization import save_game_state, load_game_state, get_latest_save
 from utils.snapshot import GameSnapshot
 
 
@@ -29,7 +25,7 @@ class TestSaveLoadGameState(unittest.TestCase):
         self.test_state = {
             "player": {"name": "Test Player", "gold": 100},
             "time": 10.5,
-            "location": "Test Location"
+            "location": "Test Location",
         }
 
     def tearDown(self):
@@ -45,7 +41,7 @@ class TestSaveLoadGameState(unittest.TestCase):
 
         self.assertTrue(Path(save_path).exists())
 
-        with open(save_path, 'r') as f:
+        with open(save_path, "r") as f:
             saved_data = json.load(f)
 
         self.assertEqual(saved_data, self.test_state)
@@ -66,10 +62,10 @@ class TestSaveLoadGameState(unittest.TestCase):
         save1 = self.test_dir / "save_1.json"
         save2 = self.test_dir / "save_2.json"
 
-        with open(save1, 'w') as f:
+        with open(save1, "w") as f:
             json.dump({"test": 1}, f)
 
-        with open(save2, 'w') as f:
+        with open(save2, "w") as f:
             json.dump({"test": 2}, f)
 
         # The latest save should be save_2.json
@@ -88,15 +84,9 @@ class TestGameSnapshot(unittest.TestCase):
 
         self.test_state = {
             "time": 10.5,
-            "player": {
-                "gold": 100,
-                "has_room": True,
-                "tiredness": 3
-            },
+            "player": {"gold": 100, "has_room": True, "tiredness": 3},
             "location": "Test Tavern",
-            "npcs": [
-                {"name": "Test NPC", "present": True}
-            ]
+            "npcs": [{"name": "Test NPC", "present": True}],
         }
 
     def tearDown(self):
@@ -119,7 +109,7 @@ class TestGameSnapshot(unittest.TestCase):
         self.assertEqual(len(snapshot_files), 1)
 
         # Check the content of the snapshot file
-        with open(snapshot_files[0], 'r') as f:
+        with open(snapshot_files[0], "r") as f:
             snapshot_data = json.load(f)
 
         self.assertEqual(snapshot_data["command"], "test command")

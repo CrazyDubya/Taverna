@@ -13,7 +13,11 @@ Usage:
 """
 
 from typing import Optional, Dict, Any
-from .fantasy_calendar import TavernCalendar, get_natural_time_display, get_time_context_for_llm
+from .fantasy_calendar import (
+    TavernCalendar,
+    get_natural_time_display,
+    get_time_context_for_llm,
+)
 
 
 class TimeDisplayManager:
@@ -39,7 +43,9 @@ class TimeDisplayManager:
     }
 
     @classmethod
-    def format_time_for_context(cls, game_time_hours: float, context: str = "ui_main") -> str:
+    def format_time_for_context(
+        cls, game_time_hours: float, context: str = "ui_main"
+    ) -> str:
         """Format time appropriate for the given context.
 
         Args:
@@ -53,7 +59,9 @@ class TimeDisplayManager:
         return get_natural_time_display(game_time_hours, style)
 
     @classmethod
-    def format_time_for_npc(cls, game_time_hours: float, npc_personality: str = "casual") -> str:
+    def format_time_for_npc(
+        cls, game_time_hours: float, npc_personality: str = "casual"
+    ) -> str:
         """Format time as an NPC would say it based on their personality.
 
         Args:
@@ -88,7 +96,9 @@ class TimeDisplayManager:
         return greetings.get(period_desc, "Greetings")
 
     @classmethod
-    def get_time_reference_for_scheduling(cls, game_time_hours: float, hours_ahead: int) -> str:
+    def get_time_reference_for_scheduling(
+        cls, game_time_hours: float, hours_ahead: int
+    ) -> str:
         """Get natural time reference for future scheduling.
 
         Args:
@@ -130,7 +140,9 @@ def format_time_for_display(game_time_hours: float, context: str = "ui_main") ->
     return TimeDisplayManager.format_time_for_context(game_time_hours, context)
 
 
-def format_time_for_npc_speech(game_time_hours: float, npc_data: Optional[Dict[str, Any]] = None) -> str:
+def format_time_for_npc_speech(
+    game_time_hours: float, npc_data: Optional[Dict[str, Any]] = None
+) -> str:
     """Format time for NPC dialogue and conversations.
 
     Args:
@@ -150,13 +162,15 @@ def format_time_for_npc_speech(game_time_hours: float, npc_data: Optional[Dict[s
             personality = "traditional"
         elif npc_type in ["bard", "adventurer"]:
             personality = "poetic"
-        elif npc_type in ["merchant", "thief"]:
+        elif npc_type in ["merchant", "thie"]:
             personality = "practical"
 
     return TimeDisplayManager.format_time_for_npc(game_time_hours, personality)
 
 
-def get_time_context_for_room_description(game_time_hours: float, weather: Optional[str] = None) -> str:
+def get_time_context_for_room_description(
+    game_time_hours: float, weather: Optional[str] = None
+) -> str:
     """Get atmospheric time description for room descriptions.
 
     This provides rich context for room examinations and scene setting.
@@ -171,7 +185,9 @@ def get_time_greeting(game_time_hours: float) -> str:
 
 def get_scheduling_reference(game_time_hours: float, hours_ahead: int) -> str:
     """Get natural time reference for future events."""
-    return TimeDisplayManager.get_time_reference_for_scheduling(game_time_hours, hours_ahead)
+    return TimeDisplayManager.get_time_reference_for_scheduling(
+        game_time_hours, hours_ahead
+    )
 
 
 def replace_decimal_time_in_text(text: str, game_time_hours: float) -> str:
@@ -209,7 +225,9 @@ class GameClockTimeDisplay:
     @staticmethod
     def get_atmospheric_time(game_clock, weather: Optional[str] = None) -> str:
         """Get atmospheric time description from GameClock."""
-        return get_time_context_for_room_description(game_clock.current_time_hours, weather)
+        return get_time_context_for_room_description(
+            game_clock.current_time_hours, weather
+        )
 
     @staticmethod
     def get_llm_time_context(game_clock, weather: Optional[str] = None) -> str:
@@ -258,7 +276,7 @@ if __name__ == "__main__":
         greeting = get_time_greeting(time_val)
         print(f"{'greeting':12}: {greeting}")
 
-    print(f"\n--- Testing text replacement ---")
+    print("\n--- Testing text replacement ---")
     test_text = "It's currently 14.75 hours and the meeting is at 18.5."
     replaced = replace_decimal_time_in_text(test_text, 0)
     print(f"Original: {test_text}")

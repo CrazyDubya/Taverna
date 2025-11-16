@@ -135,14 +135,18 @@ class ContextualFallbackGenerator:
             "guard": "The tavern guard maintains watchful attention to the surroundings.",
         }
 
-    def generate_fallback(self, error_context: ErrorContext, game_context: Optional[Dict[str, Any]] = None) -> str:
+    def generate_fallback(
+        self, error_context: ErrorContext, game_context: Optional[Dict[str, Any]] = None
+    ) -> str:
         """Generate an appropriate fallback response based on error and game context."""
 
         # Get base response from templates
         category_templates = self.response_templates.get(
             error_context.category, self.response_templates[ErrorCategory.NETWORK]
         )
-        severity_responses = category_templates.get(error_context.severity, category_templates[ErrorSeverity.MEDIUM])
+        severity_responses = category_templates.get(
+            error_context.severity, category_templates[ErrorSeverity.MEDIUM]
+        )
 
         base_response = random.choice(severity_responses)
 
@@ -157,7 +161,9 @@ class ContextualFallbackGenerator:
 
         return contextual_response
 
-    def _add_context(self, base_response: str, game_context: Optional[Dict[str, Any]]) -> str:
+    def _add_context(
+        self, base_response: str, game_context: Optional[Dict[str, Any]]
+    ) -> str:
         """Add game context to the base response."""
         if not game_context:
             return base_response
@@ -217,7 +223,9 @@ class ErrorClassifier:
             "unauthorized": (ErrorCategory.AUTHENTICATION, ErrorSeverity.HIGH),
         }
 
-    def classify_error(self, error: Exception, context: Optional[str] = None) -> Tuple[ErrorCategory, ErrorSeverity]:
+    def classify_error(
+        self, error: Exception, context: Optional[str] = None
+    ) -> Tuple[ErrorCategory, ErrorSeverity]:
         """Classify an error and determine its severity."""
         error_message = str(error).lower()
         error_type = type(error).__name__.lower()
@@ -262,7 +270,9 @@ class SystemHealthMonitor:
 
         # Clean old error history (keep last hour)
         cutoff_time = time.time() - 3600  # 1 hour ago
-        self.error_history = [err for err in self.error_history if err.timestamp > cutoff_time]
+        self.error_history = [
+            err for err in self.error_history if err.timestamp > cutoff_time
+        ]
 
     def record_success(self) -> None:
         """Record a successful operation."""
@@ -274,11 +284,17 @@ class SystemHealthMonitor:
         current_time = time.time()
 
         # Calculate error rates
-        errors_1min = [err for err in self.error_history if current_time - err.timestamp <= 60]
-        errors_5min = [err for err in self.error_history if current_time - err.timestamp <= 300]
+        errors_1min = [
+            err for err in self.error_history if current_time - err.timestamp <= 60
+        ]
+        errors_5min = [
+            err for err in self.error_history if current_time - err.timestamp <= 300
+        ]
 
         # Count critical errors
-        critical_errors_1min = len([err for err in errors_1min if err.severity == ErrorSeverity.CRITICAL])
+        critical_errors_1min = len(
+            [err for err in errors_1min if err.severity == ErrorSeverity.CRITICAL]
+        )
 
         # Calculate health score (0-1, where 1 is healthy)
         health_score = 1.0
@@ -352,7 +368,9 @@ class ErrorRecoverySystem:
             session_id=session_id,
             user_input=user_input,
             game_state_snapshot=game_context,
-            stack_trace=traceback.format_exc() if severity in [ErrorSeverity.HIGH, ErrorSeverity.CRITICAL] else None,
+            stack_trace=traceback.format_exc()
+            if severity in [ErrorSeverity.HIGH, ErrorSeverity.CRITICAL]
+            else None,
         )
 
         # Record error for health monitoring
@@ -369,7 +387,9 @@ class ErrorRecoverySystem:
                 logger.error(f"Recovery strategy failed: {recovery_error}")
 
         # Generate fallback response
-        fallback_response = self.fallback_generator.generate_fallback(error_context, game_context)
+        fallback_response = self.fallback_generator.generate_fallback(
+            error_context, game_context
+        )
 
         # Log error with appropriate level
         if severity == ErrorSeverity.CRITICAL:
@@ -406,7 +426,9 @@ class ErrorRecoverySystem:
     def _recover_memory_error(self, error_context: ErrorContext) -> bool:
         """Attempt recovery from memory system errors."""
         # Memory errors are usually not critical to gameplay
-        logger.info("Memory system error detected, continuing with reduced memory functionality")
+        logger.info(
+            "Memory system error detected, continuing with reduced memory functionality"
+        )
         return True  # Memory errors don't stop the game
 
     def _recover_parsing_error(self, error_context: ErrorContext) -> bool:
@@ -475,7 +497,9 @@ if __name__ == "__main__":
 
     for error in test_errors:
         category, severity = recovery_system.classifier.classify_error(error)
-        print(f"Error: {error} -> Category: {category.value}, Severity: {severity.name}")
+        print(
+            f"Error: {error} -> Category: {category.value}, Severity: {severity.name}"
+        )
 
     # Test error handling
     fallback, recovered = recovery_system.handle_error(

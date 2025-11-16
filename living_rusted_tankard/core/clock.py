@@ -46,7 +46,9 @@ class GameTime(BaseModel):
         dump["hour_of_day"] = self.hour_of_day
         dump["day"] = self.day
         dump["formatted_time"] = self.format_time()  # Now uses natural time by default
-        dump["legacy_time"] = self.format_time(style="legacy")  # Keep decimal version for backward compatibility
+        dump["legacy_time"] = self.format_time(
+            style="legacy"
+        )  # Keep decimal version for backward compatibility
         return dump
 
     def format_time(self, format_str: str = None, style: str = "natural") -> str:
@@ -81,7 +83,12 @@ class GameTime(BaseModel):
             if format_str is None:
                 return f"Day {self.day}, {hours:02d}:{minutes:02d}"
 
-            return format_str.format(day=self.day, hour=hours if hours <= 12 else hours - 12, minute=minutes, ampm=ampm)
+            return format_str.format(
+                day=self.day,
+                hour=hours if hours <= 12 else hours - 12,
+                minute=minutes,
+                ampm=ampm,
+            )
 
     def to_real_time(self) -> datetime:
         """Convert to a real datetime (using current date)."""
@@ -91,7 +98,9 @@ class GameTime(BaseModel):
         return now + timedelta(days=days, hours=hours)
 
     @classmethod
-    def from_real_time(cls, dt: datetime, start_time: Optional[datetime] = None) -> "GameTime":
+    def from_real_time(
+        cls, dt: datetime, start_time: Optional[datetime] = None
+    ) -> "GameTime":
         """Create a GameTime from a datetime.
 
         Args:
@@ -132,12 +141,20 @@ class GameClock(BaseModel):
     time_scale: float = 1.0
 
     # Pydantic v1 doesn't allow fields with leading underscores, so we renamed them
-    scheduled_events_data: List[Dict[str, Any]] = Field(default_factory=list, exclude=True)
+    scheduled_events_data: List[Dict[str, Any]] = Field(
+        default_factory=list, exclude=True
+    )
     event_bus_field: EventBus = Field(default_factory=EventBus, exclude=True)
     last_tick: float = Field(default=0.0, exclude=True)
-    day_callbacks: Dict[str, Callable[[int], None]] = Field(default_factory=dict, exclude=True)
-    hour_callbacks: Dict[str, Callable[[int], None]] = Field(default_factory=dict, exclude=True)
-    minute_callbacks: Dict[str, Callable[[int], None]] = Field(default_factory=dict, exclude=True)
+    day_callbacks: Dict[str, Callable[[int], None]] = Field(
+        default_factory=dict, exclude=True
+    )
+    hour_callbacks: Dict[str, Callable[[int], None]] = Field(
+        default_factory=dict, exclude=True
+    )
+    minute_callbacks: Dict[str, Callable[[int], None]] = Field(
+        default_factory=dict, exclude=True
+    )
     last_day_field: int = Field(default=0, exclude=True)
     last_hour_field: int = Field(default=0, exclude=True)
     last_minute_field: int = Field(default=0, exclude=True)
@@ -149,7 +166,9 @@ class GameClock(BaseModel):
         arbitrary_types_allowed = True
 
     # For GameState to hook into, not serialized with clock's own state
-    on_time_advanced_handler: Optional[Callable[[float, float, float], None]] = Field(None, exclude=True)
+    on_time_advanced_handler: Optional[Callable[[float, float, float], None]] = Field(
+        None, exclude=True
+    )
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -267,12 +286,16 @@ class GameClock(BaseModel):
     def model_dump(self, **kwargs) -> Dict[str, Any]:
         """Serialize GameClock state."""
         # Exclude runtime-only or complex objects that are handled separately
-        kwargs.setdefault("exclude", {"on_time_advanced_handler"})  # Already excluded by Field option
+        kwargs.setdefault(
+            "exclude", {"on_time_advanced_handler"}
+        )  # Already excluded by Field option
 
         data = super().model_dump(**kwargs)
         # scheduled_events_data is already handled by Pydantic if it's a regular field.
         # If it's PrivateAttr, we need to explicitly add it.
-        data["_scheduled_events_data"] = self.scheduled_events_data  # Use old name for compatibility
+        data[
+            "_scheduled_events_data"
+        ] = self.scheduled_events_data  # Use old name for compatibility
         return data
 
     @classmethod
@@ -408,7 +431,9 @@ class GameClock(BaseModel):
             True if the event was found and cancelled, False otherwise
         """
         original_len = len(self.scheduled_events_data)
-        self.scheduled_events_data = [event for event in self.scheduled_events_data if event["id"] != event_id]
+        self.scheduled_events_data = [
+            event for event in self.scheduled_events_data if event["id"] != event_id
+        ]
         return len(self.scheduled_events_data) < original_len
 
     def on_day_change(self, callback: Callable[[int], None]) -> Callable:
@@ -488,10 +513,14 @@ class GameClock(BaseModel):
 
                     if event_data["repeat"]:
                         event_data["time"] += event_data["interval"]
-                        new_scheduled_events_data.append(event_data)  # Re-add if repeating
+                        new_scheduled_events_data.append(
+                            event_data
+                        )  # Re-add if repeating
                     # else: it's removed by not re-adding
                 except Exception as e:
-                    print(f"Error processing event '{event_data.get('name', 'Unnamed')}': {e}")
+                    print(
+                        f"Error processing event '{event_data.get('name', 'Unnamed')}': {e}"
+                    )
                     # Decide if a failing repeating event should be rescheduled or not
                     # For now, if it fails, it's not rescheduled.
             else:
@@ -499,7 +528,9 @@ class GameClock(BaseModel):
 
         if processed_any:
             # Re-sort if any repeating events were re-added
-            self.scheduled_events_data = sorted(new_scheduled_events_data, key=lambda e: e["time"])
+            self.scheduled_events_data = sorted(
+                new_scheduled_events_data, key=lambda e: e["time"]
+            )
         else:
             self.scheduled_events_data = new_scheduled_events_data
 
@@ -540,7 +571,9 @@ class GameClock(BaseModel):
 
             # Dispatch general time update event (e.g. every minute)
             self.event_bus_field.dispatch(
-                Event(EventType.TIME_ADVANCED, {"time": self.time.model_dump()})  # Use Pydantic model_dump for GameTime
+                Event(
+                    EventType.TIME_ADVANCED, {"time": self.time.model_dump()}
+                )  # Use Pydantic model_dump for GameTime
             )
 
         # If GameState has an on_time_advanced_handler, call it
@@ -590,7 +623,14 @@ class GameClock(BaseModel):
         # A more generic TIME_ADVANCED event for other systems, if needed.
         # This might be redundant if GameState's handler covers the main logic.
         self.event_bus_field.dispatch(
-            Event(EventType.TIME_ADVANCED, {"old_time": old_time_hours, "new_time": self.time.hours, "delta": hours})
+            Event(
+                EventType.TIME_ADVANCED,
+                {
+                    "old_time": old_time_hours,
+                    "new_time": self.time.hours,
+                    "delta": hours,
+                },
+            )
         )
 
     # _fire_time_based_events seems to be duplicative of _process_time_callbacks

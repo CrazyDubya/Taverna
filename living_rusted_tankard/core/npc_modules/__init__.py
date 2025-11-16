@@ -16,17 +16,32 @@ respond naturally to player actions and world events.
 
 # Import NPC subsystems from npc_systems directory
 try:
-    from ..npc_systems.psychology import NPCPsychology, PersonalityTrait, EmotionalState, CognitiveBias
+    from ..npc_systems.psychology import (
+        NPCPsychology,
+        PersonalityTrait,
+        EmotionalState,
+        CognitiveBias,
+    )
 except ImportError:
     NPCPsychology = PersonalityTrait = EmotionalState = CognitiveBias = None
 
 try:
-    from ..npc_systems.behavioral_rules import BehaviorEngine, BehaviorRule, Condition, Action
+    from ..npc_systems.behavioral_rules import (
+        BehaviorEngine,
+        BehaviorRule,
+        Condition,
+        Action,
+    )
 except ImportError:
     BehaviorEngine = BehaviorRule = Condition = Action = None
 
 try:
-    from ..npc_systems.dialogue import DialogueGenerator, DialogueContext, DialogueOption, DialogueType
+    from ..npc_systems.dialogue import (
+        DialogueGenerator,
+        DialogueContext,
+        DialogueOption,
+        DialogueType,
+    )
 except ImportError:
     DialogueGenerator = DialogueContext = DialogueOption = DialogueType = None
 
@@ -36,7 +51,12 @@ except ImportError:
     Goal = GoalStep = NPCAgency = GoalGenerator = None
 
 try:
-    from ..npc_systems.secrets import EnhancedSecret, Evidence, SecretConsequence, SecretProtection
+    from ..npc_systems.secrets import (
+        EnhancedSecret,
+        Evidence,
+        SecretConsequence,
+        SecretProtection,
+    )
 except ImportError:
     EnhancedSecret = Evidence = SecretConsequence = SecretProtection = None
 
@@ -56,7 +76,11 @@ except ImportError:
     NPCSchedule = ScheduleBlock = DayType = None
 
 try:
-    from ..npc_systems.interactions import InteractionManager, NPCInteraction, InteractionType
+    from ..npc_systems.interactions import (
+        InteractionManager,
+        NPCInteraction,
+        InteractionType,
+    )
 except ImportError:
     InteractionManager = NPCInteraction = InteractionType = None
 

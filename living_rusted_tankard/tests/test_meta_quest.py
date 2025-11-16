@@ -12,8 +12,8 @@ class TestMetaQuestMechanics:
     def test_meta_quest_unlocks_after_48h(self, meta_quest_setup):
         """Test that meta-quest unlocks after 48h without a room when asking about sleep."""
         setup = meta_quest_setup
-        clock = setup['clock']
-        player = setup['player']
+        clock = setup["clock"]
+        player = setup["player"]
 
         # Advance to just before 48h
         clock.advance(47.9)
@@ -32,13 +32,13 @@ class TestMetaQuestMechanics:
     def test_meta_quest_blocked_by_room_rental(self, meta_quest_setup):
         """Test that renting a room blocks the meta-quest permanently."""
         setup = meta_quest_setup
-        clock = setup['clock']
-        player = setup['player']
-        room_manager = setup['room_manager']
+        clock = setup["clock"]
+        player = setup["player"]
+        room_manager = setup["room_manager"]
 
         # Rent a room before 48h
         player.gold = 20
-        with patch('core.room_manager.ROOM_COST', 10):
+        with patch("core.room_manager.ROOM_COST", 10):
             room_manager.rent_room(player)
 
         # Advance past 48h and ask about sleep
@@ -52,9 +52,9 @@ class TestMetaQuestMechanics:
     def test_meta_quest_persists_after_unlock(self, meta_quest_setup):
         """Test that meta-quest remains unlocked after conditions are no longer met."""
         setup = meta_quest_setup
-        clock = setup['clock']
-        player = setup['player']
-        room_manager = setup['room_manager']
+        clock = setup["clock"]
+        player = setup["player"]
+        room_manager = setup["room_manager"]
 
         # Unlock the quest
         clock.advance(50)
@@ -62,7 +62,7 @@ class TestMetaQuestMechanics:
 
         # Rent a room after unlocking
         player.gold = 20
-        with patch('core.room_manager.ROOM_COST', 10):
+        with patch("core.room_manager.ROOM_COST", 10):
             room_manager.rent_room(player)
 
         # Quest should remain unlocked
@@ -71,8 +71,8 @@ class TestMetaQuestMechanics:
     def test_meta_quest_only_triggers_on_ask(self, meta_quest_setup):
         """Test that meta-quest only triggers when explicitly asking about sleep."""
         setup = meta_quest_setup
-        clock = setup['clock']
-        player = setup['player']
+        clock = setup["clock"]
+        player = setup["player"]
 
         # Advance past 48h
         clock.advance(50)
@@ -118,7 +118,7 @@ class TestMetaQuestIntegration:
 
         # Rent a room
         game_state.player.gold = 20
-        with patch('core.room_manager.ROOM_COST', 10):
+        with patch("core.room_manager.ROOM_COST", 10):
             game_state.process_command("rent room")
 
         # Quest should remain unlocked

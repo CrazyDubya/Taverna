@@ -22,7 +22,13 @@ from ..npc.goals import GoalManager
 from ..npc.interactions import InteractionManager
 
 # Phase 4: Narrative Engine
-from ..narrative import ThreadManager, NarrativeRulesEngine, NarrativeOrchestrator, StoryThread, ThreadType
+from ..narrative import (
+    ThreadManager,
+    NarrativeRulesEngine,
+    NarrativeOrchestrator,
+    StoryThread,
+    ThreadType,
+)
 from ..narrative.event_integration import NarrativeEventHandler
 
 logger = logging.getLogger(__name__)
@@ -115,7 +121,9 @@ class PhaseIntegration:
         # Create narrative components
         self.thread_manager = ThreadManager()
         self.rules_engine = NarrativeRulesEngine()
-        self.narrative_orchestrator = NarrativeOrchestrator(self.thread_manager, self.rules_engine)
+        self.narrative_orchestrator = NarrativeOrchestrator(
+            self.thread_manager, self.rules_engine
+        )
 
         # Attach to game state
         self.game_state.thread_manager = self.thread_manager
@@ -123,7 +131,9 @@ class PhaseIntegration:
         self.game_state.narrative_orchestrator = self.narrative_orchestrator
 
         # Create and connect event handler
-        self.narrative_handler = NarrativeEventHandler(self.game_state, self.narrative_orchestrator)
+        self.narrative_handler = NarrativeEventHandler(
+            self.game_state, self.narrative_orchestrator
+        )
         self.game_state.narrative_handler = self.narrative_handler
 
         # Create initial narrative threads based on game state
@@ -181,7 +191,9 @@ class PhaseIntegration:
         psychology = self.npc_psychology.get_npc_state(npc_name)
 
         # Get narrative context
-        narrative_context = self.narrative_handler.get_narrative_context_for_npc(npc_name)
+        narrative_context = self.narrative_handler.get_narrative_context_for_npc(
+            npc_name
+        )
 
         # Create dialogue context
         dialogue_context = DialogueContext(
@@ -257,7 +269,9 @@ class PhaseIntegration:
                 )
                 self.thread_manager.add_thread(secret_thread)
 
-    def _on_atmosphere_change(self, area: str, old_atmosphere: Dict, new_atmosphere: Dict):
+    def _on_atmosphere_change(
+        self, area: str, old_atmosphere: Dict, new_atmosphere: Dict
+    ):
         """Handle atmosphere changes affecting NPCs"""
         # NPCs in the area react to atmosphere
         npcs_in_area = self.area_manager.get_npcs_in_area(area)
@@ -265,7 +279,9 @@ class PhaseIntegration:
         for npc_name in npcs_in_area:
             # Atmosphere affects mood
             if new_atmosphere.get("mood_modifier"):
-                self.npc_psychology.modify_mood(npc_name, new_atmosphere["mood_modifier"])
+                self.npc_psychology.modify_mood(
+                    npc_name, new_atmosphere["mood_modifier"]
+                )
 
     def _on_npc_goal_achieved(self, npc_name: str, goal: Any):
         """Handle NPC goal achievement"""
@@ -311,7 +327,10 @@ class PhaseIntegration:
 
         for thread in active_threads:
             # Simple keyword matching for now
-            if any(participant in command.lower() for participant in thread.primary_participants):
+            if any(
+                participant in command.lower()
+                for participant in thread.primary_participants
+            ):
                 return f"[This action relates to: {thread.title}]"
 
         return None

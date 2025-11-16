@@ -44,7 +44,9 @@ class SnapshotManager:
                     "name": npc.name,
                     "description": npc.description,
                     "mood": npc.mood if hasattr(npc, "mood") else "neutral",
-                    "last_interaction_time": npc.last_interaction_time if hasattr(npc, "last_interaction_time") else 0,
+                    "last_interaction_time": npc.last_interaction_time
+                    if hasattr(npc, "last_interaction_time")
+                    else 0,
                 }
             )
 
@@ -58,7 +60,9 @@ class SnapshotManager:
             if hasattr(inventory, "items") and isinstance(inventory.items, dict):
                 for _, inv_item in inventory.items.items():
                     if hasattr(inv_item, "item") and hasattr(inv_item, "quantity"):
-                        player_inventory.append({"name": inv_item.item.name, "quantity": inv_item.quantity})
+                        player_inventory.append(
+                            {"name": inv_item.item.name, "quantity": inv_item.quantity}
+                        )
 
         player_state = {
             "gold": self.game_state.player.gold,
@@ -112,10 +116,16 @@ class SnapshotManager:
         """Get a list of currently present NPCs."""
         from .npc import NPC  # Import here to avoid circular import
 
-        if hasattr(self.game_state, "npc_manager") and hasattr(self.game_state.npc_manager, "npcs"):
+        if hasattr(self.game_state, "npc_manager") and hasattr(
+            self.game_state.npc_manager, "npcs"
+        ):
             npcs_dict = self.game_state.npc_manager.npcs
             if isinstance(npcs_dict, dict):
-                return [npc for npc in npcs_dict.values() if hasattr(npc, "is_present") and npc.is_present]
+                return [
+                    npc
+                    for npc in npcs_dict.values()
+                    if hasattr(npc, "is_present") and npc.is_present
+                ]
         return []
 
     def _get_visible_board_notes(self) -> List[str]:

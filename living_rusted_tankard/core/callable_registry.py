@@ -14,7 +14,9 @@ def register_callback(name: str):
             # This could indicate a naming collision, which might be an issue.
             # For now, let's print a warning. In a real scenario, you might raise an error
             # or have a more sophisticated way to handle this (e.g., namespacing).
-            print(f"Warning: Callback '{name}' is being overwritten in CALLBACK_REGISTRY.")
+            print(
+                f"Warning: Callback '{name}' is being overwritten in CALLBACK_REGISTRY."
+            )
         CALLBACK_REGISTRY[name] = func
         return func
 
@@ -28,7 +30,9 @@ def register_interaction(name: str):
 
     def decorator(func):
         if name in INTERACTION_REGISTRY:
-            print(f"Warning: Interaction '{name}' is being overwritten in INTERACTION_REGISTRY.")
+            print(
+                f"Warning: Interaction '{name}' is being overwritten in INTERACTION_REGISTRY."
+            )
         INTERACTION_REGISTRY[name] = func
         return func
 

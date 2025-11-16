@@ -15,7 +15,12 @@ import logging
 import json
 from pathlib import Path
 
-from .audio_system import audio_manager, game_audio, get_audio_config, process_game_audio
+from .audio_system import (
+    audio_manager,
+    game_audio,
+    get_audio_config,
+    process_game_audio,
+)
 from .economy_balancing import economy_balancer, get_economic_status, get_balanced_price
 from .game_state import GameState as OptimizedGameState
 
@@ -58,7 +63,11 @@ async def trigger_audio_event(request: Dict[str, Any]) -> Dict[str, Any]:
 
         commands = audio_manager.trigger_event(event_type, context)
 
-        return {"status": "success", "audio_commands": commands, "event_type": event_type}
+        return {
+            "status": "success",
+            "audio_commands": commands,
+            "event_type": event_type,
+        }
     except Exception as e:
         logger.error(f"Error triggering audio event: {e}")
         raise HTTPException(status_code=500, detail="Failed to trigger audio event")
@@ -110,7 +119,11 @@ async def update_audio_settings(request: Dict[str, Any]) -> Dict[str, Any]:
             except ValueError:
                 logger.warning(f"Invalid audio type: {audio_type_str}")
 
-        return {"status": "success", "message": "Audio settings updated", "current_config": get_audio_config()}
+        return {
+            "status": "success",
+            "message": "Audio settings updated",
+            "current_config": get_audio_config(),
+        }
     except Exception as e:
         logger.error(f"Error updating audio settings: {e}")
         raise HTTPException(status_code=500, detail="Failed to update audio settings")
@@ -128,18 +141,31 @@ async def get_player_economy_status(player_id: str) -> Dict[str, Any]:
 
 
 @ux_router.get("/economy/pricing/{player_id}")
-async def get_dynamic_pricing(player_id: str, items: Optional[str] = None) -> Dict[str, Any]:
+async def get_dynamic_pricing(
+    player_id: str, items: Optional[str] = None
+) -> Dict[str, Any]:
     """Get dynamic pricing information for items."""
     try:
         if items:
             item_list = [item.strip() for item in items.split(",")]
         else:
             # Default items to show pricing for
-            item_list = ["ale", "bread", "healing_potion", "room_basic", "old_toms_surprise"]
+            item_list = [
+                "ale",
+                "bread",
+                "healing_potion",
+                "room_basic",
+                "old_toms_surprise",
+            ]
 
         pricing = economy_balancer.get_pricing_preview(player_id, item_list)
 
-        return {"status": "success", "player_id": player_id, "pricing": pricing, "items_checked": len(item_list)}
+        return {
+            "status": "success",
+            "player_id": player_id,
+            "pricing": pricing,
+            "items_checked": len(item_list),
+        }
     except Exception as e:
         logger.error(f"Error getting pricing for {player_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to get pricing information")
@@ -158,11 +184,17 @@ async def get_active_economic_events() -> Dict[str, Any]:
                     "description": event.description,
                     "duration_hours": event.duration_hours,
                     "price_modifiers": event.price_modifiers,
-                    "active_until": event.active_until.isoformat() if event.active_until else None,
+                    "active_until": event.active_until.isoformat()
+                    if event.active_until
+                    else None,
                 }
             )
 
-        return {"status": "success", "active_events": active_events, "total_events": len(active_events)}
+        return {
+            "status": "success",
+            "active_events": active_events,
+            "total_events": len(active_events),
+        }
     except Exception as e:
         logger.error(f"Error getting economic events: {e}")
         raise HTTPException(status_code=500, detail="Failed to get economic events")
@@ -199,7 +231,9 @@ async def get_interface_config() -> Dict[str, Any]:
         }
     except Exception as e:
         logger.error(f"Error getting interface config: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get interface configuration")
+        raise HTTPException(
+            status_code=500, detail="Failed to get interface configuration"
+        )
 
 
 @ux_router.post("/feedback")
@@ -213,7 +247,9 @@ async def submit_user_feedback(request: Dict[str, Any]) -> Dict[str, Any]:
         features_used = request.get("features_used", [])
 
         # Log feedback for analysis
-        logger.info(f"User feedback: {feedback_type} - Rating: {rating}/5 - Features: {features_used}")
+        logger.info(
+            f"User feedback: {feedback_type} - Rating: {rating}/5 - Features: {features_used}"
+        )
 
         # In a real implementation, this would be stored in a database
         feedback_data = {
@@ -292,14 +328,21 @@ async def process_command_with_ux(command_data: Dict[str, Any]) -> Dict[str, Any
 
         # Add audio triggers based on command
         if "gold" in user_input.lower():
-            audio_commands = process_game_audio([{"type": "success", "message": "gold gained"}], session_id)
+            audio_commands = process_game_audio(
+                [{"type": "success", "message": "gold gained"}], session_id
+            )
             response["audio_commands"] = audio_commands
 
         # Add UI updates for enhanced feedback
         response["ui_updates"] = {
             "animate_elements": ["gold-amount"] if "gold" in user_input.lower() else [],
             "highlight_sidebar": (
-                True if any(word in user_input.lower() for word in ["status", "inventory", "quest"]) else False
+                True
+                if any(
+                    word in user_input.lower()
+                    for word in ["status", "inventory", "quest"]
+                )
+                else False
             ),
             "show_quick_actions": True,
         }
@@ -308,11 +351,15 @@ async def process_command_with_ux(command_data: Dict[str, Any]) -> Dict[str, Any
 
     except Exception as e:
         logger.error(f"Error processing command with UX: {e}")
-        raise HTTPException(status_code=500, detail="Failed to process command with UX enhancements")
+        raise HTTPException(
+            status_code=500, detail="Failed to process command with UX enhancements"
+        )
 
 
 # Utility functions for integration
-def get_enhanced_game_response(base_response: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+def get_enhanced_game_response(
+    base_response: Dict[str, Any], session_id: str
+) -> Dict[str, Any]:
     """Enhance standard game response with UX improvements."""
     enhanced_response = base_response.copy()
 
@@ -322,10 +369,17 @@ def get_enhanced_game_response(base_response: Dict[str, Any], session_id: str) -
         enhanced_response["audio_commands"] = audio_commands
 
     # Add UI enhancement hints
-    enhanced_response["ui_enhancements"] = {"auto_scroll": True, "animate_new_content": True, "update_sidebar": True}
+    enhanced_response["ui_enhancements"] = {
+        "auto_scroll": True,
+        "animate_new_content": True,
+        "update_sidebar": True,
+    }
 
     # Add mobile-specific optimizations
-    enhanced_response["mobile_optimizations"] = {"compact_layout": True, "touch_friendly": True}
+    enhanced_response["mobile_optimizations"] = {
+        "compact_layout": True,
+        "touch_friendly": True,
+    }
 
     return enhanced_response
 

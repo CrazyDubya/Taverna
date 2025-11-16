@@ -40,7 +40,9 @@ class NarrativeCache:
             try:
                 with open(cache_file, "r", encoding="utf-8") as f:
                     self.cache = json.load(f)
-                logger.info(f"Loaded {len(self.cache)} cached narratives from {cache_file}")
+                logger.info(
+                    f"Loaded {len(self.cache)} cached narratives from {cache_file}"
+                )
             except Exception as e:
                 logger.error(f"Error loading narrative cache: {e}")
                 self.cache = {}

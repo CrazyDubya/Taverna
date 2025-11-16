@@ -51,7 +51,10 @@ class GMThoughtEngine:
     """Hidden GM system that thinks about the game state and plans events."""
 
     def __init__(
-        self, llm_endpoint: str = "http://localhost:11434", model: str = "long-gemma", thought_interval: int = 30
+        self,
+        llm_endpoint: str = "http://localhost:11434",
+        model: str = "long-gemma",
+        thought_interval: int = 30,
     ):  # Think every 30 seconds
         self.llm_endpoint = llm_endpoint
         self.model = model
@@ -123,7 +126,7 @@ class GMThoughtEngine:
     async def _generate_gm_thought(self, context: GameContext) -> Optional[GMThought]:
         """Generate a GM thought based on current game context."""
 
-        prompt = f"""You are the Game Master for "The Living Rusted Tankard" tavern game.
+        prompt = """You are the Game Master for "The Living Rusted Tankard" tavern game.
 This is a HIDDEN thinking cycle - the player cannot see this.
 
 CURRENT GAME SITUATION:
@@ -165,7 +168,12 @@ Focus on making the world feel alive and responsive to the player."""
         try:
             response = requests.post(
                 f"{self.llm_endpoint}/api/generate",
-                json={"model": self.model, "prompt": prompt, "format": "json", "stream": False},
+                json={
+                    "model": self.model,
+                    "prompt": prompt,
+                    "format": "json",
+                    "stream": False,
+                },
                 timeout=20,
             )
             response.raise_for_status()
@@ -218,7 +226,9 @@ Focus on making the world feel alive and responsive to the player."""
         """Get thoughts that haven't been executed yet."""
         return [t for t in self.thoughts if not t.executed]
 
-    def add_manual_thought(self, content: str, priority: GMThoughtPriority = GMThoughtPriority.BACKGROUND):
+    def add_manual_thought(
+        self, content: str, priority: GMThoughtPriority = GMThoughtPriority.BACKGROUND
+    ):
         """Manually add a thought for the GM to consider."""
         thought = GMThought(
             id=f"manual_{time.time()}",

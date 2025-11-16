@@ -5,12 +5,11 @@ from unittest.mock import patch
 
 
 class TestEconomy:
-
     def test_gamble_success(self, economy, player_state):
         """Test a successful gambling attempt."""
         initial_gold = player_state.gold
 
-        with patch('random.random', return_value=0.5):  # Will win (0.5 < 0.6)
+        with patch("random.random", return_value=0.5):  # Will win (0.5 < 0.6)
             won, winnings = economy.gamble(player_state, 10)
 
         assert won is True
@@ -21,7 +20,7 @@ class TestEconomy:
         """Test a failed gambling attempt."""
         initial_gold = player_state.gold
 
-        with patch('random.random', return_value=0.7):  # Will lose (0.7 > 0.6)
+        with patch("random.random", return_value=0.7):  # Will lose (0.7 > 0.6)
             won, winnings = economy.gamble(player_state, 10)
 
         assert won is False
@@ -42,7 +41,7 @@ class TestEconomy:
         with pytest.raises(ValueError, match="must be positive"):
             economy.gamble(player_state, -10)
 
-    @patch('random.choice')
+    @patch("random.choice")
     def test_get_side_job(self, mock_choice, economy, player_state):
         """Test getting a side job."""
         # Mock the job selection
@@ -58,12 +57,12 @@ class TestEconomy:
         player_state.gold = 100
 
         # This job's reward is too low (5 < 10)
-        with patch('random.choice', return_value=("Low paying job", 5)):
+        with patch("random.choice", return_value=("Low paying job", 5)):
             job = economy.get_side_job(player_state)
             assert job is None  # Should be filtered out
 
         # This job's reward is sufficient (15 > 10)
-        with patch('random.choice', return_value=("Good job", 15)):
+        with patch("random.choice", return_value=("Good job", 15)):
             job = economy.get_side_job(player_state)
             assert job is not None
 

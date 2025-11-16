@@ -27,7 +27,9 @@ class CommandSchema(BaseModel):
     action: Union[ActionType, str] = Field(..., description="The action to perform")
     target: Optional[str] = Field(None, description="The target of the action")
     subject: Optional[str] = Field(None, description="Additional context or subject")
-    amount: Optional[int] = Field(None, description="Numeric value (e.g., for gambling)")
+    amount: Optional[int] = Field(
+        None, description="Numeric value (e.g., for gambling)"
+    )
     error: Optional[str] = Field(None, description="Error message if parsing failed")
 
     @validator("action", pre=True)
@@ -46,9 +48,13 @@ class CommandOutput(BaseModel):
     """Output from the parser, containing either a valid command or an error."""
 
     success: bool = Field(..., description="Whether parsing was successful")
-    command: Optional[CommandSchema] = Field(None, description="Parsed command if successful")
+    command: Optional[CommandSchema] = Field(
+        None, description="Parsed command if successful"
+    )
     error: Optional[str] = Field(None, description="Error message if parsing failed")
-    raw_response: Optional[Dict[str, Any]] = Field(None, description="Raw response from the LLM")
+    raw_response: Optional[Dict[str, Any]] = Field(
+        None, description="Raw response from the LLM"
+    )
 
 
 def format_command_output(command_dict: Dict[str, Any]) -> str:

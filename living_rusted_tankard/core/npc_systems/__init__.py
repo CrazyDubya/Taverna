@@ -22,7 +22,13 @@ from .behavioral_rules import (
     DailySchedule,
 )
 
-from .schedules import NPCSchedule, ScheduleBlock, ScheduleVariation, ActivityType, DayType
+from .schedules import (
+    NPCSchedule,
+    ScheduleBlock,
+    ScheduleVariation,
+    ActivityType,
+    DayType,
+)
 
 from .relationships import (
     RelationshipWeb,

@@ -38,9 +38,16 @@ class ReputationOpinion:
     confidence: float  # 0.0 to 1.0 - how sure they are
     source: str  # How they formed this opinion
     last_updated: float
-    experiences: List[str] = field(default_factory=list)  # Personal experiences that shaped this
+    experiences: List[str] = field(
+        default_factory=list
+    )  # Personal experiences that shaped this
 
-    def update_from_experience(self, new_score: float, experience_description: str, confidence_boost: float = 0.2):
+    def update_from_experience(
+        self,
+        new_score: float,
+        experience_description: str,
+        confidence_boost: float = 0.2,
+    ):
         """Update opinion based on direct experience."""
         # Weight new experience more heavily if they have high confidence
         weight = 0.3 + (self.confidence * 0.4)
@@ -59,7 +66,9 @@ class ReputationOpinion:
         self.last_updated = time.time()
         self.source = "personal_experience"
 
-    def update_from_gossip(self, gossip_score: float, source_credibility: float, gossip_description: str):
+    def update_from_gossip(
+        self, gossip_score: float, source_credibility: float, gossip_description: str
+    ):
         """Update opinion based on gossip from another NPC."""
         # Gossip has less impact than personal experience
         weight = 0.1 * source_credibility
@@ -139,25 +148,55 @@ class NPCReputation:
         """Get existing opinion or create neutral one."""
         if aspect not in self.opinions:
             self.opinions[aspect] = ReputationOpinion(
-                aspect=aspect, score=0.0, confidence=0.1, source="unknown", last_updated=time.time()
+                aspect=aspect,
+                score=0.0,
+                confidence=0.1,
+                source="unknown",
+                last_updated=time.time(),
             )
         return self.opinions[aspect]
 
-    def update_opinion_from_action(self, action_type: str, outcome: str, context: Dict[str, Any]):
+    def update_opinion_from_action(
+        self, action_type: str, outcome: str, context: Dict[str, Any]
+    ):
         """Update reputation based on player action this NPC witnessed or heard about."""
 
         # Map actions to reputation aspects
         action_mappings = {
-            "help_npc": {ReputationAspect.GENEROSITY: 0.3, ReputationAspect.TRUSTWORTHINESS: 0.2},
-            "complete_quest": {ReputationAspect.RELIABILITY: 0.4, ReputationAspect.PROBLEM_SOLVING: 0.3},
-            "pay_debt": {ReputationAspect.HONESTY: 0.3, ReputationAspect.TRUSTWORTHINESS: 0.2},
-            "break_promise": {ReputationAspect.TRUSTWORTHINESS: -0.4, ReputationAspect.RELIABILITY: -0.3},
-            "cheat_in_deal": {ReputationAspect.HONESTY: -0.5, ReputationAspect.BUSINESS_ACUMEN: -0.2},
+            "help_npc": {
+                ReputationAspect.GENEROSITY: 0.3,
+                ReputationAspect.TRUSTWORTHINESS: 0.2,
+            },
+            "complete_quest": {
+                ReputationAspect.RELIABILITY: 0.4,
+                ReputationAspect.PROBLEM_SOLVING: 0.3,
+            },
+            "pay_debt": {
+                ReputationAspect.HONESTY: 0.3,
+                ReputationAspect.TRUSTWORTHINESS: 0.2,
+            },
+            "break_promise": {
+                ReputationAspect.TRUSTWORTHINESS: -0.4,
+                ReputationAspect.RELIABILITY: -0.3,
+            },
+            "cheat_in_deal": {
+                ReputationAspect.HONESTY: -0.5,
+                ReputationAspect.BUSINESS_ACUMEN: -0.2,
+            },
             "win_fight": {ReputationAspect.COMBAT_SKILL: 0.4},
             "lose_fight": {ReputationAspect.COMBAT_SKILL: -0.2},
-            "successful_trade": {ReputationAspect.BUSINESS_ACUMEN: 0.3, ReputationAspect.WEALTH: 0.1},
-            "charity_donation": {ReputationAspect.GENEROSITY: 0.4, ReputationAspect.WEALTH: 0.2},
-            "rude_behavior": {ReputationAspect.SOCIAL_CHARM: -0.3, ReputationAspect.RESPECT_FOR_AUTHORITY: -0.2},
+            "successful_trade": {
+                ReputationAspect.BUSINESS_ACUMEN: 0.3,
+                ReputationAspect.WEALTH: 0.1,
+            },
+            "charity_donation": {
+                ReputationAspect.GENEROSITY: 0.4,
+                ReputationAspect.WEALTH: 0.2,
+            },
+            "rude_behavior": {
+                ReputationAspect.SOCIAL_CHARM: -0.3,
+                ReputationAspect.RESPECT_FOR_AUTHORITY: -0.2,
+            },
         }
 
         if action_type in action_mappings:
@@ -173,7 +212,9 @@ class NPCReputation:
                     source_npc = context.get("source_npc", "someone")
                     experience_desc = f"heard that player did {action_type} with result {outcome} (from {source_npc})"
 
-                opinion.update_from_experience(opinion.score + score_change, experience_desc, confidence_boost)
+                opinion.update_from_experience(
+                    opinion.score + score_change, experience_desc, confidence_boost
+                )
 
         # Recalculate overall opinion
         self._calculate_overall_opinion()
@@ -205,12 +246,15 @@ class NPCReputation:
         """Get a summary of this NPC's opinions about the player."""
         summary = {
             "overall_opinion": self.overall_opinion,
-            "opinion_strength": sum(op.confidence for op in self.opinions.values()) / max(1, len(self.opinions)),
+            "opinion_strength": sum(op.confidence for op in self.opinions.values())
+            / max(1, len(self.opinions)),
             "aspects": {},
         }
 
         for aspect, opinion in self.opinions.items():
-            if opinion.confidence > 0.2:  # Only include opinions they're somewhat confident about
+            if (
+                opinion.confidence > 0.2
+            ):  # Only include opinions they're somewhat confident about
                 summary["aspects"][aspect.value] = {
                     "score": opinion.score,
                     "confidence": opinion.confidence,
@@ -232,7 +276,9 @@ class NPCReputation:
             return None
 
         # Prefer strong opinions (positive or negative)
-        aspect, opinion = max(confident_opinions, key=lambda x: abs(x[1].score) * x[1].confidence)
+        aspect, opinion = max(
+            confident_opinions, key=lambda x: abs(x[1].score) * x[1].confidence
+        )
 
         # Create gossip description
         if opinion.score > 0.5:
@@ -251,7 +297,9 @@ class ReputationNetwork:
     def __init__(self):
         self.npc_reputations: Dict[str, NPCReputation] = {}
         self.social_connections: Dict[Tuple[str, str], SocialConnection] = {}
-        self.global_events: List[Tuple[str, str, Dict[str, Any], float]] = []  # action, outcome, context, timestamp
+        self.global_events: List[
+            Tuple[str, str, Dict[str, Any], float]
+        ] = []  # action, outcome, context, timestamp
 
     def get_or_create_reputation(self, npc_id: str, npc_name: str) -> NPCReputation:
         """Get existing reputation tracker or create new one."""
@@ -260,17 +308,29 @@ class ReputationNetwork:
             logger.info(f"Created reputation tracker for {npc_name}")
         return self.npc_reputations[npc_id]
 
-    def add_social_connection(self, npc1_id: str, npc2_id: str, strength: float = 0.5, trust: float = 0.5):
+    def add_social_connection(
+        self, npc1_id: str, npc2_id: str, strength: float = 0.5, trust: float = 0.5
+    ):
         """Add a social connection between two NPCs."""
         # Use sorted tuple to avoid duplicates
         connection_key = tuple(sorted([npc1_id, npc2_id]))
 
         if connection_key not in self.social_connections:
-            self.social_connections[connection_key] = SocialConnection(npc1_id, npc2_id, strength)
+            self.social_connections[connection_key] = SocialConnection(
+                npc1_id, npc2_id, strength
+            )
             self.social_connections[connection_key].trust_level = trust
-            logger.debug(f"Added social connection: {npc1_id} <-> {npc2_id} (strength: {strength})")
+            logger.debug(
+                f"Added social connection: {npc1_id} <-> {npc2_id} (strength: {strength})"
+            )
 
-    def record_player_action(self, action_type: str, outcome: str, witnesses: List[str], context: Dict[str, Any]):
+    def record_player_action(
+        self,
+        action_type: str,
+        outcome: str,
+        witnesses: List[str],
+        context: Dict[str, Any],
+    ):
         """Record a player action and update relevant NPC opinions."""
         timestamp = time.time()
 
@@ -282,13 +342,19 @@ class ReputationNetwork:
             if witness_id in self.npc_reputations:
                 witness_context = context.copy()
                 witness_context["witnessed_directly"] = True
-                self.npc_reputations[witness_id].update_opinion_from_action(action_type, outcome, witness_context)
+                self.npc_reputations[witness_id].update_opinion_from_action(
+                    action_type, outcome, witness_context
+                )
 
         # Spread through gossip network (delayed effect)
         self._queue_gossip_spread(action_type, outcome, witnesses, context)
 
     def _queue_gossip_spread(
-        self, action_type: str, outcome: str, initial_witnesses: List[str], context: Dict[str, Any]
+        self,
+        action_type: str,
+        outcome: str,
+        initial_witnesses: List[str],
+        context: Dict[str, Any],
     ):
         """Queue gossip to spread through the social network."""
         # This would be called periodically to simulate gossip spreading
@@ -335,21 +401,29 @@ class ReputationNetwork:
                     if gossip1:
                         aspect, score, description = gossip1
                         npc2_opinion = npc2_reputation.get_or_create_opinion(aspect)
-                        npc2_opinion.update_from_gossip(score, connection.get_trust_multiplier(), description)
+                        npc2_opinion.update_from_gossip(
+                            score, connection.get_trust_multiplier(), description
+                        )
 
                     # NPC2 shares gossip with NPC1
                     gossip2 = npc2_reputation.get_gossip_to_share()
                     if gossip2:
                         aspect, score, description = gossip2
                         npc1_opinion = npc1_reputation.get_or_create_opinion(aspect)
-                        npc1_opinion.update_from_gossip(score, connection.get_trust_multiplier(), description)
+                        npc1_opinion.update_from_gossip(
+                            score, connection.get_trust_multiplier(), description
+                        )
 
                     connection.last_interaction = time.time()
 
     def get_overall_reputation_summary(self) -> Dict[str, Any]:
         """Get a summary of the player's reputation across all NPCs."""
         if not self.npc_reputations:
-            return {"overall_score": 0.0, "reputation_level": "unknown", "npc_opinions": {}}
+            return {
+                "overall_score": 0.0,
+                "reputation_level": "unknown",
+                "npc_opinions": {},
+            }
 
         # Calculate weighted average reputation
         total_weight = 0.0
@@ -358,7 +432,9 @@ class ReputationNetwork:
 
         for npc_id, reputation in self.npc_reputations.items():
             opinion_strength = sum(op.confidence for op in reputation.opinions.values())
-            weight = max(0.1, opinion_strength)  # Minimum weight so all NPCs have some influence
+            weight = max(
+                0.1, opinion_strength
+            )  # Minimum weight so all NPCs have some influence
 
             weighted_sum += reputation.overall_opinion * weight
             total_weight += weight
@@ -386,7 +462,9 @@ class ReputationNetwork:
             "reputation_level": rep_level,
             "npc_opinions": npc_summaries,
             "social_connections": len(self.social_connections),
-            "recent_events": len([e for e in self.global_events if time.time() - e[3] < 86400]),  # Last 24 hours
+            "recent_events": len(
+                [e for e in self.global_events if time.time() - e[3] < 86400]
+            ),  # Last 24 hours
         }
 
     def create_default_social_network(self, npc_ids: List[str]):
@@ -410,9 +488,13 @@ class ReputationNetwork:
                 connection_key = tuple(sorted([npc1, npc2]))
                 if connection_key in self.social_connections:
                     connection = self.social_connections[connection_key]
-                    connection.connection_strength = min(1.0, connection.connection_strength + 0.3)
+                    connection.connection_strength = min(
+                        1.0, connection.connection_strength + 0.3
+                    )
                     connection.trust_level = min(1.0, connection.trust_level + 0.2)
-                    connection.gossip_frequency = min(1.0, connection.gossip_frequency + 0.2)
+                    connection.gossip_frequency = min(
+                        1.0, connection.gossip_frequency + 0.2
+                    )
 
 
 def setup_reputation_network_for_profession(

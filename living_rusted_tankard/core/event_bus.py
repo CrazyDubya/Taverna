@@ -48,7 +48,9 @@ class EventBus:
         """Initialize the event bus."""
         self._subscribers: Dict[EventType, List[Callable[[Event], None]]] = {}
 
-    def subscribe(self, event_type: EventType, callback: Callable[[Event], None]) -> Callable[[], None]:
+    def subscribe(
+        self, event_type: EventType, callback: Callable[[Event], None]
+    ) -> Callable[[], None]:
         """Subscribe to an event type.
 
         Args:
@@ -64,7 +66,10 @@ class EventBus:
         self._subscribers[event_type].append(callback)
 
         def unsubscribe():
-            if event_type in self._subscribers and callback in self._subscribers[event_type]:
+            if (
+                event_type in self._subscribers
+                and callback in self._subscribers[event_type]
+            ):
                 self._subscribers[event_type].remove(callback)
 
         return unsubscribe
@@ -92,7 +97,9 @@ class EventBus:
             try:
                 callback(event)
             except Exception as e:
-                logger.error(f"Error in event handler for {event_type}: {e}", exc_info=True)
+                logger.error(
+                    f"Error in event handler for {event_type}: {e}", exc_info=True
+                )
 
     def clear(self) -> None:
         """Clear all subscribers."""

@@ -20,7 +20,7 @@ class PersonalityTrait(Enum):
     EXTROVERTED = "extroverted"
     INTROVERTED = "introverted"
     EMPATHETIC = "empathetic"
-    ALOOF = "aloof"
+    ALOOF = "aloo"
     GOSSIPY = "gossipy"
     SECRETIVE = "secretive"
 
@@ -96,11 +96,15 @@ class TraitExpression:
         if tone == "enthusiastic":
             return message.replace(".", "!").replace("I ", "I really ")
         elif tone == "cautious":
-            return message.replace(".", "...").replace("I think", "I'm not sure, but I think")
-        elif tone == "gruff":
+            return message.replace(".", "...").replace(
+                "I think", "I'm not sure, but I think"
+            )
+        elif tone == "gruf":
             return message.replace("Hello", "Hmph").replace("please", "")
         elif tone == "flowery":
-            return message.replace("good", "wonderful").replace("I think", "In my humble opinion")
+            return message.replace("good", "wonderful").replace(
+                "I think", "In my humble opinion"
+            )
         else:
             return message
 
@@ -138,7 +142,9 @@ class PersonalityProfile:
             dialogue_modifiers=dialogue_mods,
             behavior_tendencies=behavior_mods,
         )
-        logger.info(f"{self.npc_name} gained trait: {trait.value} (intensity: {intensity})")
+        logger.info(
+            f"{self.npc_name} gained trait: {trait.value} (intensity: {intensity})"
+        )
 
     def get_active_traits(self, situation: str) -> List[TraitExpression]:
         """Get traits that would be active in the current situation."""
@@ -157,7 +163,9 @@ class PersonalityProfile:
         modified = base_message
 
         # Apply modifications from active traits (strongest first)
-        for trait_expr in active_traits[:3]:  # Limit to top 3 traits to avoid over-modification
+        for trait_expr in active_traits[
+            :3
+        ]:  # Limit to top 3 traits to avoid over-modification
             modified = trait_expr.get_dialogue_flavor(modified, situation)
 
             # Mark trait as recently expressed
@@ -171,7 +179,9 @@ class PersonalityProfile:
 
         for trait_expr in self.traits.values():
             if action_type in trait_expr.behavior_tendencies:
-                base_tendency += trait_expr.behavior_tendencies[action_type] * trait_expr.intensity
+                base_tendency += (
+                    trait_expr.behavior_tendencies[action_type] * trait_expr.intensity
+                )
 
         return max(0.0, min(1.0, base_tendency))
 
@@ -180,12 +190,18 @@ class PersonalityProfile:
         if not self.traits:
             return f"{self.npc_name} has an unremarkable personality."
 
-        dominant_traits = sorted(self.traits.values(), key=lambda t: t.intensity, reverse=True)[:3]
+        dominant_traits = sorted(
+            self.traits.values(), key=lambda t: t.intensity, reverse=True
+        )[:3]
 
         trait_descriptions = []
         for trait_expr in dominant_traits:
             intensity_desc = (
-                "very" if trait_expr.intensity > 0.7 else "somewhat" if trait_expr.intensity > 0.4 else "mildly"
+                "very"
+                if trait_expr.intensity > 0.7
+                else "somewhat"
+                if trait_expr.intensity > 0.4
+                else "mildly"
             )
             trait_descriptions.append(f"{intensity_desc} {trait_expr.trait.value}")
 
@@ -201,18 +217,30 @@ class PersonalityProfile:
 
         return summary
 
-    def react_to_world_event(self, event_type: str, event_data: Dict[str, Any]) -> Dict[str, Any]:
+    def react_to_world_event(
+        self, event_type: str, event_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate personality-based reaction to world events."""
         reactions = {}
 
         # Check how each trait would react
         for trait, trait_expr in self.traits.items():
-            if trait == PersonalityTrait.ANXIOUS and event_type in ["theft", "conflict", "danger"]:
+            if trait == PersonalityTrait.ANXIOUS and event_type in [
+                "theft",
+                "conflict",
+                "danger",
+            ]:
                 reactions["stress_increase"] = trait_expr.intensity * 0.5
                 reactions["concern_level"] = "high"
-            elif trait == PersonalityTrait.OPTIMISTIC and event_type in ["good_news", "celebration"]:
+            elif trait == PersonalityTrait.OPTIMISTIC and event_type in [
+                "good_news",
+                "celebration",
+            ]:
                 reactions["mood_boost"] = trait_expr.intensity * 0.3
-            elif trait == PersonalityTrait.GOSSIPY and event_type in ["scandal", "rumor"]:
+            elif trait == PersonalityTrait.GOSSIPY and event_type in [
+                "scandal",
+                "rumor",
+            ]:
                 reactions["wants_to_share"] = True
                 reactions["gossip_intensity"] = trait_expr.intensity
             elif trait == PersonalityTrait.GENEROUS and event_type == "charity_drive":
@@ -221,7 +249,9 @@ class PersonalityProfile:
         return reactions
 
 
-def create_personality_from_profession(npc_id: str, npc_name: str, profession: str) -> PersonalityProfile:
+def create_personality_from_profession(
+    npc_id: str, npc_name: str, profession: str
+) -> PersonalityProfile:
     """Create a personality profile based on NPC's profession."""
     profile = PersonalityProfile(npc_id, npc_name)
 
@@ -243,7 +273,10 @@ def create_personality_from_profession(npc_id: str, npc_name: str, profession: s
             behavior_mods={"offer_help": 0.4, "listen_patiently": 0.3},
         )
         profile.core_values = ["hospitality", "community"]
-        profile.quirks = ["always polishing glasses", "remembers everyone's favorite drink"]
+        profile.quirks = [
+            "always polishing glasses",
+            "remembers everyone's favorite drink",
+        ]
 
     elif profession.lower() in ["merchant", "trader", "shopkeeper"]:
         # Merchants are business-focused and persuasive
@@ -277,11 +310,17 @@ def create_personality_from_profession(npc_id: str, npc_name: str, profession: s
             PersonalityTrait.HARDWORKING,
             0.7,
             triggers=["work", "commitment"],
-            dialogue_mods={"prefix": "Hard work never killed anyone,", "tone": "determined"},
+            dialogue_mods={
+                "prefix": "Hard work never killed anyone,",
+                "tone": "determined",
+            },
             behavior_mods={"long_work_hours": 0.4, "take_pride_in_work": 0.5},
         )
         profile.core_values = ["quality craftsmanship", "reliability"]
-        profile.quirks = ["hands always stained from work", "judges others by their tools"]
+        profile.quirks = [
+            "hands always stained from work",
+            "judges others by their tools",
+        ]
 
     elif profession.lower() in ["guard", "soldier"]:
         # Guards are loyal and vigilant
@@ -335,7 +374,11 @@ def create_personality_from_profession(npc_id: str, npc_name: str, profession: s
         if trait not in profile.traits:
             intensity = random.uniform(0.3, 0.6)
             profile.add_trait(
-                trait, intensity, triggers=["general"], dialogue_mods={"tone": trait.value}, behavior_mods={}
+                trait,
+                intensity,
+                triggers=["general"],
+                dialogue_mods={"tone": trait.value},
+                behavior_mods={},
             )
 
     return profile
@@ -353,7 +396,9 @@ class PersonalityManager:
         """Get existing personality or create new one."""
         if npc_id not in self.personalities:
             if profession:
-                self.personalities[npc_id] = create_personality_from_profession(npc_id, npc_name, profession)
+                self.personalities[npc_id] = create_personality_from_profession(
+                    npc_id, npc_name, profession
+                )
             else:
                 # Create generic personality
                 profile = PersonalityProfile(npc_id, npc_name)
@@ -362,15 +407,23 @@ class PersonalityManager:
                 for trait in traits_to_add:
                     intensity = random.uniform(0.4, 0.8)
                     profile.add_trait(
-                        trait, intensity, triggers=["general"], dialogue_mods={"tone": trait.value}, behavior_mods={}
+                        trait,
+                        intensity,
+                        triggers=["general"],
+                        dialogue_mods={"tone": trait.value},
+                        behavior_mods={},
                     )
                 self.personalities[npc_id] = profile
 
-            logger.info(f"Created personality for {npc_name}: {self.personalities[npc_id].get_personality_summary()}")
+            logger.info(
+                f"Created personality for {npc_name}: {self.personalities[npc_id].get_personality_summary()}"
+            )
 
         return self.personalities[npc_id]
 
-    def modify_dialogue_for_personality(self, npc_id: str, base_message: str, situation: str = "conversation") -> str:
+    def modify_dialogue_for_personality(
+        self, npc_id: str, base_message: str, situation: str = "conversation"
+    ) -> str:
         """Apply personality modifications to NPC dialogue."""
         if npc_id in self.personalities:
             return self.personalities[npc_id].modify_dialogue(base_message, situation)
@@ -382,7 +435,9 @@ class PersonalityManager:
             return self.personalities[npc_id].get_behavior_tendency(action_type)
         return 0.5  # Default neutral likelihood
 
-    def react_to_world_event(self, event_type: str, event_data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    def react_to_world_event(
+        self, event_type: str, event_data: Dict[str, Any]
+    ) -> Dict[str, Dict[str, Any]]:
         """Get personality-based reactions from all NPCs to a world event."""
         reactions = {}
 
@@ -395,4 +450,7 @@ class PersonalityManager:
 
     def get_personality_insights(self) -> Dict[str, str]:
         """Get personality summaries for all NPCs."""
-        return {npc_id: personality.get_personality_summary() for npc_id, personality in self.personalities.items()}
+        return {
+            npc_id: personality.get_personality_summary()
+            for npc_id, personality in self.personalities.items()
+        }

@@ -11,11 +11,17 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./taverna.db")
 
 # Create engine
 engine = create_engine(
-    DATABASE_URL, echo=True, connect_args={"check_same_thread": False}  # Set to False in production  # SQLite specific
+    DATABASE_URL,
+    echo=True,
+    connect_args={
+        "check_same_thread": False
+    },  # Set to False in production  # SQLite specific
 )
 
 # Session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=Session)
+SessionLocal = sessionmaker(
+    autocommit=False, autoflush=False, bind=engine, class_=Session
+)
 
 
 def init_db():

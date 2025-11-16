@@ -9,6 +9,7 @@ import json
 # Test the AI player manager structure
 print("Testing AI Player Manager Structure...")
 
+
 # Mock the personality enum
 class AIPlayerPersonality:
     CURIOUS_EXPLORER = "curious_explorer"
@@ -16,34 +17,42 @@ class AIPlayerPersonality:
     SOCIAL_BUTTERFLY = "social_butterfly"
     MYSTERIOUS_WANDERER = "mysterious_wanderer"
 
+
 # Test data structures
 print("\n✅ AI Player Personalities:")
 for attr in dir(AIPlayerPersonality):
-    if not attr.startswith('_'):
+    if not attr.startswith("_"):
         print(f"  - {attr}: {getattr(AIPlayerPersonality, attr)}")
 
 # Test personality traits configuration
 personality_traits = {
     "curious_explorer": {
-        "preferred_commands": ["look", "read notice board", "interact", "jobs", "status", "inventory"],
+        "preferred_commands": [
+            "look",
+            "read notice board",
+            "interact",
+            "jobs",
+            "status",
+            "inventory",
+        ],
         "interaction_style": "eager and inquisitive",
-        "decision_pattern": "always chooses the most interesting option"
+        "decision_pattern": "always chooses the most interesting option",
     },
     "cautious_merchant": {
         "preferred_commands": ["status", "inventory", "buy", "jobs", "work"],
         "interaction_style": "careful and business-minded",
-        "decision_pattern": "evaluates cost-benefit before acting"
+        "decision_pattern": "evaluates cost-benefit before acting",
     },
     "social_butterfly": {
         "preferred_commands": ["interact", "read notice board", "look", "jobs"],
         "interaction_style": "friendly and talkative",
-        "decision_pattern": "prioritizes social interactions and relationships"
+        "decision_pattern": "prioritizes social interactions and relationships",
     },
     "mysterious_wanderer": {
         "preferred_commands": ["look", "wait", "status", "read notice board"],
         "interaction_style": "cryptic and thoughtful",
-        "decision_pattern": "takes time to observe before acting"
-    }
+        "decision_pattern": "takes time to observe before acting",
+    },
 }
 
 print("\n✅ Personality Traits Configuration:")
@@ -75,7 +84,8 @@ print("     - Context manager pattern for resource management")
 
 # Show example usage (pseudo-code)
 print("\n✅ Example Usage (Pseudo-code):")
-print("""
+print(
+    """
 # Create AI player manager
 manager = AIPlayerManager()
 
@@ -89,7 +99,8 @@ decision = await session.ai_player.make_decision(game_state)
 
 # Session cleanup
 await session.deactivate()
-""")
+"""
+)
 
 print("\n✅ AI Player is structurally sound and ready to work!")
 print("   Dependencies needed to run: requests, aiohttp, pydantic")

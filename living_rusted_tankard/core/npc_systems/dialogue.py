@@ -93,7 +93,9 @@ class DialogueOption:
     can_repeat: bool = True
     cooldown: int = 0  # Turns before can use again
 
-    def is_available(self, context: DialogueContext, speaker_psychology: NPCPsychology) -> bool:
+    def is_available(
+        self, context: DialogueContext, speaker_psychology: NPCPsychology
+    ) -> bool:
         """Check if this dialogue option is available."""
         # Check relationship requirement
         if self.requires_relationship is not None:
@@ -142,7 +144,9 @@ class DialogueGenerator:
 
     def __init__(self):
         self.dialogue_templates: Dict[DialogueType, List[str]] = self._load_templates()
-        self.personality_modifiers: Dict[Personality, Dict[str, Any]] = self._load_personality_modifiers()
+        self.personality_modifiers: Dict[
+            Personality, Dict[str, Any]
+        ] = self._load_personality_modifiers()
         self.mood_modifiers: Dict[Mood, Dict[str, Any]] = self._load_mood_modifiers()
 
     def _load_templates(self) -> Dict[DialogueType, List[str]]:
@@ -211,19 +215,36 @@ class DialogueGenerator:
     def _load_mood_modifiers(self) -> Dict[Mood, Dict[str, Any]]:
         """Load mood-specific modifiers."""
         return {
-            Mood.HAPPY: {"tone_shift": 0.3, "talkativeness": 1.3, "secret_looseness": 0.2},  # More positive
-            Mood.ANGRY: {"tone_shift": -0.5, "talkativeness": 0.8, "aggression_boost": 0.5},  # More negative
-            Mood.SAD: {"tone_shift": -0.3, "talkativeness": 0.6, "sympathy_seeking": 0.7},
+            Mood.HAPPY: {
+                "tone_shift": 0.3,
+                "talkativeness": 1.3,
+                "secret_looseness": 0.2,
+            },  # More positive
+            Mood.ANGRY: {
+                "tone_shift": -0.5,
+                "talkativeness": 0.8,
+                "aggression_boost": 0.5,
+            },  # More negative
+            Mood.SAD: {
+                "tone_shift": -0.3,
+                "talkativeness": 0.6,
+                "sympathy_seeking": 0.7,
+            },
         }
 
     def generate_dialogue_options(
-        self, context: DialogueContext, speaker_psychology: NPCPsychology, num_options: int = 3
+        self,
+        context: DialogueContext,
+        speaker_psychology: NPCPsychology,
+        num_options: int = 3,
     ) -> List[DialogueOption]:
         """Generate dialogue options based on context."""
         options = []
 
         # Determine appropriate dialogue types
-        appropriate_types = self._get_appropriate_dialogue_types(context, speaker_psychology)
+        appropriate_types = self._get_appropriate_dialogue_types(
+            context, speaker_psychology
+        )
 
         for dialogue_type in appropriate_types[:num_options]:
             # Generate option for this type
@@ -283,7 +304,10 @@ class DialogueGenerator:
         return unique
 
     def _generate_option(
-        self, dialogue_type: DialogueType, context: DialogueContext, psychology: NPCPsychology
+        self,
+        dialogue_type: DialogueType,
+        context: DialogueContext,
+        psychology: NPCPsychology,
     ) -> Optional[DialogueOption]:
         """Generate a specific dialogue option."""
         # Get base template
@@ -325,25 +349,39 @@ class DialogueGenerator:
 
         return option
 
-    def _fill_template(self, template: str, context: DialogueContext, psychology: NPCPsychology) -> str:
+    def _fill_template(
+        self, template: str, context: DialogueContext, psychology: NPCPsychology
+    ) -> str:
         """Fill in a dialogue template with contextual information."""
         replacements = {
             "{listener}": context.listener_id,
             "{location}": context.location,
             "{weather}": context.environmental_factors.get("weather", "strange"),
             "{recent_event}": context.current_event or "the usual happenings",
-            "{business_state}": random.choice(["slow", "busy", "strange", "profitable"]),
-            "{random_topic}": random.choice(["the old days", "the future", "life", "fate"]),
-            "{adjective}": random.choice(["interesting", "peculiar", "lively", "quiet"]),
-            "{character}": random.choice(context.nearby_characters) if context.nearby_characters else "someone",
+            "{business_state}": random.choice(
+                ["slow", "busy", "strange", "profitable"]
+            ),
+            "{random_topic}": random.choice(
+                ["the old days", "the future", "life", "fate"]
+            ),
+            "{adjective}": random.choice(
+                ["interesting", "peculiar", "lively", "quiet"]
+            ),
+            "{character}": random.choice(context.nearby_characters)
+            if context.nearby_characters
+            else "someone",
             "{gossip_content}": "something scandalous is happening",
             "{secret_hint}": "not everything is as it seems",
             "{rumor}": "changes are coming",
             "{juicy_gossip}": "certain people aren't who they claim to be",
             "{protected_thing}": "what's mine",
-            "{poetic_comparison}": random.choice(["stars", "gems", "moonlight", "sunrise"]),
+            "{poetic_comparison}": random.choice(
+                ["stars", "gems", "moonlight", "sunrise"]
+            ),
             "{romantic_activity}": random.choice(["a walk", "dinner", "a drink"]),
-            "{romantic_adjective}": random.choice(["magical", "perfect", "wonderful", "special"]),
+            "{romantic_adjective}": random.choice(
+                ["magical", "perfect", "wonderful", "special"]
+            ),
         }
 
         result = template
@@ -353,7 +391,10 @@ class DialogueGenerator:
         return result
 
     def _determine_tone(
-        self, dialogue_type: DialogueType, context: DialogueContext, psychology: NPCPsychology
+        self,
+        dialogue_type: DialogueType,
+        context: DialogueContext,
+        psychology: NPCPsychology,
     ) -> DialogueTone:
         """Determine the tone of dialogue."""
         # Base tone from dialogue type
@@ -390,21 +431,39 @@ class DialogueGenerator:
 
         return base_tone
 
-    def _calculate_priority(self, option: DialogueOption, context: DialogueContext, psychology: NPCPsychology) -> float:
+    def _calculate_priority(
+        self,
+        option: DialogueOption,
+        context: DialogueContext,
+        psychology: NPCPsychology,
+    ) -> float:
         """Calculate priority for a dialogue option."""
         priority = 0.5
 
         # Goal alignment
         if context.speaker_goal:
-            if option.type == DialogueType.INFORMATION and context.speaker_goal == "get_information":
+            if (
+                option.type == DialogueType.INFORMATION
+                and context.speaker_goal == "get_information"
+            ):
                 priority += 0.3
-            elif option.type == DialogueType.THREATENING and context.speaker_goal == "intimidate":
+            elif (
+                option.type == DialogueType.THREATENING
+                and context.speaker_goal == "intimidate"
+            ):
                 priority += 0.3
 
         # Personality alignment
         personality_preferences = {
-            Personality.FRIENDLY: [DialogueType.GREETING, DialogueType.GOSSIP, DialogueType.SMALL_TALK],
-            Personality.SUSPICIOUS: [DialogueType.INFORMATION, DialogueType.THREATENING],
+            Personality.FRIENDLY: [
+                DialogueType.GREETING,
+                DialogueType.GOSSIP,
+                DialogueType.SMALL_TALK,
+            ],
+            Personality.SUSPICIOUS: [
+                DialogueType.INFORMATION,
+                DialogueType.THREATENING,
+            ],
             Personality.AGGRESSIVE: [DialogueType.THREATENING, DialogueType.BUSINESS],
         }
 
@@ -413,32 +472,52 @@ class DialogueGenerator:
                 priority += 0.2
 
         # Mood influence
-        if psychology.current_mood == Mood.HAPPY and option.tone == DialogueTone.FRIENDLY:
+        if (
+            psychology.current_mood == Mood.HAPPY
+            and option.tone == DialogueTone.FRIENDLY
+        ):
             priority += 0.1
-        elif psychology.current_mood == Mood.ANGRY and option.tone == DialogueTone.HOSTILE:
+        elif (
+            psychology.current_mood == Mood.ANGRY
+            and option.tone == DialogueTone.HOSTILE
+        ):
             priority += 0.2
 
         # Relationship influence
-        if context.relationship_strength > 0.7 and option.type in [DialogueType.PERSONAL, DialogueType.GOSSIP]:
+        if context.relationship_strength > 0.7 and option.type in [
+            DialogueType.PERSONAL,
+            DialogueType.GOSSIP,
+        ]:
             priority += 0.15
 
         return min(1.0, priority)
 
     def generate_response(
-        self, chosen_option: DialogueOption, context: DialogueContext, responder_psychology: NPCPsychology
+        self,
+        chosen_option: DialogueOption,
+        context: DialogueContext,
+        responder_psychology: NPCPsychology,
     ) -> DialogueResponse:
         """Generate a response to chosen dialogue."""
         # Determine response tone based on relationship and option
-        response_tone = self._determine_response_tone(chosen_option, context, responder_psychology)
+        response_tone = self._determine_response_tone(
+            chosen_option, context, responder_psychology
+        )
 
         # Generate response text
-        response_text = self._generate_response_text(chosen_option, response_tone, context, responder_psychology)
+        response_text = self._generate_response_text(
+            chosen_option, response_tone, context, responder_psychology
+        )
 
         # Determine if conversation continues
-        ends_conversation = self._should_end_conversation(chosen_option, context, responder_psychology)
+        ends_conversation = self._should_end_conversation(
+            chosen_option, context, responder_psychology
+        )
 
         # Create response
-        response = DialogueResponse(text=response_text, tone=response_tone, ends_conversation=ends_conversation)
+        response = DialogueResponse(
+            text=response_text, tone=response_tone, ends_conversation=ends_conversation
+        )
 
         # Set relationship changes
         if chosen_option.tone == DialogueTone.HOSTILE:
@@ -459,7 +538,10 @@ class DialogueGenerator:
         return response
 
     def _determine_response_tone(
-        self, option: DialogueOption, context: DialogueContext, psychology: NPCPsychology
+        self,
+        option: DialogueOption,
+        context: DialogueContext,
+        psychology: NPCPsychology,
     ) -> DialogueTone:
         """Determine tone of response."""
         # Mirror friendly tones if relationship is good
@@ -479,7 +561,11 @@ class DialogueGenerator:
         return DialogueTone.NEUTRAL
 
     def _generate_response_text(
-        self, option: DialogueOption, tone: DialogueTone, context: DialogueContext, psychology: NPCPsychology
+        self,
+        option: DialogueOption,
+        tone: DialogueTone,
+        context: DialogueContext,
+        psychology: NPCPsychology,
     ) -> str:
         """Generate response text."""
         response_templates = {
@@ -506,12 +592,17 @@ class DialogueGenerator:
         }
 
         # Get appropriate templates
-        templates = response_templates.get((option.type, tone), ["I see.", "Interesting.", "Is that so?"])
+        templates = response_templates.get(
+            (option.type, tone), ["I see.", "Interesting.", "Is that so?"]
+        )
 
         return random.choice(templates)
 
     def _should_end_conversation(
-        self, option: DialogueOption, context: DialogueContext, psychology: NPCPsychology
+        self,
+        option: DialogueOption,
+        context: DialogueContext,
+        psychology: NPCPsychology,
     ) -> bool:
         """Determine if conversation should end."""
         # Threats often end conversations

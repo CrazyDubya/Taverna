@@ -62,14 +62,20 @@ class Parser:
             # Look commands - handle both 'look' and 'look at something'
             (r"^look(?: around| at )?(?: the | at |)(.*)", self._handle_look),
             # Movement - handle 'go north', 'move to north', 'walk to north', or just 'north'
-            (r"^(?:go(?: to)? |move to |walk to |)(north|south|east|west|up|down|in|out)", self._handle_movement),
+            (
+                r"^(?:go(?: to)? |move to |walk to |)(north|south|east|west|up|down|in|out)",
+                self._handle_movement,
+            ),
             # Talk to NPC
             (r"^(?:talk to|speak to|chat with|ask) (.+)", self._handle_talk),
             # Default fallback
             (r"^(.+)$", self._handle_unknown),
         ]
 
-        self.compiled_patterns = [(re.compile(pattern, re.IGNORECASE), handler) for pattern, handler in patterns]
+        self.compiled_patterns = [
+            (re.compile(pattern, re.IGNORECASE), handler)
+            for pattern, handler in patterns
+        ]
 
     def _handle_look(self, match: re.Match) -> Dict[str, Any]:
         """Handle look commands."""
@@ -130,7 +136,7 @@ class Parser:
 
         try:
             # Prepare the prompt with game context
-            prompt = f"""
+            prompt = """
             Current location: {game_state.location}
             Time: {game_state.time_of_day}
             Visible objects: {', '.join(game_state.visible_objects)}
@@ -143,7 +149,9 @@ class Parser:
             """.strip()
 
             # Call the LLM
-            response = requests.post(self.llm_endpoint, json={"prompt": prompt}, timeout=5)  # 5 second timeout
+            response = requests.post(
+                self.llm_endpoint, json={"prompt": prompt}, timeout=5
+            )  # 5 second timeout
             response.raise_for_status()
 
             # Parse the response

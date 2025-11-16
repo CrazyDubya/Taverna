@@ -103,7 +103,9 @@ class AsyncContextCache:
             if len(self.cache) >= self.max_size:
                 self._evict_oldest()
 
-            self.cache[cache_key] = CachedContext(content=context, timestamp=time.time(), hash_key=state_hash)
+            self.cache[cache_key] = CachedContext(
+                content=context, timestamp=time.time(), hash_key=state_hash
+            )
             logger.debug(f"Context cached for {session_id}")
 
     def _evict_oldest(self) -> None:
@@ -124,7 +126,11 @@ class AsyncContextCache:
 class AsyncLLMOptimizer:
     """Asynchronous LLM optimization and request handling."""
 
-    def __init__(self, ollama_url: str = "http://localhost:11434", model: str = "long-gemma:latest"):
+    def __init__(
+        self,
+        ollama_url: str = "http://localhost:11434",
+        model: str = "long-gemma:latest",
+    ):
         self.ollama_url = ollama_url
         self.model = model
         self.context_cache = AsyncContextCache()
@@ -143,7 +149,9 @@ class AsyncLLMOptimizer:
         if self._session and not self._session.closed:
             await self._session.close()
 
-    async def make_async_request(self, messages: List[Dict], session_id: str) -> Dict[str, Any]:
+    async def make_async_request(
+        self, messages: List[Dict], session_id: str
+    ) -> Dict[str, Any]:
         """Make asynchronous request to LLM service."""
         session = await self._get_session()
         api_url = f"{self.ollama_url}/api/chat"
@@ -164,11 +172,16 @@ class AsyncLLMOptimizer:
         try:
             async with session.post(api_url, json=data) as response:
                 if response.status != 200:
-                    raise aiohttp.ClientError(f"HTTP {response.status}: {await response.text()}")
+                    raise aiohttp.ClientError(
+                        f"HTTP {response.status}: {await response.text()}"
+                    )
 
                 response_data = await response.json()
 
-                if "message" not in response_data or "content" not in response_data["message"]:
+                if (
+                    "message" not in response_data
+                    or "content" not in response_data["message"]
+                ):
                     raise ValueError("Invalid response format from LLM")
 
                 self.request_stats["successful_requests"] += 1
@@ -200,7 +213,9 @@ class AsyncLLMOptimizer:
 
         # Calculate average response time
         if stats.get("successful_requests", 0) > 0:
-            stats["average_response_time"] = stats.get("total_response_time", 0) / stats["successful_requests"]
+            stats["average_response_time"] = (
+                stats.get("total_response_time", 0) / stats["successful_requests"]
+            )
         else:
             stats["average_response_time"] = 0
 
@@ -264,8 +279,12 @@ class BackgroundHealthMonitor:
                         raise aiohttp.ClientError(f"HTTP {response.status}")
 
                     data = await response.json()
-                    available_models = [model["name"] for model in data.get("models", [])]
-                    model_available = any(self.model in model_name for model_name in available_models)
+                    available_models = [
+                        model["name"] for model in data.get("models", [])
+                    ]
+                    model_available = any(
+                        self.model in model_name for model_name in available_models
+                    )
 
                     if model_available:
                         self.is_healthy = True
@@ -278,7 +297,9 @@ class BackgroundHealthMonitor:
         except Exception as e:
             self.consecutive_failures += 1
             self.is_healthy = False
-            logger.warning(f"Health check failed ({self.consecutive_failures} consecutive): {e}")
+            logger.warning(
+                f"Health check failed ({self.consecutive_failures} consecutive): {e}"
+            )
 
     def get_status(self) -> Dict[str, Any]:
         """Get current health status."""
@@ -291,7 +312,9 @@ class BackgroundHealthMonitor:
 
 
 # Utility functions for integration
-async def optimize_llm_requests(requests: List[Tuple[str, Any]], optimizer: AsyncLLMOptimizer) -> List[Dict[str, Any]]:
+async def optimize_llm_requests(
+    requests: List[Tuple[str, Any]], optimizer: AsyncLLMOptimizer
+) -> List[Dict[str, Any]]:
     """Batch process multiple LLM requests for efficiency."""
     tasks = []
 

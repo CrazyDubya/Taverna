@@ -45,7 +45,11 @@ class LLMChatMessage:
 class LLMGameMaster:
     """LLM-powered game master for interpreting and responding to natural language inputs."""
 
-    def __init__(self, ollama_url: str = "http://localhost:11434", model: str = "long-gemma:latest"):
+    def __init__(
+        self,
+        ollama_url: str = "http://localhost:11434",
+        model: str = "long-gemma:latest",
+    ):
         """Initialize the LLM Game Master using Ollama.
 
         Args:
@@ -55,8 +59,12 @@ class LLMGameMaster:
         self.ollama_url = ollama_url
         self.model = model
         self.conversation_histories: Dict[str, List[LLMChatMessage]] = {}
-        self.current_conversations: Dict[str, Dict[str, Any]] = {}  # Track active conversations by session
-        self.session_memories: Dict[str, List[Dict[str, Any]]] = {}  # Track important information by session
+        self.current_conversations: Dict[
+            str, Dict[str, Any]
+        ] = {}  # Track active conversations by session
+        self.session_memories: Dict[
+            str, List[Dict[str, Any]]
+        ] = {}  # Track important information by session
 
         # Narrative action processor
         self.action_processor = NarrativeActionProcessor()
@@ -224,7 +232,9 @@ These memories will be included in future conversations to maintain consistency.
         if hasattr(game_state, "npc_manager"):
             try:
                 for npc in game_state.npc_manager.get_present_npcs():
-                    present_npcs.append({"id": npc.id, "name": npc.name, "description": npc.description})
+                    present_npcs.append(
+                        {"id": npc.id, "name": npc.name, "description": npc.description}
+                    )
             except Exception as e:
                 logger.error(f"Error getting present NPCs: {e}")
 
@@ -262,7 +272,8 @@ These memories will be included in future conversations to maintain consistency.
             try:
                 recent_events = list(game_state.events)[-5:]
                 context["recent_events"] = [
-                    {"message": event.message, "type": event.event_type} for event in recent_events
+                    {"message": event.message, "type": event.event_type}
+                    for event in recent_events
                 ]
             except Exception as e:
                 logger.error(f"Error getting recent events: {e}")
@@ -317,7 +328,11 @@ These memories will be included in future conversations to maintain consistency.
 
         # Initialize conversation state for this session if it doesn't exist
         if session_id not in self.current_conversations:
-            self.current_conversations[session_id] = {"talking_to": None, "options": [], "last_updated": time.time()}
+            self.current_conversations[session_id] = {
+                "talking_to": None,
+                "options": [],
+                "last_updated": time.time(),
+            }
 
         # Extract the options
         options_part = content.split("[Options:")[1]
@@ -413,8 +428,12 @@ These memories will be included in future conversations to maintain consistency.
         cleaned_response = re.sub(memory_pattern, "", response, flags=re.IGNORECASE)
 
         # Clean up any double spaces left by removing tags, but preserve newlines for options formatting
-        cleaned_response = re.sub(r"[ \t]+", " ", cleaned_response)  # Only collapse horizontal whitespace
-        cleaned_response = re.sub(r"\n\s*\n", "\n", cleaned_response)  # Remove empty lines but keep structure
+        cleaned_response = re.sub(
+            r"[ \t]+", " ", cleaned_response
+        )  # Only collapse horizontal whitespace
+        cleaned_response = re.sub(
+            r"\n\s*\n", "\n", cleaned_response
+        )  # Remove empty lines but keep structure
         cleaned_response = cleaned_response.strip()
 
         return cleaned_response
@@ -452,22 +471,35 @@ These memories will be included in future conversations to maintain consistency.
             The air is filled with the aroma of hearty stew, freshly baked bread, and the distinct smell of ale. The ambient noise is a pleasant mixture of conversation, occasional laughter, and the soft notes of someone strumming a lute in the corner.
             """
             return tavern_description.strip(), "look", []
-        elif user_input_lower.startswith("look ") or user_input_lower.startswith("examine "):
+        elif user_input_lower.startswith("look ") or user_input_lower.startswith(
+            "examine "
+        ):
             # Handle looking at specific things
-            target = user_input_lower.replace("look ", "").replace("examine ", "").strip()
+            target = (
+                user_input_lower.replace("look ", "").replace("examine ", "").strip()
+            )
 
             # Define key facts about tavern objects - enough to guide the LLM
             # but not so prescriptive that it limits creative freedom
             tavern_object_facts = {
                 "bar": {
                     "material": "oak",
-                    "features": ["polished counter", "brass beer tap", "array of bottles", "hanging mugs"],
+                    "features": [
+                        "polished counter",
+                        "brass beer tap",
+                        "array of bottles",
+                        "hanging mugs",
+                    ],
                     "people": ["Old Tom (barkeep)"],
                     "notable": "intricate carvings along the edge",
                 },
                 "fireplace": {
                     "material": "river stone",
-                    "features": ["large hearth", "crackling fire", "mantelpiece with trinkets"],
+                    "features": [
+                        "large hearth",
+                        "crackling fire",
+                        "mantelpiece with trinkets",
+                    ],
                     "notable": "rusty dagger mounted on a plaque above",
                 },
                 "notice board": {
@@ -482,7 +514,11 @@ These memories will be included in future conversations to maintain consistency.
                 },
                 "stairs": {
                     "material": "oak",
-                    "features": ["creaky steps", "polished banister", "sign about room prices"],
+                    "features": [
+                        "creaky steps",
+                        "polished banister",
+                        "sign about room prices",
+                    ],
                     "leads_to": "upper floor with rooms for rent",
                     "price": "2 gold per night",
                 },
@@ -565,7 +601,10 @@ These memories will be included in future conversations to maintain consistency.
         examining_info = ""
         if session_id in self.current_conversations:
             session_context = self.current_conversations[session_id]
-            if "examining_object" in session_context and "object_facts" in session_context:
+            if (
+                "examining_object" in session_context
+                and "object_facts" in session_context
+            ):
                 examining_object = session_context["examining_object"]
                 object_facts = session_context["object_facts"]
 
@@ -582,13 +621,24 @@ These memories will be included in future conversations to maintain consistency.
         memories = self.get_memories(session_id)
         if memories:
             memories_str = "\n".join([f"- {memory}" for memory in memories])
-            memories_info = f"\n\nIMPORTANT MEMORIES FROM PREVIOUS INTERACTIONS:\n{memories_str}\n"
+            memories_info = (
+                f"\n\nIMPORTANT MEMORIES FROM PREVIOUS INTERACTIONS:\n{memories_str}\n"
+            )
 
         # Add information about recent player input to help with command detection
         input_context = ""
         if user_input:
             # Check if this looks like a response to a purchase/transaction offer
-            purchase_keywords = ["buy", "purchase", "take it", "i'll try it", "sounds good", "yes", "sure", "okay"]
+            purchase_keywords = [
+                "buy",
+                "purchase",
+                "take it",
+                "i'll try it",
+                "sounds good",
+                "yes",
+                "sure",
+                "okay",
+            ]
             reject_keywords = ["no", "pass", "skip", "not interested", "too expensive"]
 
             user_lower = user_input.lower()
@@ -640,13 +690,17 @@ These memories will be included in future conversations to maintain consistency.
                 raise ValueError("Unexpected response format from Ollama")
 
             # Extract memories from the response first
-            llm_response = self._extract_memories_from_response(llm_response, session_id)
+            llm_response = self._extract_memories_from_response(
+                llm_response, session_id
+            )
 
             # Extract and process narrative actions
             actions = self.action_processor.extract_actions(llm_response)
             action_results = []
             if actions:
-                action_results = self.action_processor.process_actions(actions, game_state, session_id)
+                action_results = self.action_processor.process_actions(
+                    actions, game_state, session_id
+                )
                 # Clean the response of action tags
                 llm_response = self.action_processor.clean_text(llm_response)
 
@@ -675,7 +729,9 @@ These memories will be included in future conversations to maintain consistency.
                         # Don't modify the narrative response here - we want the LLM's rich description
 
             # Add the assistant's response to history
-            self.add_to_history(session_id, LLMChatMessage(role="assistant", content=narrative_response))
+            self.add_to_history(
+                session_id, LLMChatMessage(role="assistant", content=narrative_response)
+            )
 
             return narrative_response, command_to_execute, action_results
 
@@ -693,9 +749,17 @@ These memories will be included in future conversations to maintain consistency.
                         [],
                     )
                 elif any(word in user_input_lower for word in ["buy", "purchase"]):
-                    return "I think you want to buy something. You can use 'buy' followed by the item name.", "buy", []
+                    return (
+                        "I think you want to buy something. You can use 'buy' followed by the item name.",
+                        "buy",
+                        [],
+                    )
                 elif any(word in user_input_lower for word in ["rest", "sleep"]):
-                    return "I think you want to rest. You can use the 'rest' command.", "rest", []
+                    return (
+                        "I think you want to rest. You can use the 'rest' command.",
+                        "rest",
+                        [],
+                    )
 
             return (
                 f"I'm having trouble connecting to the Ollama server at {self.ollama_url}. Please ensure it's running with the {self.model} model. Try using a direct command like 'look' or 'inventory'.",

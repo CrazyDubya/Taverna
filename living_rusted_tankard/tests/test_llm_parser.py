@@ -16,7 +16,7 @@ requests_mock.exceptions = MagicMock()
 requests_mock.exceptions.RequestException = Exception
 
 # Patch sys.modules to include our mock requests
-sys.modules['requests'] = requests_mock
+sys.modules["requests"] = requests_mock
 
 # Now import the parser
 
@@ -28,7 +28,7 @@ TEST_SNAPSHOT = GameSnapshot(
     time_of_day="evening",
     visible_objects=["bar", "tables", "door", "bulletin_board"],
     visible_npcs=["bartender", "merchant", "stranger"],
-    player_state={"gold": 50, "has_room": False, "tiredness": 0}
+    player_state={"gold": 50, "has_room": False, "tiredness": 0},
 )
 
 # Helper function to create a mock LLM response
@@ -36,12 +36,11 @@ TEST_SNAPSHOT = GameSnapshot(
 
 def create_mock_llm_response(action: str, target: str = None, **extras):
     return {
-        "response": json.dumps({
-            "action": action,
-            "target": target,
-            "extras": extras or {}
-        })
+        "response": json.dumps(
+            {"action": action, "target": target, "extras": extras or {}}
+        )
     }
+
 
 # Test the regex fallback parser
 
@@ -73,6 +72,7 @@ def test_regex_fallback_parser():
     cmd = parser.parse("do something weird", TEST_SNAPSHOT)
     assert cmd["action"] == "unknown"
     assert cmd["target"] == "do something weird"
+
 
 # Test LLM parser with mocks
 
@@ -106,6 +106,7 @@ def test_llm_parser():
     assert cmd["action"] == "ask"
     assert cmd["target"] == "bartender"
     assert cmd["extras"].get("topic") == "rumors"
+
 
 # Test LLM fallback to regex
 

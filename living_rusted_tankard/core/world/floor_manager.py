@@ -116,7 +116,9 @@ class FloorManager:
                 accessible.append(floor_num)
         return sorted(accessible)
 
-    def calculate_vertical_sound(self, source_floor: int, target_floor: int, source_noise: float) -> float:
+    def calculate_vertical_sound(
+        self, source_floor: int, target_floor: int, source_noise: float
+    ) -> float:
         """Calculate how much sound travels between floors."""
         if source_floor == target_floor:
             return source_noise
@@ -125,7 +127,9 @@ class FloorManager:
 
         # Get transmission factor for the intermediate floor
         transmission = 1.0
-        for floor in range(min(source_floor, target_floor), max(source_floor, target_floor)):
+        for floor in range(
+            min(source_floor, target_floor), max(source_floor, target_floor)
+        ):
             floor_info = self.get_floor_info(floor)
             if floor_info:
                 transmission *= floor_info.vertical_sound_transmission
@@ -179,7 +183,9 @@ class FloorManager:
             count = 0
 
             for area in source_areas:
-                atmosphere = self.area_manager.atmosphere_manager.get_atmosphere(area.id)
+                atmosphere = self.area_manager.atmosphere_manager.get_atmosphere(
+                    area.id
+                )
                 if atmosphere:
                     total_noise += atmosphere.noise_level
                     count += 1
@@ -194,17 +200,23 @@ class FloorManager:
                 if target_floor == source_floor:
                     continue
 
-                transmitted_noise = self.calculate_vertical_sound(source_floor, target_floor, avg_noise)
+                transmitted_noise = self.calculate_vertical_sound(
+                    source_floor, target_floor, avg_noise
+                )
 
                 # Apply to areas on target floor
                 if transmitted_noise > 0.05:  # Threshold
                     target_areas = self.get_areas_on_floor(target_floor)
                     for area in target_areas:
-                        atmosphere = self.area_manager.atmosphere_manager.get_atmosphere(area.id)
+                        atmosphere = (
+                            self.area_manager.atmosphere_manager.get_atmosphere(area.id)
+                        )
                         if atmosphere:
                             # Add as background noise
                             current = atmosphere.noise_level
-                            atmosphere.noise_level = min(1.0, current + transmitted_noise * 0.3)
+                            atmosphere.noise_level = min(
+                                1.0, current + transmitted_noise * 0.3
+                            )
 
     def get_vertical_connections(self, area_id: str) -> List[str]:
         """Get connections that lead to different floors."""

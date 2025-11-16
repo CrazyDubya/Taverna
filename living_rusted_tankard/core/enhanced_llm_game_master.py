@@ -97,21 +97,29 @@ class ConnectionHealthMonitor:
 
                 # Check if our model is available
                 tags_data = response.json()
-                available_models = [model["name"] for model in tags_data.get("models", [])]
-                model_available = any(self.model in model_name for model_name in available_models)
+                available_models = [
+                    model["name"] for model in tags_data.get("models", [])
+                ]
+                model_available = any(
+                    self.model in model_name for model_name in available_models
+                )
 
                 if model_available:
                     self.is_healthy = True
                     self.consecutive_failures = 0
                     logger.debug(f"LLM health check passed - {self.model} available")
                 else:
-                    logger.warning(f"Model {self.model} not found in available models: {available_models}")
+                    logger.warning(
+                        f"Model {self.model} not found in available models: {available_models}"
+                    )
                     self.is_healthy = False
 
             except Exception as e:
                 self.consecutive_failures += 1
                 self.is_healthy = False
-                logger.warning(f"LLM health check failed ({self.consecutive_failures} consecutive): {e}")
+                logger.warning(
+                    f"LLM health check failed ({self.consecutive_failures} consecutive): {e}"
+                )
 
             return self.is_healthy
 
@@ -123,7 +131,9 @@ class ContextOptimizer:
         self.context_cache = {}
         self.cache_timestamps = {}
 
-    def optimize_context(self, context: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+    def optimize_context(
+        self, context: Dict[str, Any], session_id: str
+    ) -> Dict[str, Any]:
         """Optimize context to reduce redundancy and token usage."""
         optimized = {}
 
@@ -148,7 +158,8 @@ class ContextOptimizer:
         present_npcs = context.get("present_npcs", [])
         if present_npcs:
             optimized["present_npcs"] = [
-                {"name": npc["name"], "id": npc["id"]} for npc in present_npcs[:3]  # Limit to 3 most relevant
+                {"name": npc["name"], "id": npc["id"]}
+                for npc in present_npcs[:3]  # Limit to 3 most relevant
             ]
 
         # Only include recent, important events
@@ -189,7 +200,11 @@ class ContextOptimizer:
 class EnhancedLLMGameMaster:
     """Enhanced LLM-powered game master with robust error handling and optimization."""
 
-    def __init__(self, ollama_url: str = "http://localhost:11434", model: str = "long-gemma:latest"):
+    def __init__(
+        self,
+        ollama_url: str = "http://localhost:11434",
+        model: str = "long-gemma:latest",
+    ):
         """Initialize the Enhanced LLM Game Master."""
         self.ollama_url = ollama_url
         self.model = model
@@ -266,7 +281,10 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
         return self.health_monitor.check_health()
 
     def get_fallback_response(
-        self, user_input: str, session_id: str = None, game_context: Optional[Dict] = None
+        self,
+        user_input: str,
+        session_id: str = None,
+        game_context: Optional[Dict] = None,
     ) -> LLMResponse:
         """Generate fallback response when LLM is unavailable using enhanced error recovery."""
         try:
@@ -275,9 +293,16 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
             # Create a simulated LLM unavailable error
             llm_error = Exception("LLM service unavailable")
 
-            enhanced_response, command, actions = handle_llm_error(llm_error, session_id, user_input, game_context)
+            enhanced_response, command, actions = handle_llm_error(
+                llm_error, session_id, user_input, game_context
+            )
 
-            return LLMResponse(content=enhanced_response, command=command, actions=actions or [], was_fallback=True)
+            return LLMResponse(
+                content=enhanced_response,
+                command=command,
+                actions=actions or [],
+                was_fallback=True,
+            )
 
         except ImportError:
             # Fallback to basic responses
@@ -286,10 +311,14 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
             # Try to match to a known command
             for command in ["look", "status", "inventory", "talk", "buy", "help"]:
                 if command in user_input_lower:
-                    response_text = self.fallback_responses.get(command, self.fallback_responses["default"])
+                    response_text = self.fallback_responses.get(
+                        command, self.fallback_responses["default"]
+                    )
                     return LLMResponse(
                         content=response_text,
-                        command=command if command in ["look", "status", "inventory"] else None,
+                        command=command
+                        if command in ["look", "status", "inventory"]
+                        else None,
                         was_fallback=True,
                     )
 
@@ -307,10 +336,14 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
             full_context = self._build_game_context(game_state)
 
             # Optimize context
-            optimized_context = self.context_optimizer.optimize_context(full_context, session_id)
+            optimized_context = self.context_optimizer.optimize_context(
+                full_context, session_id
+            )
 
             # Convert to concise string
-            context_summary = self.context_optimizer.get_context_summary(optimized_context)
+            context_summary = self.context_optimizer.get_context_summary(
+                optimized_context
+            )
 
             return f"GAME STATE: {context_summary}"
 
@@ -324,7 +357,9 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
         if hasattr(game_state, "npc_manager"):
             try:
                 for npc in game_state.npc_manager.get_present_npcs():
-                    present_npcs.append({"id": npc.id, "name": npc.name, "description": npc.description})
+                    present_npcs.append(
+                        {"id": npc.id, "name": npc.name, "description": npc.description}
+                    )
             except Exception as e:
                 logger.error(f"Error getting present NPCs: {e}")
 
@@ -358,7 +393,8 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
             try:
                 recent_events = list(game_state.events)[-5:]
                 context["recent_events"] = [
-                    {"message": event.message, "type": event.event_type} for event in recent_events
+                    {"message": event.message, "type": event.event_type}
+                    for event in recent_events
                 ]
             except Exception as e:
                 logger.error(f"Error getting recent events: {e}")
@@ -380,7 +416,9 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
             try:
                 from .time_display import get_time_context_for_llm
 
-                game_context["current_time"] = get_time_context_for_llm(game_state.clock.current_time_hours)
+                game_context["current_time"] = get_time_context_for_llm(
+                    game_state.clock.current_time_hours
+                )
                 present_npcs = game_state.get_present_npcs()
                 game_context["present_npcs"] = [npc.name for npc in present_npcs]
             except Exception:
@@ -413,14 +451,22 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
 
             memory_context = get_memory_context_for_llm(session_id, user_input)
             if memory_context:
-                messages.append({"role": "system", "content": f"MEMORY: {memory_context}"})
+                messages.append(
+                    {"role": "system", "content": f"MEMORY: {memory_context}"}
+                )
         except ImportError:
             # Fallback to basic session memories
             if session_id in self.session_memories:
-                recent_memories = self.session_memories[session_id][-3:]  # Last 3 memories
+                recent_memories = self.session_memories[session_id][
+                    -3:
+                ]  # Last 3 memories
                 if recent_memories:
-                    memory_text = " | ".join([mem.get("content", "") for mem in recent_memories])
-                    messages.append({"role": "system", "content": f"MEMORY: {memory_text}"})
+                    memory_text = " | ".join(
+                        [mem.get("content", "") for mem in recent_memories]
+                    )
+                    messages.append(
+                        {"role": "system", "content": f"MEMORY: {memory_text}"}
+                    )
 
         # Add current user input
         messages.append({"role": "user", "content": user_input})
@@ -432,8 +478,12 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
             response.response_time = time.time() - start_time
 
             # Add to conversation history
-            self.add_to_history(session_id, LLMChatMessage(role="user", content=user_input))
-            self.add_to_history(session_id, LLMChatMessage(role="assistant", content=response.content))
+            self.add_to_history(
+                session_id, LLMChatMessage(role="user", content=user_input)
+            )
+            self.add_to_history(
+                session_id, LLMChatMessage(role="assistant", content=response.content)
+            )
 
             return response.content, response.command, response.actions or []
 
@@ -445,7 +495,9 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
             try:
                 from .time_display import get_time_context_for_llm
 
-                game_context["current_time"] = get_time_context_for_llm(game_state.clock.current_time_hours)
+                game_context["current_time"] = get_time_context_for_llm(
+                    game_state.clock.current_time_hours
+                )
                 present_npcs = game_state.get_present_npcs()
                 game_context["present_npcs"] = [npc.name for npc in present_npcs]
             except Exception:
@@ -479,13 +531,18 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
 
             response_data = response.json()
 
-            if "message" not in response_data or "content" not in response_data["message"]:
+            if (
+                "message" not in response_data
+                or "content" not in response_data["message"]
+            ):
                 raise ValueError("Invalid response format from LLM")
 
             llm_response = response_data["message"]["content"]
 
             # Process response
-            llm_response = self._extract_memories_from_response(llm_response, session_id)
+            llm_response = self._extract_memories_from_response(
+                llm_response, session_id
+            )
 
             # Extract and process narrative actions
             actions = self.action_processor.extract_actions(llm_response)
@@ -505,7 +562,10 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
                     llm_response = llm_response[command_end + 1 :].strip()
 
             return LLMResponse(
-                content=llm_response, command=command_to_execute, actions=action_results, was_fallback=False
+                content=llm_response,
+                command=command_to_execute,
+                actions=action_results,
+                was_fallback=False,
             )
 
         except requests.Timeout:
@@ -521,7 +581,9 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
             logger.error(f"Unexpected error in LLM request: {e}")
             raise
 
-    def _optimize_conversation_history(self, history: List[LLMChatMessage]) -> List[LLMChatMessage]:
+    def _optimize_conversation_history(
+        self, history: List[LLMChatMessage]
+    ) -> List[LLMChatMessage]:
         """Optimize conversation history to reduce token usage."""
         if not history:
             return []
@@ -557,12 +619,24 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
                     importance = MemoryImportance.NORMAL
                     if any(
                         word in memory_content.lower()
-                        for word in ["quest", "mission", "important", "secret", "discovery"]
+                        for word in [
+                            "quest",
+                            "mission",
+                            "important",
+                            "secret",
+                            "discovery",
+                        ]
                     ):
                         importance = MemoryImportance.HIGH
-                    elif any(word in memory_content.lower() for word in ["greeting", "hello", "small talk"]):
+                    elif any(
+                        word in memory_content.lower()
+                        for word in ["greeting", "hello", "small talk"]
+                    ):
                         importance = MemoryImportance.TRIVIAL
-                    elif any(word in memory_content.lower() for word in ["buy", "purchase", "trade", "gold"]):
+                    elif any(
+                        word in memory_content.lower()
+                        for word in ["buy", "purchase", "trade", "gold"]
+                    ):
                         importance = MemoryImportance.LOW
 
                     # Add to enhanced memory system
@@ -579,7 +653,9 @@ Be concise but atmospheric. Focus on advancing the story and providing clear pla
 
                     # Limit memory storage
                     if len(self.session_memories[session_id]) > 20:
-                        self.session_memories[session_id] = self.session_memories[session_id][-15:]
+                        self.session_memories[session_id] = self.session_memories[
+                            session_id
+                        ][-15:]
 
             # Remove memory tags from response
             response = re.sub(memory_pattern, "", response).strip()

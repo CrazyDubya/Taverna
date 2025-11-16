@@ -91,9 +91,13 @@ class ThreadCondition:
             if self.condition_type == "reputation":
                 # Check overall reputation level
                 if hasattr(game_state, "reputation_network"):
-                    rep_summary = game_state.reputation_network.get_overall_reputation_summary()
+                    rep_summary = (
+                        game_state.reputation_network.get_overall_reputation_summary()
+                    )
                     current_value = rep_summary["overall_score"]
-                    return self._compare_values(current_value, self.operator, self.value)
+                    return self._compare_values(
+                        current_value, self.operator, self.value
+                    )
 
             elif self.condition_type == "relationship":
                 # Check relationship with specific NPC
@@ -101,7 +105,9 @@ class ThreadCondition:
                     memory = game_state.character_memory_manager.get_memory(self.target)
                     if memory:
                         current_value = memory.relationship_score
-                        return self._compare_values(current_value, self.operator, self.value)
+                        return self._compare_values(
+                            current_value, self.operator, self.value
+                        )
 
             elif self.condition_type == "time":
                 # Check game time
@@ -271,7 +277,9 @@ class StoryThread:
 
         return False
 
-    def _apply_stage_completion_effects(self, stage: ThreadStage, game_state: Any) -> None:
+    def _apply_stage_completion_effects(
+        self, stage: ThreadStage, game_state: Any
+    ) -> None:
         """Apply the effects of completing a stage."""
         # Apply world changes
         for change_type, change_data in stage.world_changes.items():
@@ -284,14 +292,20 @@ class StoryThread:
                             "story_progression",
                             "stage_completed",
                             [npc_id],
-                            {"stage": stage.title, "witnessed_directly": True, "reputation_change": change},
+                            {
+                                "stage": stage.title,
+                                "witnessed_directly": True,
+                                "reputation_change": change,
+                            },
                         )
 
             elif change_type == "npc_mood_change":
                 # Affect NPC moods
                 for npc_id, mood_effect in change_data.items():
                     if hasattr(game_state, "character_state_manager"):
-                        state = game_state.character_state_manager.character_states.get(npc_id)
+                        state = game_state.character_state_manager.character_states.get(
+                            npc_id
+                        )
                         if state:
                             # Add mood modifier
                             state.mood_modifiers[f"story_{stage.stage_id}"] = (
@@ -318,7 +332,10 @@ class StoryThread:
                 if hasattr(game_state, "reputation_network"):
                     for npc_id in self.involved_npcs:
                         game_state.reputation_network.record_player_action(
-                            "story_heroics", "completed", [npc_id], {"reward": reward_data, "witnessed_directly": True}
+                            "story_heroics",
+                            "completed",
+                            [npc_id],
+                            {"reward": reward_data, "witnessed_directly": True},
                         )
 
     def add_event(self, event: ThreadEvent) -> None:
@@ -368,7 +385,9 @@ class StoryThread:
 
         # Recency factor
         hours_since_update = (time.time() - self.last_updated) / 3600.0
-        recency_factor = max(0.1, 1.0 - (hours_since_update / 168.0))  # Decay over a week
+        recency_factor = max(
+            0.1, 1.0 - (hours_since_update / 168.0)
+        )  # Decay over a week
         base_score *= recency_factor
 
         # Context relevance
@@ -392,7 +411,8 @@ class StoryThread:
         unmet_conditions = [
             cond
             for cond in current_stage.conditions
-            if not hasattr(self, "_temp_game_state") or not cond.is_met(self._temp_game_state)
+            if not hasattr(self, "_temp_game_state")
+            or not cond.is_met(self._temp_game_state)
         ]
 
         if unmet_conditions:
@@ -423,7 +443,9 @@ class StoryThread:
         }
 
 
-def create_relationship_thread(npc_id: str, npc_name: str, relationship_level: str) -> StoryThread:
+def create_relationship_thread(
+    npc_id: str, npc_name: str, relationship_level: str
+) -> StoryThread:
     """Create a personal relationship thread based on current relationship."""
     thread_id = f"relationship_{npc_id}_{int(time.time())}"
 

@@ -151,7 +151,9 @@ class CharacterMemory:
         """Update relationship score based on interaction impact."""
         # Recent interactions have more weight
         weight = 1.0
-        self.relationship_score = max(-1.0, min(1.0, self.relationship_score * 0.9 + impact * weight * 0.1))
+        self.relationship_score = max(
+            -1.0, min(1.0, self.relationship_score * 0.9 + impact * weight * 0.1)
+        )
 
     def _update_trust(self, delta: float) -> None:
         """Update trust level, which changes slowly over time."""
@@ -209,7 +211,9 @@ class CharacterMemory:
             if recent_memory and recent_memory.emotional_impact > 0:
                 return f'{self.npc_name} smiles warmly. "Good to see you again! I remember {recent_memory.to_narrative()}."'
             else:
-                return f'{self.npc_name} greets you with a friendly smile. "Welcome back!"'
+                return (
+                    f'{self.npc_name} greets you with a friendly smile. "Welcome back!"'
+                )
 
         elif level == RelationshipLevel.FRIEND:
             if time_since_last and time_since_last > 72:
@@ -237,7 +241,9 @@ class CharacterMemory:
             return (time.time() - self.last_interaction) / 3600.0
         return None
 
-    def _get_most_relevant_memory(self, context: Optional[str] = None) -> Optional[Memory]:
+    def _get_most_relevant_memory(
+        self, context: Optional[str] = None
+    ) -> Optional[Memory]:
         """Get most relevant recent memory, optionally filtered by context."""
         if not self.memories:
             return None
@@ -265,7 +271,9 @@ class CharacterMemory:
         else:
             return "I was just thinking about you!"
 
-    def recall_relevant_memories(self, current_topic: str, limit: int = 3) -> List[Memory]:
+    def recall_relevant_memories(
+        self, current_topic: str, limit: int = 3
+    ) -> List[Memory]:
         """Recall memories relevant to current conversation topic."""
         relevant_memories = []
 
@@ -295,7 +303,9 @@ class CharacterMemory:
             relevance += 0.3
 
         # Recency bonus (memories fade)
-        age_penalty = min(memory.age_in_hours(time.time()) / 168.0, 1.0)  # Max penalty after a week
+        age_penalty = min(
+            memory.age_in_hours(time.time()) / 168.0, 1.0
+        )  # Max penalty after a week
         relevance *= 1.0 - age_penalty * 0.5
 
         # Emotional significance bonus
@@ -406,7 +416,10 @@ class CharacterMemoryManager:
 
     def save_all(self, filepath: str) -> None:
         """Save all character memories to file."""
-        data = {npc_id: memory.to_dict() for npc_id, memory in self.character_memories.items()}
+        data = {
+            npc_id: memory.to_dict()
+            for npc_id, memory in self.character_memories.items()
+        }
 
         import json
 
@@ -431,7 +444,9 @@ class CharacterMemoryManager:
         for npc_id, memory_data in data.items():
             self.character_memories[npc_id] = CharacterMemory.from_dict(memory_data)
 
-        logger.info(f"Loaded {len(self.character_memories)} character memories from {filepath}")
+        logger.info(
+            f"Loaded {len(self.character_memories)} character memories from {filepath}"
+        )
 
     def cleanup_old_memories(self, max_age_days: int = 30) -> None:
         """Remove very old memories to prevent unbounded growth."""
@@ -441,7 +456,10 @@ class CharacterMemoryManager:
         for memory in self.character_memories.values():
             # Keep only memories younger than max age or frequently referenced
             memory.memories = [
-                m for m in memory.memories if m.age_in_hours(current_time) < max_age_hours or m.referenced_count > 5
+                m
+                for m in memory.memories
+                if m.age_in_hours(current_time) < max_age_hours
+                or m.referenced_count > 5
             ]
 
     def get_relationship_summary(self) -> Dict[str, Dict[str, any]]:

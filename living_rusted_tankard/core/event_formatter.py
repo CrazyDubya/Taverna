@@ -64,7 +64,13 @@ class EventFormatter:
             event_type: Type of event (e.g., 'rent_success', 'gamble_win')
             **kwargs: Additional data for the event
         """
-        self.recent_events.append({"type": event_type, "data": kwargs, "timestamp": datetime.now().isoformat()})
+        self.recent_events.append(
+            {
+                "type": event_type,
+                "data": kwargs,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
     def get_formatted_events(self) -> List[str]:
         """Get all recent events as formatted text.

@@ -113,13 +113,13 @@ class AreaManager:
                     interaction_verb="tap",
                 ),
                 Feature(
-                    id="bottle_shelf",
-                    name="Bottle Shelf",
+                    id="bottle_shel",
+                    name="Bottle Shel",
                     description="Rows of bottles containing various spirits, some covered in dust.",
                     interaction_verb="examine",
                 ),
                 Feature(
-                    id="hidden_shelf",
+                    id="hidden_shel",
                     name="Hidden Compartment",
                     description="A cleverly concealed compartment behind a false bottle.",
                     interaction_verb="open",
@@ -451,57 +451,98 @@ class AreaManager:
         # Cellar connections
         self.add_connection("wine_cellar", "storage_room", "north", "south")
         self.add_connection(
-            "storage_room", "deep_cellar", "hidden passage", "back", is_hidden=True, access_level=AccessLevel.SECRET
+            "storage_room",
+            "deep_cellar",
+            "hidden passage",
+            "back",
+            is_hidden=True,
+            access_level=AccessLevel.SECRET,
         )
 
         # Upper floor connections
         for i in range(1, 4):
-            self.add_connection(f"guest_room_{i}", f"guest_room_{i+1}", "next room", "previous room")
+            self.add_connection(
+                f"guest_room_{i}", f"guest_room_{i+1}", "next room", "previous room"
+            )
 
         self.add_connection("guest_room_2", "gambling_den", "end of hall", "hallway")
-        self.add_connection("gambling_den", "owners_quarters", "private stairs", "down", access_level=AccessLevel.OWNER)
+        self.add_connection(
+            "gambling_den",
+            "owners_quarters",
+            "private stairs",
+            "down",
+            access_level=AccessLevel.OWNER,
+        )
 
     def _initialize_atmospheres(self) -> None:
         """Set initial atmospheres for all areas."""
         # Main hall - busy and lively
         main_atmosphere = AtmosphereState(
-            noise_level=0.6, lighting=0.7, crowd_density=0.5, temperature=0.6, air_quality=0.5
+            noise_level=0.6,
+            lighting=0.7,
+            crowd_density=0.5,
+            temperature=0.6,
+            air_quality=0.5,
         )
         self.atmosphere_manager.set_atmosphere("main_hall", main_atmosphere)
 
         # Bar area - busy but more controlled
         bar_atmosphere = AtmosphereState(
-            noise_level=0.5, lighting=0.6, crowd_density=0.3, temperature=0.7, air_quality=0.4
+            noise_level=0.5,
+            lighting=0.6,
+            crowd_density=0.3,
+            temperature=0.7,
+            air_quality=0.4,
         )
         self.atmosphere_manager.set_atmosphere("bar_area", bar_atmosphere)
 
         # Kitchen - hot and busy
         kitchen_atmosphere = AtmosphereState(
-            noise_level=0.5, lighting=0.8, crowd_density=0.4, temperature=0.85, air_quality=0.3
+            noise_level=0.5,
+            lighting=0.8,
+            crowd_density=0.4,
+            temperature=0.85,
+            air_quality=0.3,
         )
         self.atmosphere_manager.set_atmosphere("kitchen", kitchen_atmosphere)
 
         # Private booth - quiet and dim
         booth_atmosphere = AtmosphereState(
-            noise_level=0.2, lighting=0.3, crowd_density=0.1, temperature=0.5, air_quality=0.6
+            noise_level=0.2,
+            lighting=0.3,
+            crowd_density=0.1,
+            temperature=0.5,
+            air_quality=0.6,
         )
         self.atmosphere_manager.set_atmosphere("private_booth", booth_atmosphere)
 
         # Fireplace nook - warm and cozy
         nook_atmosphere = AtmosphereState(
-            noise_level=0.3, lighting=0.6, crowd_density=0.3, temperature=0.75, air_quality=0.5
+            noise_level=0.3,
+            lighting=0.6,
+            crowd_density=0.3,
+            temperature=0.75,
+            air_quality=0.5,
         )
         self.atmosphere_manager.set_atmosphere("fireplace_nook", nook_atmosphere)
 
         # Wine cellar - cool and quiet
         cellar_atmosphere = AtmosphereState(
-            noise_level=0.1, lighting=0.4, crowd_density=0.0, temperature=0.3, air_quality=0.7
+            noise_level=0.1,
+            lighting=0.4,
+            crowd_density=0.0,
+            temperature=0.3,
+            air_quality=0.7,
         )
         self.atmosphere_manager.set_atmosphere("wine_cellar", cellar_atmosphere)
 
         # Deep cellar - cold and eerie
         deep_atmosphere = AtmosphereState(
-            noise_level=0.05, lighting=0.1, crowd_density=0.0, temperature=0.2, air_quality=0.6
+            noise_level=0.05,
+            lighting=0.1,
+            crowd_density=0.0,
+            temperature=0.2,
+            air_quality=0.6,
         )
         self.atmosphere_manager.set_atmosphere("deep_cellar", deep_atmosphere)
 
@@ -578,7 +619,9 @@ class AreaManager:
         self.connections[from_area].append(forward)
         self.connections[to_area].append(reverse)
 
-    def get_connections(self, area_id: str, show_hidden: bool = False) -> List[Connection]:
+    def get_connections(
+        self, area_id: str, show_hidden: bool = False
+    ) -> List[Connection]:
         """Get available connections from an area."""
         if area_id not in self.connections:
             return []
@@ -624,7 +667,11 @@ class AreaManager:
         return False
 
     def move_to_area(
-        self, player_id: str, target_area_id: str, has_key: bool = False, access_level: AccessLevel = AccessLevel.PUBLIC
+        self,
+        player_id: str,
+        target_area_id: str,
+        has_key: bool = False,
+        access_level: AccessLevel = AccessLevel.PUBLIC,
     ) -> MoveResult:
         """Attempt to move a player to a target area."""
         current_area_id = self.entity_locations.get(player_id, self.current_area_id)
@@ -668,7 +715,12 @@ class AreaManager:
             if abs(current_area.floor - target_area.floor) > 0:
                 time_cost += 0.5 * abs(current_area.floor - target_area.floor)
 
-            return MoveResult(True, f"You go {connection.direction} to {target_area.name}.", target_area_id, time_cost)
+            return MoveResult(
+                True,
+                f"You go {connection.direction} to {target_area.name}.",
+                target_area_id,
+                time_cost,
+            )
 
         return MoveResult(False, "Something went wrong during movement.")
 
@@ -689,7 +741,9 @@ class AreaManager:
     def update_area_state(self, game_time: Any) -> None:
         """Update area states based on time and events."""
         # Update atmospheres based on time
-        self.atmosphere_manager.update_time_based_changes(game_time.hour, game_time.get_season())
+        self.atmosphere_manager.update_time_based_changes(
+            game_time.hour, game_time.get_season()
+        )
 
         # Propagate atmospheric effects
         self.atmosphere_manager.propagate_atmosphere()
@@ -701,18 +755,28 @@ class AreaManager:
                 # Main hall gets busier in evening
                 if area_id == "main_hall":
                     if 18 <= game_time.hour <= 23:
-                        atmosphere.crowd_density = min(0.8, area.current_occupancy / area.max_occupancy)
+                        atmosphere.crowd_density = min(
+                            0.8, area.current_occupancy / area.max_occupancy
+                        )
                     elif 6 <= game_time.hour <= 10:
-                        atmosphere.crowd_density = min(0.3, area.current_occupancy / area.max_occupancy)
+                        atmosphere.crowd_density = min(
+                            0.3, area.current_occupancy / area.max_occupancy
+                        )
                     else:
-                        atmosphere.crowd_density = min(0.5, area.current_occupancy / area.max_occupancy)
+                        atmosphere.crowd_density = min(
+                            0.5, area.current_occupancy / area.max_occupancy
+                        )
 
                 # Gambling den is busiest at night
                 elif area_id == "gambling_den":
                     if 20 <= game_time.hour or game_time.hour <= 2:
-                        atmosphere.crowd_density = min(0.7, area.current_occupancy / area.max_occupancy)
+                        atmosphere.crowd_density = min(
+                            0.7, area.current_occupancy / area.max_occupancy
+                        )
                     else:
-                        atmosphere.crowd_density = min(0.2, area.current_occupancy / area.max_occupancy)
+                        atmosphere.crowd_density = min(
+                            0.2, area.current_occupancy / area.max_occupancy
+                        )
 
                 atmosphere.calculate_modifiers()
 
@@ -729,18 +793,34 @@ class AreaManager:
             "area": area.to_dict(),
             "atmosphere": (
                 {
-                    "description": atmosphere.describe_atmosphere() if atmosphere else "",
-                    "noise_level": atmosphere.get_noise_level().name if atmosphere else "UNKNOWN",
-                    "light_level": atmosphere.get_light_level().name if atmosphere else "UNKNOWN",
-                    "crowd_density": atmosphere.get_crowd_density().name if atmosphere else "UNKNOWN",
-                    "affects_conversation": atmosphere.affects_conversation() if atmosphere else False,
-                    "affects_stealth": atmosphere.affects_stealth() if atmosphere else False,
+                    "description": atmosphere.describe_atmosphere()
+                    if atmosphere
+                    else "",
+                    "noise_level": atmosphere.get_noise_level().name
+                    if atmosphere
+                    else "UNKNOWN",
+                    "light_level": atmosphere.get_light_level().name
+                    if atmosphere
+                    else "UNKNOWN",
+                    "crowd_density": atmosphere.get_crowd_density().name
+                    if atmosphere
+                    else "UNKNOWN",
+                    "affects_conversation": atmosphere.affects_conversation()
+                    if atmosphere
+                    else False,
+                    "affects_stealth": atmosphere.affects_stealth()
+                    if atmosphere
+                    else False,
                 }
                 if atmosphere
                 else {}
             ),
             "exits": [
-                {"direction": c.direction, "description": c.get_description(), "accessible": c.can_traverse()}
+                {
+                    "direction": c.direction,
+                    "description": c.get_description(),
+                    "accessible": c.can_traverse(),
+                }
                 for c in connections
             ],
         }

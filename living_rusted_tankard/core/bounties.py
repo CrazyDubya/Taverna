@@ -43,7 +43,7 @@ class Bounty(BaseModel):
     id: str = Field(..., description="Unique identifier for the bounty")
     title: str = Field(..., description="Title of the bounty")
     description: str = Field(..., description="Detailed description of the bounty")
-    issuer: Optional[str] = "Tavern Staff"
+    issuer: Optional[str] = "Tavern Staf"
 
     status: BountyStatus = BountyStatus.AVAILABLE
     objectives: List[BountyObjective] = Field(default_factory=list)
@@ -100,19 +100,28 @@ class BountyManager(BaseModel):
                     is_active_from_json = obj_data.get("is_active", i == 0)
                     loaded_objectives.append(
                         BountyObjective(
-                            id=obj_data.get("id", f"obj_{bounty_data['id']}_{i+1}"),  # Ensure objective ID
+                            id=obj_data.get(
+                                "id", f"obj_{bounty_data['id']}_{i+1}"
+                            ),  # Ensure objective ID
                             description=obj_data["description"],
                             type=obj_data.get("type", "generic"),
                             target_id=obj_data.get("target_id"),
                             required_progress=obj_data.get("required_progress", 1),
-                            current_progress=obj_data.get("current_progress", 0),  # Usually 0 for definition
-                            is_completed=obj_data.get("is_completed", False),  # Usually False for definition
+                            current_progress=obj_data.get(
+                                "current_progress", 0
+                            ),  # Usually 0 for definition
+                            is_completed=obj_data.get(
+                                "is_completed", False
+                            ),  # Usually False for definition
                             is_active=is_active_from_json,
                         )
                     )
                 bounty_data["objectives"] = loaded_objectives
 
-                if "reputation_requirement" in bounty_data and bounty_data["reputation_requirement"]:
+                if (
+                    "reputation_requirement" in bounty_data
+                    and bounty_data["reputation_requirement"]
+                ):
                     bounty_data["reputation_requirement"] = ReputationRequirement(
                         **bounty_data["reputation_requirement"]
                     )
@@ -121,7 +130,9 @@ class BountyManager(BaseModel):
 
                 bounty = Bounty(**bounty_data)
                 # Ensure the first objective is marked active if none are explicitly set
-                if bounty.objectives and not any(obj.is_active for obj in bounty.objectives):
+                if bounty.objectives and not any(
+                    obj.is_active for obj in bounty.objectives
+                ):
                     bounty.objectives[0].is_active = True
 
                 self._bounty_definitions[bounty.id] = bounty
@@ -142,22 +153,33 @@ class BountyManager(BaseModel):
 
         player_score = get_reputation(player_state, requirement.npc_id)
         player_tier_str = get_reputation_tier(player_score)
-        tier_values = {tier_name: i for i, (_, tier_name) in enumerate(REPUTATION_TIERS)}
-        required_tier_value = tier_values.get(requirement.min_tier.upper())  # Ensure tier name matches enum/key
+        tier_values = {
+            tier_name: i for i, (_, tier_name) in enumerate(REPUTATION_TIERS)
+        }
+        required_tier_value = tier_values.get(
+            requirement.min_tier.upper()
+        )  # Ensure tier name matches enum/key
         player_tier_value = tier_values.get(player_tier_str)
         if required_tier_value is None or player_tier_value is None:
             return False
         return player_tier_value >= required_tier_value
 
-    def get_available_bounties_on_notice_board(self, player_state: "PlayerState") -> List[Bounty]:
+    def get_available_bounties_on_notice_board(
+        self, player_state: "PlayerState"
+    ) -> List[Bounty]:
         notice_board_bounties = []
         for def_id, definition_bounty in self._bounty_definitions.items():
             managed_bounty = self.managed_bounties_state.get(def_id)
             if managed_bounty and managed_bounty.status != BountyStatus.AVAILABLE:
                 continue
             bounty_to_display = managed_bounty if managed_bounty else definition_bounty
-            if bounty_to_display.status == BountyStatus.AVAILABLE and bounty_to_display.is_posted:
-                if self._check_reputation_requirement(player_state, bounty_to_display.reputation_requirement):
+            if (
+                bounty_to_display.status == BountyStatus.AVAILABLE
+                and bounty_to_display.is_posted
+            ):
+                if self._check_reputation_requirement(
+                    player_state, bounty_to_display.reputation_requirement
+                ):
                     # Make sure we return a copy of the definition if it's not already managed
                     # so that any UI display of objectives doesn't reflect another player's potential state
                     # (though for notice board, it should always be pristine)
@@ -174,7 +196,9 @@ class BountyManager(BaseModel):
             return True
         return False
 
-    def accept_bounty(self, bounty_id: str, player_state: "PlayerState", current_game_time: float) -> Tuple[bool, str]:
+    def accept_bounty(
+        self, bounty_id: str, player_state: "PlayerState", current_game_time: float
+    ) -> Tuple[bool, str]:
         bounty_def = self._bounty_definitions.get(bounty_id)
         if not bounty_def:
             return False, "Bounty not found."
@@ -184,7 +208,9 @@ class BountyManager(BaseModel):
             return False, "Bounty is not currently posted on the notice board."
         if bounty_def.status != BountyStatus.AVAILABLE:
             return False, f"This bounty is currently {bounty_def.status.value}."
-        if not self._check_reputation_requirement(player_state, bounty_def.reputation_requirement):
+        if not self._check_reputation_requirement(
+            player_state, bounty_def.reputation_requirement
+        ):
             req = bounty_def.reputation_requirement
             return False, f"You do not meet the reputation requirement ({req.min_tier} with {req.npc_id}) for this bounty."  # type: ignore
         if bounty_id in self.managed_bounties_state:
@@ -216,7 +242,11 @@ class BountyManager(BaseModel):
         return True, f"Bounty '{active_bounty.title}' accepted."
 
     def update_bounty_progress(
-        self, player_id: str, bounty_id: str, objective_id: str, progress_amount: int = 1
+        self,
+        player_id: str,
+        bounty_id: str,
+        objective_id: str,
+        progress_amount: int = 1,
     ) -> Tuple[bool, str]:
         active_bounty = self.managed_bounties_state.get(bounty_id)
         if (
@@ -231,14 +261,21 @@ class BountyManager(BaseModel):
             return False, "Invalid bounty state: current objective index out of bounds."
 
         objective = active_bounty.objectives[current_obj_index]
-        if objective.id != objective_id:  # Ensure we're updating the correct, active objective
-            return False, f"Objective {objective_id} is not the current active objective for this bounty."
+        if (
+            objective.id != objective_id
+        ):  # Ensure we're updating the correct, active objective
+            return (
+                False,
+                f"Objective {objective_id} is not the current active objective for this bounty.",
+            )
         if not objective.is_active:
             return False, f"Objective {objective.description} is not active."
         if objective.is_completed:
             return False, "Objective already completed."
 
-        objective.current_progress = min(objective.current_progress + progress_amount, objective.required_progress)
+        objective.current_progress = min(
+            objective.current_progress + progress_amount, objective.required_progress
+        )
         message = f"Progress on '{objective.description}': {objective.current_progress}/{objective.required_progress}."
 
         if objective.current_progress >= objective.required_progress:
@@ -248,7 +285,9 @@ class BountyManager(BaseModel):
 
             active_bounty.current_objective_index += 1
             if active_bounty.current_objective_index < len(active_bounty.objectives):
-                next_objective = active_bounty.objectives[active_bounty.current_objective_index]
+                next_objective = active_bounty.objectives[
+                    active_bounty.current_objective_index
+                ]
                 next_objective.is_active = True
                 message += f" Next objective: '{next_objective.description}'."
             else:  # All objectives completed
@@ -257,7 +296,9 @@ class BountyManager(BaseModel):
 
         return True, message
 
-    def get_active_objective_description(self, player_id: str, bounty_id: str) -> Optional[str]:
+    def get_active_objective_description(
+        self, player_id: str, bounty_id: str
+    ) -> Optional[str]:
         active_bounty = self.managed_bounties_state.get(bounty_id)
         if (
             active_bounty
@@ -269,7 +310,9 @@ class BountyManager(BaseModel):
                 return active_obj.description
         return None
 
-    def is_bounty_objective_complete(self, player_id: str, bounty_id: str, objective_id: str) -> bool:
+    def is_bounty_objective_complete(
+        self, player_id: str, bounty_id: str, objective_id: str
+    ) -> bool:
         active_bounty = self.managed_bounties_state.get(bounty_id)
         if active_bounty and active_bounty.accepted_by_player_id == player_id:
             for obj in active_bounty.objectives:
@@ -283,12 +326,19 @@ class BountyManager(BaseModel):
             return active_bounty.are_all_objectives_completed()
         return False
 
-    def complete_bounty(self, player_id: str, bounty_id: str, game_state_interface: Any) -> Tuple[bool, str]:
+    def complete_bounty(
+        self, player_id: str, bounty_id: str, game_state_interface: Any
+    ) -> Tuple[bool, str]:
         active_bounty = self.managed_bounties_state.get(bounty_id)
         if not active_bounty or active_bounty.accepted_by_player_id != player_id:
             return False, "Bounty not accepted by you or not found."
-        if active_bounty.status != BountyStatus.ACCEPTED:  # Should be ACCEPTED to be turn-in-able
-            return False, f"Bounty cannot be completed. Current status: {active_bounty.status.value}."
+        if (
+            active_bounty.status != BountyStatus.ACCEPTED
+        ):  # Should be ACCEPTED to be turn-in-able
+            return (
+                False,
+                f"Bounty cannot be completed. Current status: {active_bounty.status.value}.",
+            )
         if not active_bounty.are_all_objectives_completed():
             return False, "Not all objectives for this bounty are completed."
 
@@ -308,20 +358,30 @@ class BountyManager(BaseModel):
                 item_def = ITEM_DEFINITIONS.get(item_id) if item_id else None
                 if item_def:
                     # Player inventory add_item takes item_id and quantity
-                    success, msg = player.inventory.add_item(item_id_to_add=item_id, quantity=quantity)
+                    success, msg = player.inventory.add_item(
+                        item_id_to_add=item_id, quantity=quantity
+                    )
                     if success:
                         reward_messages.append(f"{quantity} x {item_def.name}")
                     else:
                         print(f"Warning: Failed to add reward item {item_id}: {msg}")
                 else:
                     print(f"Warning: Reward item ID '{item_id}' not found.")
-        if rewards.reputation and hasattr(player, "reputation"):  # Assuming PlayerState has reputation dict
-            from .reputation import update_reputation  # Local import to avoid circularity at top level
+        if rewards.reputation and hasattr(
+            player, "reputation"
+        ):  # Assuming PlayerState has reputation dict
+            from .reputation import (
+                update_reputation,
+            )  # Local import to avoid circularity at top level
 
             for entity_id, rep_change in rewards.reputation.items():
-                update_reputation(player, entity_id, rep_change)  # This updates player.reputation
+                update_reputation(
+                    player, entity_id, rep_change
+                )  # This updates player.reputation
                 reward_messages.append(f"{rep_change} rep with {entity_id}")
-        if rewards.xp and hasattr(player, "add_xp"):  # Assuming PlayerState has add_xp method
+        if rewards.xp and hasattr(
+            player, "add_xp"
+        ):  # Assuming PlayerState has add_xp method
             player.add_xp(rewards.xp)
             reward_messages.append(f"{rewards.xp} XP")
 
@@ -331,5 +391,10 @@ class BountyManager(BaseModel):
         if hasattr(player, "completed_bounty_ids"):
             player.completed_bounty_ids.add(bounty_id)  # type: ignore
 
-        reward_summary = ", ".join(reward_messages) if reward_messages else "No direct rewards."
-        return True, f"Bounty '{active_bounty.title}' completed! Rewards: {reward_summary}"
+        reward_summary = (
+            ", ".join(reward_messages) if reward_messages else "No direct rewards."
+        )
+        return (
+            True,
+            f"Bounty '{active_bounty.title}' completed! Rewards: {reward_summary}",
+        )

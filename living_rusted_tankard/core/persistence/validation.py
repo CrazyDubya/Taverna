@@ -49,15 +49,24 @@ class ValidationResult:
 
     def has_errors(self) -> bool:
         """Check if there are any error-level issues."""
-        return any(issue.severity in [ValidationSeverity.ERROR, ValidationSeverity.CRITICAL] for issue in self.issues)
+        return any(
+            issue.severity in [ValidationSeverity.ERROR, ValidationSeverity.CRITICAL]
+            for issue in self.issues
+        )
 
     def has_warnings(self) -> bool:
         """Check if there are any warning-level issues."""
-        return any(issue.severity == ValidationSeverity.WARNING for issue in self.issues)
+        return any(
+            issue.severity == ValidationSeverity.WARNING for issue in self.issues
+        )
 
     def get_critical_issues(self) -> List[ValidationIssue]:
         """Get all critical issues."""
-        return [issue for issue in self.issues if issue.severity == ValidationSeverity.CRITICAL]
+        return [
+            issue
+            for issue in self.issues
+            if issue.severity == ValidationSeverity.CRITICAL
+        ]
 
     def summary(self) -> str:
         """Get a summary of validation results."""
@@ -122,7 +131,11 @@ class SaveValidator:
             self._validate_cross_references(save_data)
 
         except Exception as e:
-            self._add_issue(ValidationSeverity.CRITICAL, f"Validation failed with exception: {e}", "root")
+            self._add_issue(
+                ValidationSeverity.CRITICAL,
+                f"Validation failed with exception: {e}",
+                "root",
+            )
 
         # Compile results
         errors = [
@@ -130,11 +143,20 @@ class SaveValidator:
             for issue in self.issues
             if issue.severity in [ValidationSeverity.ERROR, ValidationSeverity.CRITICAL]
         ]
-        warnings = [issue.message for issue in self.issues if issue.severity == ValidationSeverity.WARNING]
+        warnings = [
+            issue.message
+            for issue in self.issues
+            if issue.severity == ValidationSeverity.WARNING
+        ]
 
         is_valid = len(errors) == 0
 
-        return ValidationResult(is_valid=is_valid, issues=self.issues.copy(), errors=errors, warnings=warnings)
+        return ValidationResult(
+            is_valid=is_valid,
+            issues=self.issues.copy(),
+            errors=errors,
+            warnings=warnings,
+        )
 
     def _validate_top_level_structure(self, save_data: Dict[str, Any]):
         """Validate top-level save structure."""
@@ -153,7 +175,11 @@ class SaveValidator:
         expected_fields = {"metadata", "game_state"}
         for field in save_data:
             if field not in expected_fields:
-                self._add_issue(ValidationSeverity.WARNING, f"Unexpected top-level field: {field}", "root")
+                self._add_issue(
+                    ValidationSeverity.WARNING,
+                    f"Unexpected top-level field: {field}",
+                    "root",
+                )
 
     def _validate_metadata(self, metadata: Dict[str, Any]):
         """Validate save metadata."""
@@ -167,7 +193,11 @@ class SaveValidator:
 
         for field, expected_type in required_fields.items():
             if field not in metadata:
-                self._add_issue(ValidationSeverity.ERROR, f"Missing metadata field: {field}", f"metadata.{field}")
+                self._add_issue(
+                    ValidationSeverity.ERROR,
+                    f"Missing metadata field: {field}",
+                    f"metadata.{field}",
+                )
             elif not isinstance(metadata[field], expected_type):
                 self._add_issue(
                     ValidationSeverity.ERROR,
@@ -190,7 +220,11 @@ class SaveValidator:
         if "player_name" in metadata:
             player_name = metadata["player_name"]
             if not player_name or len(player_name.strip()) == 0:
-                self._add_issue(ValidationSeverity.WARNING, "Player name is empty", "metadata.player_name")
+                self._add_issue(
+                    ValidationSeverity.WARNING,
+                    "Player name is empty",
+                    "metadata.player_name",
+                )
 
     def _validate_game_state(self, game_state: Dict[str, Any]):
         """Validate game state structure."""
@@ -209,11 +243,15 @@ class SaveValidator:
                     validator(game_state[subsystem], f"game_state.{subsystem}")
                 except Exception as e:
                     self._add_issue(
-                        ValidationSeverity.ERROR, f"Validation error in {subsystem}: {e}", f"game_state.{subsystem}"
+                        ValidationSeverity.ERROR,
+                        f"Validation error in {subsystem}: {e}",
+                        f"game_state.{subsystem}",
                     )
             else:
                 self._add_issue(
-                    ValidationSeverity.WARNING, f"Missing subsystem: {subsystem}", f"game_state.{subsystem}"
+                    ValidationSeverity.WARNING,
+                    f"Missing subsystem: {subsystem}",
+                    f"game_state.{subsystem}",
                 )
 
     def _validate_player(self, player: Dict[str, Any], path: str):
@@ -228,7 +266,11 @@ class SaveValidator:
 
         for field, expected_types in required_fields.items():
             if field not in player:
-                self._add_issue(ValidationSeverity.ERROR, f"Missing player field: {field}", f"{path}.{field}")
+                self._add_issue(
+                    ValidationSeverity.ERROR,
+                    f"Missing player field: {field}",
+                    f"{path}.{field}",
+                )
             else:
                 value = player[field]
                 if not isinstance(value, expected_types):
@@ -243,9 +285,15 @@ class SaveValidator:
             health = player["health"]
             max_health = player["max_health"]
 
-            if isinstance(health, (int, float)) and isinstance(max_health, (int, float)):
+            if isinstance(health, (int, float)) and isinstance(
+                max_health, (int, float)
+            ):
                 if health < 0:
-                    self._add_issue(ValidationSeverity.ERROR, f"Health cannot be negative: {health}", f"{path}.health")
+                    self._add_issue(
+                        ValidationSeverity.ERROR,
+                        f"Health cannot be negative: {health}",
+                        f"{path}.health",
+                    )
 
                 if health > max_health:
                     self._add_issue(
@@ -256,18 +304,28 @@ class SaveValidator:
 
                 if max_health <= 0:
                     self._add_issue(
-                        ValidationSeverity.ERROR, f"Max health must be positive: {max_health}", f"{path}.max_health"
+                        ValidationSeverity.ERROR,
+                        f"Max health must be positive: {max_health}",
+                        f"{path}.max_health",
                     )
 
         if "gold" in player:
             gold = player["gold"]
             if isinstance(gold, (int, float)) and gold < 0:
-                self._add_issue(ValidationSeverity.WARNING, f"Gold is negative: {gold}", f"{path}.gold")
+                self._add_issue(
+                    ValidationSeverity.WARNING,
+                    f"Gold is negative: {gold}",
+                    f"{path}.gold",
+                )
 
         if "level" in player:
             level = player["level"]
             if isinstance(level, int) and level < 1:
-                self._add_issue(ValidationSeverity.ERROR, f"Level must be at least 1: {level}", f"{path}.level")
+                self._add_issue(
+                    ValidationSeverity.ERROR,
+                    f"Level must be at least 1: {level}",
+                    f"{path}.level",
+                )
 
     def _validate_clock(self, clock: Dict[str, Any], path: str):
         """Validate clock/time data."""
@@ -275,7 +333,13 @@ class SaveValidator:
             time_data = clock["current_time"]
 
             if isinstance(time_data, dict):
-                time_fields = {"hour": (0, 23), "day": (1, 30), "month": (1, 12), "year": (1, 9999), "minute": (0, 59)}
+                time_fields = {
+                    "hour": (0, 23),
+                    "day": (1, 30),
+                    "month": (1, 12),
+                    "year": (1, 9999),
+                    "minute": (0, 59),
+                }
 
                 for field, (min_val, max_val) in time_fields.items():
                     if field in time_data:
@@ -299,7 +363,11 @@ class SaveValidator:
             rooms = room_manager["rooms"]
 
             if not isinstance(rooms, dict):
-                self._add_issue(ValidationSeverity.ERROR, "Rooms must be a dictionary", f"{path}.rooms")
+                self._add_issue(
+                    ValidationSeverity.ERROR,
+                    "Rooms must be a dictionary",
+                    f"{path}.rooms",
+                )
                 return
 
             for room_id, room_data in rooms.items():
@@ -311,13 +379,21 @@ class SaveValidator:
 
         for field in required_fields:
             if field not in room:
-                self._add_issue(ValidationSeverity.WARNING, f"Missing room field: {field}", f"{path}.{field}")
+                self._add_issue(
+                    ValidationSeverity.WARNING,
+                    f"Missing room field: {field}",
+                    f"{path}.{field}",
+                )
 
         # Validate price
         if "price_per_night" in room:
             price = room["price_per_night"]
             if not isinstance(price, (int, float)) or price < 0:
-                self._add_issue(ValidationSeverity.ERROR, f"Invalid room price: {price}", f"{path}.price_per_night")
+                self._add_issue(
+                    ValidationSeverity.ERROR,
+                    f"Invalid room price: {price}",
+                    f"{path}.price_per_night",
+                )
 
     def _validate_npc_manager(self, npc_manager: Dict[str, Any], path: str):
         """Validate NPC manager data."""
@@ -334,7 +410,11 @@ class SaveValidator:
 
         for field in required_fields:
             if field not in npc:
-                self._add_issue(ValidationSeverity.WARNING, f"Missing NPC field: {field}", f"{path}.{field}")
+                self._add_issue(
+                    ValidationSeverity.WARNING,
+                    f"Missing NPC field: {field}",
+                    f"{path}.{field}",
+                )
 
         # Validate relationships
         if "relationships" in npc:
@@ -386,7 +466,9 @@ class SaveValidator:
                     )
                 else:
                     room = rooms[room_id]
-                    if not room.get("is_occupied") or room.get("occupant_id") != player.get("id"):
+                    if not room.get("is_occupied") or room.get(
+                        "occupant_id"
+                    ) != player.get("id"):
                         self._add_issue(
                             ValidationSeverity.WARNING,
                             f"Room occupancy mismatch for room {room_id}",
@@ -407,9 +489,17 @@ class SaveValidator:
         except (ValueError, AttributeError):
             return False
 
-    def _add_issue(self, severity: ValidationSeverity, message: str, path: str, suggested_fix: str = None):
+    def _add_issue(
+        self,
+        severity: ValidationSeverity,
+        message: str,
+        path: str,
+        suggested_fix: str = None,
+    ):
         """Add a validation issue."""
-        issue = ValidationIssue(severity=severity, message=message, path=path, suggested_fix=suggested_fix)
+        issue = ValidationIssue(
+            severity=severity, message=message, path=path, suggested_fix=suggested_fix
+        )
         self.issues.append(issue)
 
         # Log based on severity

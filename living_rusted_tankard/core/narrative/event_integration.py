@@ -66,7 +66,9 @@ class NarrativeEventHandler:
 
         # Check if interaction triggers any beats
         for thread in relevant_threads:
-            triggered_beats = self._check_interaction_triggers(thread, npc_name, interaction_type)
+            triggered_beats = self._check_interaction_triggers(
+                thread, npc_name, interaction_type
+            )
 
             for beat in triggered_beats:
                 self._execute_narrative_beat(beat, thread)
@@ -76,7 +78,9 @@ class NarrativeEventHandler:
             convergences = self.thread_manager.detect_convergences()
             for convergence in convergences:
                 if npc_name in convergence.shared_participants:
-                    logger.info(f"Convergence opportunity detected involving {npc_name}")
+                    logger.info(
+                        f"Convergence opportunity detected involving {npc_name}"
+                    )
                     self._handle_convergence(convergence)
 
     def on_room_change(self, event: Event):
@@ -96,7 +100,9 @@ class NarrativeEventHandler:
 
             for beat in pending_beats:
                 if beat.prerequisites.get("location") == new_room:
-                    logger.info(f"Room change to {new_room} triggers beat in thread {thread.id}")
+                    logger.info(
+                        f"Room change to {new_room} triggers beat in thread {thread.id}"
+                    )
                     self._execute_narrative_beat(beat, thread)
 
         # Update narrative atmosphere based on active threads
@@ -136,7 +142,9 @@ class NarrativeEventHandler:
             thread = self._create_npc_arrival_thread(npc_data)
             if thread:
                 self.thread_manager.add_thread(thread)
-                logger.info(f"Created new thread '{thread.title}' for {npc_name}'s arrival")
+                logger.info(
+                    f"Created new thread '{thread.title}' for {npc_name}'s arrival"
+                )
 
     def on_npc_depart(self, event: Event):
         """Handle NPC departure events"""
@@ -150,7 +158,9 @@ class NarrativeEventHandler:
         for thread in affected_threads:
             if npc_name in thread.primary_participants:
                 # Primary participant leaving might pause or alter thread
-                logger.warning(f"Primary participant {npc_name} leaving thread {thread.id}")
+                logger.warning(
+                    f"Primary participant {npc_name} leaving thread {thread.id}"
+                )
                 self._handle_participant_departure(thread, npc_name)
 
     def on_quest_started(self, event: Event):
@@ -174,7 +184,9 @@ class NarrativeEventHandler:
         for thread in self.thread_manager.get_active_threads():
             for beat in thread.beats:
                 if beat.prerequisites.get("has_item") == item_id:
-                    logger.info(f"Item {item_id} acquisition triggers beat in thread {thread.id}")
+                    logger.info(
+                        f"Item {item_id} acquisition triggers beat in thread {thread.id}"
+                    )
                     self._execute_narrative_beat(beat, thread)
 
     def on_reputation_changed(self, event: Event):
@@ -214,7 +226,9 @@ class NarrativeEventHandler:
                 thread_info["role"] = "secondary"
 
             context["active_threads"].append(thread_info)
-            context["current_tension"] = max(context["current_tension"], thread.tension_level)
+            context["current_tension"] = max(
+                context["current_tension"], thread.tension_level
+            )
 
             # Add suggested conversation topics based on thread
             if thread.stage == ThreadStage.RISING_ACTION:
@@ -278,7 +292,10 @@ class NarrativeEventHandler:
         """Get all active threads involving a participant"""
         threads = []
         for thread in self.thread_manager.get_active_threads():
-            if participant in thread.primary_participants or participant in thread.secondary_participants:
+            if (
+                participant in thread.primary_participants
+                or participant in thread.secondary_participants
+            ):
                 threads.append(thread)
         return threads
 
@@ -308,7 +325,9 @@ class NarrativeEventHandler:
 
         # Update thread tension if specified
         if "tension_change" in beat.effects:
-            thread.tension_level = max(0, min(1, thread.tension_level + beat.effects["tension_change"]))
+            thread.tension_level = max(
+                0, min(1, thread.tension_level + beat.effects["tension_change"])
+            )
 
         # Check for stage transition
         if beat.effects.get("stage_transition"):
@@ -329,7 +348,9 @@ class NarrativeEventHandler:
             )
         )
 
-    def _check_interaction_triggers(self, thread: StoryThread, npc: str, interaction_type: str) -> List[StoryBeat]:
+    def _check_interaction_triggers(
+        self, thread: StoryThread, npc: str, interaction_type: str
+    ) -> List[StoryBeat]:
         """Check if an interaction triggers any beats"""
         triggered = []
 
@@ -340,7 +361,10 @@ class NarrativeEventHandler:
             # Check prerequisites
             prereqs = beat.prerequisites
             if prereqs.get("interact_with") == npc:
-                if not prereqs.get("interaction_type") or prereqs["interaction_type"] == interaction_type:
+                if (
+                    not prereqs.get("interaction_type")
+                    or prereqs["interaction_type"] == interaction_type
+                ):
                     triggered.append(beat)
 
         return triggered
@@ -444,7 +468,9 @@ class NarrativeEventHandler:
                 if effect.duration > 0:
                     remaining_effects.append(effect)
                 else:
-                    logger.info(f"Narrative effect expired: {effect.type} on {effect.target}")
+                    logger.info(
+                        f"Narrative effect expired: {effect.type} on {effect.target}"
+                    )
             else:
                 # Permanent effect
                 remaining_effects.append(effect)
@@ -462,7 +488,9 @@ class NarrativeEventHandler:
             return True
         return False
 
-    def _create_npc_arrival_thread(self, npc_data: Dict[str, Any]) -> Optional[StoryThread]:
+    def _create_npc_arrival_thread(
+        self, npc_data: Dict[str, Any]
+    ) -> Optional[StoryThread]:
         """Create a narrative thread for an NPC arrival"""
         npc_name = npc_data.get("name")
 
@@ -506,7 +534,9 @@ class NarrativeEventHandler:
         thread = StoryThread(
             id=f"quest_{quest_id}",
             title=quest_name,
-            type=ThreadType.MAIN_QUEST if quest_data.get("is_main") else ThreadType.SIDE_QUEST,
+            type=ThreadType.MAIN_QUEST
+            if quest_data.get("is_main")
+            else ThreadType.SIDE_QUEST,
             description=quest_data.get("description", ""),
             primary_participants=["player"] + quest_data.get("npcs", []),
             tension_level=0.4,
@@ -531,7 +561,9 @@ class NarrativeEventHandler:
         """Handle a participant leaving an active thread"""
         if thread.stage in [ThreadStage.CLIMAX, ThreadStage.RISING_ACTION]:
             # Critical departure - might need intervention
-            logger.warning(f"Critical participant {participant} departed during {thread.stage.value}")
+            logger.warning(
+                f"Critical participant {participant} departed during {thread.stage.value}"
+            )
 
             # Create intervention request
             self.game_state.event_bus.emit(
@@ -541,7 +573,9 @@ class NarrativeEventHandler:
                         "thread_id": thread.id,
                         "reason": "participant_departure",
                         "participant": participant,
-                        "severity": "high" if thread.stage == ThreadStage.CLIMAX else "medium",
+                        "severity": "high"
+                        if thread.stage == ThreadStage.CLIMAX
+                        else "medium",
                     },
                 )
             )
@@ -565,7 +599,10 @@ class NarrativeEventHandler:
 
         # This could trigger faction-specific narrative threads
         self.game_state.event_bus.emit(
-            Event("NARRATIVE_REPUTATION_MILESTONE", {"faction": faction, "milestone": milestone, "value": new_value})
+            Event(
+                "NARRATIVE_REPUTATION_MILESTONE",
+                {"faction": faction, "milestone": milestone, "value": new_value},
+            )
         )
 
     def _get_thread_topics(self, thread: StoryThread) -> List[str]:
@@ -574,7 +611,9 @@ class NarrativeEventHandler:
 
         # Add topics based on thread type
         if thread.type == ThreadType.MYSTERY:
-            topics.extend(["strange occurrences", "missing items", "suspicious behavior"])
+            topics.extend(
+                ["strange occurrences", "missing items", "suspicious behavior"]
+            )
         elif thread.type == ThreadType.ROMANCE:
             topics.extend(["relationships", "feelings", "future plans"])
         elif thread.type == ThreadType.POLITICAL:

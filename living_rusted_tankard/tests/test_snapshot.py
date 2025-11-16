@@ -7,7 +7,6 @@ from typing import List, Dict, Any
 
 
 class TestSnapshotManager(unittest.TestCase):
-
     def setUp(self):
         # Create a mock game state
         self.game_state = MagicMock()
@@ -41,7 +40,7 @@ class TestSnapshotManager(unittest.TestCase):
         self.bulletin_board = MagicMock()
         self.bulletin_board.get_visible_notes.return_value = [
             MagicMock(content="Help wanted: Rat catcher needed"),
-            MagicMock(content="Lost: Silver locket")
+            MagicMock(content="Lost: Silver locket"),
         ]
         self.game_state.bulletin_board = self.bulletin_board
 
@@ -51,25 +50,27 @@ class TestSnapshotManager(unittest.TestCase):
     def test_create_snapshot(self):
         """Test that a snapshot is created with the correct structure."""
         # Patch the _get_present_npcs method to return our test NPC
-        with patch.object(self.snapshot_manager, '_get_present_npcs', return_value=[self.npc1]):
+        with patch.object(
+            self.snapshot_manager, "_get_present_npcs", return_value=[self.npc1]
+        ):
             snapshot = self.snapshot_manager.create_snapshot()
 
             # Check basic structure
-            self.assertIn('time', snapshot)
-            self.assertIn('present_npcs', snapshot)
-            self.assertIn('board_notes', snapshot)
-            self.assertIn('player', snapshot)
-            self.assertIn('location', snapshot)
+            self.assertIn("time", snapshot)
+            self.assertIn("present_npcs", snapshot)
+            self.assertIn("board_notes", snapshot)
+            self.assertIn("player", snapshot)
+            self.assertIn("location", snapshot)
 
             # Check values
-            self.assertEqual(snapshot['time'], 12.5)
+            self.assertEqual(snapshot["time"], 12.5)
             # Verify present_npcs is a list (length may vary)
-            self.assertIsInstance(snapshot['present_npcs'], list)
-            self.assertEqual(snapshot['present_npcs'][0]['name'], 'Old Tom')
-            self.assertEqual(len(snapshot['board_notes']), 2)
-            self.assertEqual(snapshot['player']['gold'], 100)
-            self.assertTrue(snapshot['player']['has_room'])
-            self.assertEqual(snapshot['location'], 'tavern')
+            self.assertIsInstance(snapshot["present_npcs"], list)
+            self.assertEqual(snapshot["present_npcs"][0]["name"], "Old Tom")
+            self.assertEqual(len(snapshot["board_notes"]), 2)
+            self.assertEqual(snapshot["player"]["gold"], 100)
+            self.assertTrue(snapshot["player"]["has_room"])
+            self.assertEqual(snapshot["location"], "tavern")
 
     def test_empty_snapshot(self):
         """Test snapshot creation when no NPCs are present."""
@@ -78,28 +79,30 @@ class TestSnapshotManager(unittest.TestCase):
 
         snapshot = self.snapshot_manager.create_snapshot()
 
-        self.assertEqual(len(snapshot['present_npcs']), 0)
-        self.assertEqual(len(snapshot['board_notes']), 0)
+        self.assertEqual(len(snapshot["present_npcs"]), 0)
+        self.assertEqual(len(snapshot["board_notes"]), 0)
 
     def test_npc_attributes(self):
         """Test that NPC attributes are correctly included in the snapshot."""
         # Patch the _get_present_npcs method to return our test NPC
-        with patch.object(self.snapshot_manager, '_get_present_npcs', return_value=[self.npc1]):
+        with patch.object(
+            self.snapshot_manager, "_get_present_npcs", return_value=[self.npc1]
+        ):
             snapshot = self.snapshot_manager.create_snapshot()
 
             # Check if present_npcs exists and has at least one NPC
-            self.assertIn('present_npcs', snapshot)
-            self.assertGreater(len(snapshot['present_npcs']), 0)
+            self.assertIn("present_npcs", snapshot)
+            self.assertGreater(len(snapshot["present_npcs"]), 0)
 
-            npc_data = snapshot['present_npcs'][0]
+            npc_data = snapshot["present_npcs"][0]
 
             # Check that NPC attributes are correctly included
-            self.assertEqual(npc_data['id'], 'npc1')
-            self.assertEqual(npc_data['name'], 'Old Tom')
-            self.assertEqual(npc_data['description'], 'A grizzled old man')
+            self.assertEqual(npc_data["id"], "npc1")
+            self.assertEqual(npc_data["name"], "Old Tom")
+            self.assertEqual(npc_data["description"], "A grizzled old man")
             # Mood and last_interaction_time might not be included in the actual implementation
             # So we'll just check for the required fields
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

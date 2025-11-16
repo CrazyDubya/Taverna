@@ -4,6 +4,7 @@ Enhanced server with full LLM integration for natural language understanding
 """
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI, HTTPException, Request
@@ -53,8 +54,8 @@ HTML_CONTENT = """
             max-width: 900px;
             margin: 0 auto;
         }
-        h1 { 
-            color: #d4af37; 
+        h1 {
+            color: #d4af37;
             text-align: center;
             font-size: 2.5em;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
@@ -109,15 +110,15 @@ HTML_CONTENT = """
             border-radius: 5px;
             transition: all 0.3s;
         }
-        button:hover { 
+        button:hover {
             background-color: #f0d060;
             transform: translateY(-2px);
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
-        .info { 
-            color: #888; 
-            font-size: 14px; 
-            text-align: center; 
+        .info {
+            color: #888;
+            font-size: 14px;
+            text-align: center;
             margin-top: 20px;
             font-style: italic;
         }
@@ -148,9 +149,9 @@ HTML_CONTENT = """
     <div id="status">
         <span id="llm-status" class="status-ok">LLM: Connected</span>
     </div>
-    
+
     <h1>🍺 The Living Rusted Tankard</h1>
-    
+
     <div id="game-container">
         <div id="output">Welcome to The Rusted Tankard!
 
@@ -166,54 +167,54 @@ What would you like to do? You can speak naturally - try "I'd like to look aroun
             <button onclick="sendCommand()">Send</button>
         </div>
     </div>
-    
+
     <div class="info">
         A text-based RPG with natural language understanding. Speak naturally - the tavern understands!<br>
         <small>Powered by LLM narrative engine and emergent gameplay systems</small>
     </div>
-    
+
     <script>
         let sessionId = null;
         let isProcessing = false;
-        
+
         async function sendCommand() {
             if (isProcessing) return;
-            
+
             const input = document.getElementById('command');
             const output = document.getElementById('output');
             const command = input.value.trim();
-            
+
             if (!command) return;
-            
+
             isProcessing = true;
             output.innerHTML += ' ' + escapeHtml(command) + '\\n';
             output.innerHTML += '<span class="thinking">The tavern considers your words...</span>\\n';
             input.value = '';
             output.scrollTop = output.scrollHeight;
-            
+
             try {
                 const response = await fetch('/api/command', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         command: command,
-                        session_id: sessionId 
+                        session_id: sessionId
                     })
                 });
-                
+
                 const data = await response.json();
                 sessionId = data.session_id;
-                
+
                 // Remove thinking message
                 output.innerHTML = output.innerHTML.replace(/<span class="thinking">.*?<\\/span>\\n/, '');
-                
+
                 // Add response
                 output.innerHTML += data.message + '\\n\\n>';
                 output.scrollTop = output.scrollHeight;
-                
+
                 // Update LLM status
                 updateStatus(data.llm_used);
-                
+
             } catch (error) {
                 output.innerHTML = output.innerHTML.replace(/<span class="thinking">.*?<\\/span>\\n/, '');
                 output.innerHTML += '<span class="error">Error: ' + error.message + '</span>\\n\\n>';
@@ -221,7 +222,7 @@ What would you like to do? You can speak naturally - try "I'd like to look aroun
                 isProcessing = false;
             }
         }
-        
+
         function updateStatus(llmUsed) {
             const status = document.getElementById('llm-status');
             if (llmUsed) {
@@ -232,7 +233,7 @@ What would you like to do? You can speak naturally - try "I'd like to look aroun
                 status.className = 'status-error';
             }
         }
-        
+
         function escapeHtml(text) {
             const map = {
                 '&': '&amp;',
@@ -243,7 +244,7 @@ What would you like to do? You can speak naturally - try "I'd like to look aroun
             };
             return text.replace(/[&<>"']/g, m => map[m]);
         }
-        
+
         document.getElementById('command').addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !isProcessing) sendCommand();
         });
@@ -252,116 +253,120 @@ What would you like to do? You can speak naturally - try "I'd like to look aroun
 </html>
 """
 
-def get_or_create_session(session_id: Optional[str] = None) -> tuple[GameState, EnhancedLLMGameMaster, Parser, str]:
+
+def get_or_create_session(
+    session_id: Optional[str] = None,
+) -> tuple[GameState, EnhancedLLMGameMaster, Parser, str]:
     """Get or create a game session with all components."""
     import uuid
-    
+
     if session_id and session_id in game_sessions:
         session = game_sessions[session_id]
-        return session['game_state'], session['llm_gm'], session['parser'], session_id
-    
+        return session["game_state"], session["llm_gm"], session["parser"], session_id
+
     # Create new session
     new_session_id = str(uuid.uuid4())
     game_state = GameState()
     llm_gm = EnhancedLLMGameMaster()
     parser = Parser(use_llm=True)
-    
+
     game_sessions[new_session_id] = {
-        'game_state': game_state,
-        'llm_gm': llm_gm,
-        'parser': parser,
-        'created_at': time.time()
+        "game_state": game_state,
+        "llm_gm": llm_gm,
+        "parser": parser,
+        "created_at": time.time(),
     }
-    
+
     logger.info(f"Created new session: {new_session_id}")
     return game_state, llm_gm, parser, new_session_id
+
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
     """Serve the enhanced game interface."""
     return HTML_CONTENT
 
+
 @app.post("/api/command")
 async def process_command(request: Request):
     """Process natural language commands with full LLM integration."""
     try:
         data = await request.json()
-        command = data.get('command', '').strip()
-        session_id = data.get('session_id')
-        
+        command = data.get("command", "").strip()
+        session_id = data.get("session_id")
+
         # Get or create session
         game_state, llm_gm, parser, session_id = get_or_create_session(session_id)
-        
+
         # Create game snapshot for parser context
         snapshot_data = game_state.get_snapshot()
         snapshot = GameSnapshot(
-            location=snapshot_data.get('location', 'tavern'),
-            time_of_day=snapshot_data.get('time', {}).get('formatted_time', 'evening'),
-            visible_objects=snapshot_data.get('visible_objects', ['bar', 'tables', 'fireplace']),
-            visible_npcs=[npc['name'] for npc in snapshot_data.get('present_npcs', [])],
-            player_state=snapshot_data.get('player', {})
+            location=snapshot_data.get("location", "tavern"),
+            time_of_day=snapshot_data.get("time", {}).get("formatted_time", "evening"),
+            visible_objects=snapshot_data.get(
+                "visible_objects", ["bar", "tables", "fireplace"]
+            ),
+            visible_npcs=[npc["name"] for npc in snapshot_data.get("present_npcs", [])],
+            player_state=snapshot_data.get("player", {}),
         )
-        
+
         # Process through LLM Game Master for narrative understanding
         narrative_response, parsed_command, action_results = llm_gm.process_input(
-            command, 
-            game_state, 
-            session_id
+            command, game_state, session_id
         )
-        
+
         # If LLM provided a specific command, execute it
         if parsed_command:
             result = game_state.process_command(parsed_command)
-            message = narrative_response or result.get('message', '')
+            message = narrative_response or result.get("message", "")
         else:
             # Try parsing with the parser as fallback
             try:
                 parsed = parser.parse(command, snapshot)
-                if parsed['action'] != 'unknown':
+                if parsed["action"] != "unknown":
                     # Convert parsed command to game command
                     game_command = f"{parsed['action']}"
-                    if parsed['target']:
+                    if parsed["target"]:
                         game_command += f" {parsed['target']}"
-                    
+
                     result = game_state.process_command(game_command)
-                    message = narrative_response or result.get('message', '')
+                    message = narrative_response or result.get("message", "")
                 else:
                     # Use narrative response for unknown actions
                     message = narrative_response or "I don't understand that command."
             except:
                 message = narrative_response or "I don't understand that command."
-        
+
         # Check if LLM was used
         llm_used = llm_gm.is_service_available()
-        
+
         return {
             "message": message,
             "session_id": session_id,
             "llm_used": llm_used,
-            "game_state": game_state.get_snapshot()
+            "game_state": game_state.get_snapshot(),
         }
-        
+
     except Exception as e:
         logger.error(f"Error processing command: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"error": str(e)}
-        )
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 
 @app.get("/health")
 async def health():
     """Health check endpoint."""
     return {"status": "ok", "sessions": len(game_sessions)}
 
+
 if __name__ == "__main__":
     import time
-    
+
     print("🍺 Starting The Living Rusted Tankard (Enhanced Edition)")
     print("🧠 With full LLM natural language understanding!")
     print("📍 Open http://localhost:8080 in your browser")
     print("Press Ctrl+C to stop\n")
-    
+
     # Import time module for the game
     import time
-    
+
     uvicorn.run(app, host="0.0.0.0", port=8080)

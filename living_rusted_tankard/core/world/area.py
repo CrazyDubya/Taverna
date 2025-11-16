@@ -76,7 +76,9 @@ class Connection:
     discovered: bool = False
     access_level: AccessLevel = AccessLevel.PUBLIC
 
-    def can_traverse(self, has_key: bool = False, access: AccessLevel = AccessLevel.PUBLIC) -> bool:
+    def can_traverse(
+        self, has_key: bool = False, access: AccessLevel = AccessLevel.PUBLIC
+    ) -> bool:
         """Check if connection can be traversed."""
         if self.is_hidden and not self.discovered:
             return False

@@ -6,13 +6,12 @@ from unittest.mock import patch
 
 @pytest.fixture
 def npc_manager():
-
     from core.npc import NPCManager
+
     return NPCManager()
 
 
 class TestNPC:
-
     def test_npc_initialization(self):
         """Test that an NPC is initialized with the correct attributes."""
 
@@ -25,7 +24,7 @@ class TestNPC:
             description="A test NPC",
             npc_type=NPCType.PATRON,
             schedule=[(9, 17)],  # 9 AM to 5 PM
-            departure_chance=0.5
+            departure_chance=0.5,
         )
 
         assert npc.id == "test_npc"
@@ -35,12 +34,15 @@ class TestNPC:
         assert npc.is_present is False
         assert npc.last_visit_day == -1
 
-    @pytest.mark.parametrize("hour, expected_present", [
-        (8, False),   # Before schedule
-        (12, True),   # During schedule
-        (17, False),  # At end of schedule (exclusive)
-        (20, False)   # After schedule
-    ])
+    @pytest.mark.parametrize(
+        "hour, expected_present",
+        [
+            (8, False),  # Before schedule
+            (12, True),  # During schedule
+            (17, False),  # At end of schedule (exclusive)
+            (20, False),  # After schedule
+        ],
+    )
     def test_update_presence_during_schedule(self, hour, expected_present):
         """Test that NPC presence is updated correctly based on schedule."""
 
@@ -52,7 +54,7 @@ class TestNPC:
             description="Works 9-5",
             npc_type=NPCType.PATRON,
             schedule=[(9, 17)],
-            visit_frequency=1.0  # Always visit when in schedule
+            visit_frequency=1.0,  # Always visit when in schedule
         )
 
         # Game time in hours (day 1 at specified hour)
@@ -65,7 +67,7 @@ class TestNPC:
         is_within_schedule = 9 <= (hour % 24) < 17
         assert npc.is_present == (is_within_schedule and expected_present)
 
-    @patch('random.random')
+    @patch("random.random")
     def test_departure_chance(self, mock_random):
         """Test that NPCs can randomly decide to leave based on departure_chance."""
 
@@ -82,7 +84,7 @@ class TestNPC:
             npc_type=NPCType.PATRON,
             schedule=[(0, 24)],  # All day
             departure_chance=0.5,  # 50% chance to leave
-            visit_frequency=1.0    # Always visit when in schedule
+            visit_frequency=1.0,  # Always visit when in schedule
         )
 
         # First update - should be present (uses first mock value 0.1 for visit check)
@@ -101,7 +103,7 @@ class TestNPC:
             npc_type=NPCType.PATRON,
             schedule=[(0, 24)],  # All day
             departure_chance=0.5,  # 50% chance to leave
-            visit_frequency=1.0    # Always visit when in schedule
+            visit_frequency=1.0,  # Always visit when in schedule
         )
 
         # First update - should be present (uses third mock value 0.1 for visit check)
@@ -114,7 +116,6 @@ class TestNPC:
 
 
 class TestNPCManager:
-
     def test_add_and_get_npc(self, npc_manager):
         """Test adding and retrieving NPCs from the manager."""
 
@@ -127,7 +128,7 @@ class TestNPCManager:
             description="A test NPC",
             npc_type=NPCType.PATRON,
             schedule=[(9, 17)],
-            visit_frequency=1.0
+            visit_frequency=1.0,
         )
 
         # Add NPC to manager
@@ -163,7 +164,7 @@ class TestNPCManager:
             npc_type=NPCType.PATRON,
             schedule=[(9, 17)],  # 9 AM to 5 PM
             visit_frequency=1.0,
-            departure_chance=0.0  # Never leave once arrived
+            departure_chance=0.0,  # Never leave once arrived
         )
 
         night_npc = NPC(
@@ -173,7 +174,7 @@ class TestNPCManager:
             npc_type=NPCType.PATRON,
             schedule=[(20, 4)],  # 8 PM to 4 AM
             visit_frequency=1.0,
-            departure_chance=0.0  # Never leave once arrived
+            departure_chance=0.0,  # Never leave once arrived
         )
 
         # Add NPCs to manager

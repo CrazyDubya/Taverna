@@ -11,13 +11,13 @@ class TestSleepMechanics:
     def test_sleep_advances_time(self, sleep_setup):
         """Test that sleeping advances time and reduces tiredness."""
         setup = sleep_setup
-        player = setup['player']
-        clock = setup['clock']
-        room_manager = setup['room_manager']
+        player = setup["player"]
+        clock = setup["clock"]
+        room_manager = setup["room_manager"]
 
         # Rent a room first
         player.gold = 20
-        with patch('core.room_manager.ROOM_COST', 10):
+        with patch("core.room_manager.ROOM_COST", 10):
             room_manager.rent_room(player)
 
         # Make player tired
@@ -34,8 +34,8 @@ class TestSleepMechanics:
     def test_sleep_without_room(self, sleep_setup):
         """Test that sleeping without a room is not possible."""
         setup = sleep_setup
-        player = setup['player']
-        clock = setup['clock']
+        player = setup["player"]
+        clock = setup["clock"]
 
         initial_time = clock.current_time
         initial_tiredness = player.tiredness = 5
@@ -50,12 +50,12 @@ class TestSleepMechanics:
     def test_sleep_reduces_tiredness(self, sleep_setup):
         """Test that sleeping reduces tiredness by the correct amount."""
         setup = sleep_setup
-        player = setup['player']
-        room_manager = setup['room_manager']
+        player = setup["player"]
+        room_manager = setup["room_manager"]
 
         # Rent a room
         player.gold = 20
-        with patch('core.room_manager.ROOM_COST', 10):
+        with patch("core.room_manager.ROOM_COST", 10):
             room_manager.rent_room(player)
 
         # Set high tiredness
@@ -75,7 +75,7 @@ class TestSleepMechanics:
         """Test the sleep command through the game state."""
         # Rent a room first
         game_state.player.gold = 20
-        with patch('core.room_manager.ROOM_COST', 10):
+        with patch("core.room_manager.ROOM_COST", 10):
             game_state.process_command("rent room")
 
         # Set up tiredness
