@@ -1101,6 +1101,27 @@ What tale will you weave in this living tapestry of stories?
         if not is_valid:
             return {"success": False, "message": validation_msg, "recent_events": []}
 
+        # Get atmosphere modifiers if Phase 2 is available
+        atmosphere_modifiers = {}
+        if PHASE2_AVAILABLE and hasattr(self, "atmosphere_manager"):
+            try:
+                current_atmosphere = self.atmosphere_manager.get_current_atmosphere()
+                atmosphere_modifiers = {
+                    "stealth_modifier": current_atmosphere.get("stealth_modifier", 1.0),
+                    "visibility_modifier": current_atmosphere.get("visibility_modifier", 1.0),
+                    "conversation_difficulty": current_atmosphere.get("conversation_difficulty", 0.0),
+                    "comfort_level": current_atmosphere.get("comfort", 0.5),
+                    "tension": current_atmosphere.get("tension", 0.0),
+                    "mystery": current_atmosphere.get("mystery", 0.0),
+                }
+                logger.debug(f"Atmosphere modifiers applied: {atmosphere_modifiers}")
+            except Exception as e:
+                logger.warning(f"Failed to get atmosphere modifiers: {e}")
+                atmosphere_modifiers = {}
+
+        # Store modifiers for use in command processing
+        self._current_atmosphere_modifiers = atmosphere_modifiers
+
         # Wrap command processing in error handling
         try:
             result = self._process_command_internal(command)
@@ -1129,23 +1150,64 @@ What tale will you weave in this living tapestry of stories?
                 if retry_result:
                     return retry_result
 
-        # Process command through story orchestrator for narrative consequences
+        # Process command through narrative systems for story progression
         if NARRATIVE_SYSTEMS_AVAILABLE and hasattr(self, "story_orchestrator"):
-            story_notifications = self.story_orchestrator.process_player_action(original_command, result, self)
+            try:
+                story_notifications = self.story_orchestrator.process_player_action(original_command, result, self)
 
-            # Add any story notifications to the result
-            if story_notifications:
-                existing_message = result.get("message", "")
-                story_text = "\n".join(story_notifications)
+                # Add any story notifications to the result
+                if story_notifications:
+                    existing_message = result.get("message", "")
+                    story_text = "\n".join(story_notifications)
 
-                if existing_message:
-                    result["message"] = f"{existing_message}\n\n{story_text}"
-                else:
-                    result["message"] = story_text
+                    if existing_message:
+                        result["message"] = f"{existing_message}\n\n{story_text}"
+                    else:
+                        result["message"] = story_text
 
-                # Also add as events for the event formatter
-                for notification in story_notifications:
-                    self._add_event(notification, "story_consequence", {"command": original_command})
+                    # Also add as events for the event formatter
+                    for notification in story_notifications:
+                        self._add_event(notification, "story_consequence", {"command": original_command})
+            except Exception as e:
+                logger.warning(f"Story orchestrator processing failed: {e}")
+
+        # Process command through Phase 4 narrative orchestrator if available
+        if PHASE4_AVAILABLE and hasattr(self, "narrative_orchestrator") and result.get("success"):
+            try:
+                # Build player action context for narrative engine
+                parts = command.split()
+                action_context = {
+                    "command": command,
+                    "action_type": parts[0] if parts else "unknown",
+                    "target": parts[1] if len(parts) > 1 else None,
+                    "location": self.player.location,
+                    "npcs_present": [npc.id for npc in self.npc_manager.get_present_npcs()],
+                    "time": self.clock.get_current_time().total_hours if hasattr(self, "clock") else 0,
+                    "success": result.get("success", False),
+                }
+
+                # Let narrative orchestrator process this action and trigger story beats
+                narrative_response = self.narrative_orchestrator.process_player_action(action_context)
+
+                # Add narrative beats to result if any were triggered
+                if narrative_response and narrative_response.get("beats_triggered"):
+                    beats = narrative_response["beats_triggered"]
+                    logger.info(f"Narrative beats triggered: {len(beats)} beats")
+
+                    # Append narrative developments to the message
+                    for beat in beats:
+                        if beat.get("description"):
+                            existing_message = result.get("message", "")
+                            beat_text = f"\n\n[Story Development] {beat['description']}"
+                            result["message"] = existing_message + beat_text
+
+                            # Track as narrative event
+                            self._add_event(
+                                beat["description"], "narrative_beat", {"beat_id": beat.get("id"), "thread_id": beat.get("thread_id")}
+                            )
+
+            except Exception as e:
+                logger.warning(f"Phase 4 narrative orchestrator processing failed: {e}")
 
         return result
 
@@ -1345,6 +1407,62 @@ What tale will you weave in this living tapestry of stories?
                         "success": False,
                         "message": f"Cannot move to '{room_id_target}'. No rooms are available.",
                     }
+        elif main_command == "go" and args and PHASE2_AVAILABLE and hasattr(self, "area_manager"):
+            # Phase 2: Navigate to different areas
+            area_name = " ".join(args)  # Allow multi-word area names
+            try:
+                move_result = self.area_manager.move_to_area(area_name)
+                if move_result.get("success"):
+                    # Update player location
+                    self.player.location = move_result.get("area_id", area_name)
+                    description = move_result.get("description", "")
+                    atmosphere = move_result.get("atmosphere_description", "")
+                    full_description = f"{description}\n\n{atmosphere}" if atmosphere else description
+                    result = {"success": True, "message": full_description}
+                    logger.info(f"Player moved to area: {area_name}")
+                else:
+                    result = {"success": False, "message": move_result.get("message", f"Cannot go to '{area_name}'.")}
+            except Exception as e:
+                logger.error(f"Error moving to area {area_name}: {e}")
+                result = {"success": False, "message": f"Cannot go to '{area_name}'."}
+        elif main_command in ("upstairs", "up") and PHASE2_AVAILABLE and hasattr(self, "floor_manager"):
+            # Phase 2: Go up a floor
+            try:
+                move_result = self.floor_manager.move_up()
+                if move_result.get("success"):
+                    self.player.location = move_result.get("area_id", self.player.location)
+                    result = {"success": True, "message": move_result.get("message", "You go upstairs.")}
+                    logger.info("Player moved up a floor")
+                else:
+                    result = {"success": False, "message": move_result.get("message", "You can't go up from here.")}
+            except Exception as e:
+                logger.error(f"Error going upstairs: {e}")
+                result = {"success": False, "message": "You can't go up from here."}
+        elif main_command in ("downstairs", "down") and PHASE2_AVAILABLE and hasattr(self, "floor_manager"):
+            # Phase 2: Go down a floor
+            try:
+                move_result = self.floor_manager.move_down()
+                if move_result.get("success"):
+                    self.player.location = move_result.get("area_id", self.player.location)
+                    result = {"success": True, "message": move_result.get("message", "You go downstairs.")}
+                    logger.info("Player moved down a floor")
+                else:
+                    result = {"success": False, "message": move_result.get("message", "You can't go down from here.")}
+            except Exception as e:
+                logger.error(f"Error going downstairs: {e}")
+                result = {"success": False, "message": "You can't go down from here."}
+        elif main_command == "areas" and PHASE2_AVAILABLE and hasattr(self, "area_manager"):
+            # Phase 2: List available areas
+            try:
+                areas = self.area_manager.get_available_areas()
+                if areas:
+                    area_list = "\n".join([f"- {area['name']}: {area.get('short_description', 'A location in the tavern.')}" for area in areas])
+                    result = {"success": True, "message": f"You can go to these areas:\n{area_list}\n\nUse 'go <area>' to travel."}
+                else:
+                    result = {"success": True, "message": "No areas are currently available."}
+            except Exception as e:
+                logger.error(f"Error listing areas: {e}")
+                result = {"success": False, "message": "Cannot list areas right now."}
         else:
             full_command_key = f"{main_command} {args[0]}" if args else main_command
             if full_command_key in BOUNTY_COMMAND_HANDLERS:
@@ -2157,6 +2275,13 @@ work      - List available jobs
 rent room - Rent a room at the tavern
 help      - Display this help message
 
+Navigation Commands:
+------------------
+areas      - List all available areas in the tavern
+go [area]  - Travel to a different area (e.g., 'go kitchen', 'go cellar')
+upstairs   - Go up to the next floor (aliases: 'up')
+downstairs - Go down to the lower floor (aliases: 'down')
+
 Advanced Commands:
 ----------------
 gamble [amount] - Try your luck with gambling
@@ -2180,6 +2305,10 @@ Type 'quit' to exit the game.
             "commands",
             # Movement
             "move <room>",
+            "areas",
+            "go <area>",
+            "upstairs / up",
+            "downstairs / down",
             # Economic
             "buy <item>",
             "use <item>",
