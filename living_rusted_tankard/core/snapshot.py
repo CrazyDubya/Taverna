@@ -107,7 +107,7 @@ class SnapshotManager:
 
     def _get_present_npcs(self) -> List["NPC"]:
         """Get a list of currently present NPCs."""
-        from .npc import NPC  # noqa: F401 - used within this function scope  # Import here to avoid circular import
+        from .npc import NPC  # Import here to avoid circular import
 
         if hasattr(self.game_state, "npc_manager") and hasattr(self.game_state.npc_manager, "npcs"):
             npcs_dict = self.game_state.npc_manager.npcs

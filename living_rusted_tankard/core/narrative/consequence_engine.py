@@ -361,11 +361,9 @@ class ConsequenceEngine:
 
         if rule.action_patterns:
             # If patterns are specified but none match, still allow category match
-            _pattern_match = any(  # noqa: F841 - calculated but not used (patterns are hints, not requirements)
-                re.search(pattern, action.description, re.IGNORECASE) for pattern in rule.action_patterns
-            )
             # Don't reject based on pattern mismatch - patterns are hints, not requirements
             # This makes the system more flexible and responsive to player actions
+            pass
 
         # Location requirements
         if rule.required_locations and action.location not in rule.required_locations:

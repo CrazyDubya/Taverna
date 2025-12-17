@@ -598,7 +598,7 @@ What tale will you weave in this living tapestry of stories?
             last_departure = (
                 self.travelling_merchant_departure_time
                 if self.travelling_merchant_departure_time is not None
-                else -float("in")
+                else -float("inf")
             )
             if current_game_hours > (last_departure + merchant_cooldown_hours):
                 if random.random() < merchant_arrival_chance_per_hour_after_cooldown:

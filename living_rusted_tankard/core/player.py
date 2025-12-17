@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional, List, Set
 from pydantic import BaseModel, Field as PydanticField
 import random
 
-from .items import Item, Inventory, InventoryItem  # noqa: F401 - used for type annotations
+from .items import Item, Inventory
 
 
 class ActiveEffect(BaseModel):

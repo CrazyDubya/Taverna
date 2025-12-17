@@ -212,14 +212,15 @@ async def submit_user_feedback(request: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"User feedback: {feedback_type} - Rating: {rating}/5 - Features: {features_used}")
 
         # In a real implementation, this would be stored in a database
-        _feedback_data = {  # noqa: F841 - placeholder for future database storage
-            "type": feedback_type,
-            "rating": rating,
-            "comments": comments,
-            "session_id": session_id,
-            "features_used": features_used,
-            "timestamp": "2024-01-01T00:00:00Z",  # Would use actual timestamp
-        }
+        # Placeholder for future database storage:
+        # feedback_data = {
+        #     "type": feedback_type,
+        #     "rating": rating,
+        #     "comments": comments,
+        #     "session_id": session_id,
+        #     "features_used": features_used,
+        #     "timestamp": "2024-01-01T00:00:00Z",  # Would use actual timestamp
+        # }
 
         return {
             "status": "success",

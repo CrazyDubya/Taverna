@@ -384,18 +384,13 @@ class MemoryManager:
         memory_texts = []
         for memory in relevant_memories:
             # Add time context using natural time display
-            try:
-                pass
-
-                age_hours = memory.get_age_hours()
-                if age_hours < 1:
-                    time_ref = "recently"
-                elif age_hours < 24:
-                    time_ref = f"{int(age_hours)} hours ago"
-                else:
-                    time_ref = f"{int(age_hours // 24)} days ago"
-            except ImportError:
-                time_ref = "previously"
+            age_hours = memory.get_age_hours()
+            if age_hours < 1:
+                time_ref = "recently"
+            elif age_hours < 24:
+                time_ref = f"{int(age_hours)} hours ago"
+            else:
+                time_ref = f"{int(age_hours // 24)} days ago"
 
             memory_text = f"{memory.content} ({time_ref})"
             memory_texts.append(memory_text)
