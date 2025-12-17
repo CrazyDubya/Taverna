@@ -12,7 +12,7 @@ from core.player import PlayerState
 # Import directly from the parser file that supports model parameter
 import importlib.util
 
-spec = importlib.util.spec_from_file_location("direct_parser", "core/llm/parser.py")
+spec = importlib.util.spec_from_file_location("direct_parser", "living_rusted_tankard/core/llm/parser.py")
 direct_parser = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(direct_parser)
 Parser = direct_parser.Parser
