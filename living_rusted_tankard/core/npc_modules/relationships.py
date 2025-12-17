@@ -191,7 +191,7 @@ class RelationshipWeb:
 
         # Social groups
         self.social_groups: Dict[str, Set[str]] = {
-            "staf": set(),
+            "staff": set(),
             "regulars": set(),
             "merchants": set(),
             "guards": set(),
@@ -381,7 +381,7 @@ class RelationshipWeb:
         groups = self.get_social_groups(npc_id)
         group_influence = {
             "nobility": 0.3,
-            "staf": 0.2,
+            "staff": 0.2,
             "merchants": 0.15,
             "guards": 0.2,
             "regulars": 0.1,

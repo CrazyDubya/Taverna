@@ -329,11 +329,6 @@ class Economy(BaseModel):
 
         # Check availability if game_state and merchant are relevant
         # Standard availability check - might be more complex in a full system
-        _is_available_normally = item_id in TAVERN_ITEMS  # noqa: F841 - reserved for future use
-
-        if game_state and game_state.travelling_merchant_active:
-            if item_id in game_state.travelling_merchant_temporary_items:
-                pass
 
         if not item_def:  # If the item definition itself doesn't exist
             return None

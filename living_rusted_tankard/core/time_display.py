@@ -150,7 +150,7 @@ def format_time_for_npc_speech(game_time_hours: float, npc_data: Optional[Dict[s
             personality = "traditional"
         elif npc_type in ["bard", "adventurer"]:
             personality = "poetic"
-        elif npc_type in ["merchant", "thie"]:
+        elif npc_type in ["merchant", "thief"]:
             personality = "practical"
 
     return TimeDisplayManager.format_time_for_npc(game_time_hours, personality)

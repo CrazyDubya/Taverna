@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Fix f-strings that don't have placeholders."""
 import re
-import sys
 
 def fix_fstrings_in_file(filepath):
     """Remove f prefix from f-strings without placeholders."""

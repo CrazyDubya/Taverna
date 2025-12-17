@@ -10,7 +10,6 @@ from pydantic import BaseModel, Field as PydanticField
 if TYPE_CHECKING:
     from .player import PlayerState
     from .economy import Economy
-    from .news_manager import NewsManager  # For news sharing  # noqa: F401
     from .game_state import GameState  # To pass to _handle_conversation for context
 
 from .callable_registry import get_interaction

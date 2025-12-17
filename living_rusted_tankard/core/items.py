@@ -225,7 +225,7 @@ ITEM_DEFINITIONS = {}
 
 def load_item_definitions(data_dir: Path = Path("data")) -> Dict[str, Item]:
     """Load item definitions from items.json and populate ITEM_DEFINITIONS."""
-    global ITEM_DEFINITIONS  # noqa: F824 - modified via .update() and dict assignment
+    global ITEM_DEFINITIONS
 
     # First, populate with built-in TAVERN_ITEMS
     ITEM_DEFINITIONS.update(TAVERN_ITEMS)
