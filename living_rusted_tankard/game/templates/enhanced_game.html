@@ -214,18 +214,18 @@
                     <h1 class="text-2xl md:text-3xl font-bold text-tavern-400 font-medieval">
                         🍺 The Living Rusted Tankard
                     </h1>
-                    <div id="connection-status" class="w-3 h-3 rounded-full status-online"></div>
+                    <div id="connection-status" role="status" aria-label="Connection Status: Online" class="w-3 h-3 rounded-full status-online" title="Connected"></div>
                 </div>
                 
                 <div class="flex items-center space-x-2">
                     
                     <!-- Mobile Menu Toggle -->
-                    <button id="mobile-menu-toggle" aria-label="Toggle main menu" class="md:hidden bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg">
+                    <button id="mobile-menu-toggle" aria-label="Toggle main menu" class="md:hidden bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-tavern-400">
                         ☰
                     </button>
                     
                     <!-- Settings Button -->
-                    <button id="settings-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg transition-all">
+                    <button id="settings-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-tavern-400">
                         ⚙️ Settings
                     </button>
                 </div>
@@ -256,10 +256,10 @@
             <div class="mt-4 space-y-2">
                 <!-- Command History Toggle -->
                 <div class="flex justify-between items-center">
-                    <button id="history-toggle" class="text-sm text-gray-400 hover:text-tavern-400 transition-colors">
+                    <button id="history-toggle" class="text-sm text-gray-400 hover:text-tavern-400 transition-colors focus:outline-none focus:ring-2 focus:ring-tavern-400 rounded px-1">
                         📜 Command History (0)
                     </button>
-                    <button id="clear-history" class="text-sm text-gray-400 hover:text-red-400 transition-colors">
+                    <button id="clear-history" class="text-sm text-gray-400 hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-tavern-400 rounded px-1">
                         🗑️ Clear
                     </button>
                 </div>
@@ -278,6 +278,7 @@
                             type="text" 
                             id="command-input" 
                             aria-label="Command input"
+                            autofocus
                             placeholder="What would you like to do? (e.g., 'look around', 'talk to barkeeper', 'buy ale')"
                             class="w-full bg-gray-700 text-white p-3 md:p-4 rounded-lg border border-gray-600 focus:border-tavern-400 focus:ring-2 focus:ring-tavern-400/20 outline-none transition-all text-base"
                             autocomplete="off"
@@ -291,7 +292,7 @@
                     <button 
                         id="submit-btn" 
                         aria-label="Send command"
-                        class="btn-primary text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="btn-primary text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-tavern-400"
                         disabled
                     >
                         <span class="hidden md:inline">Send</span>
@@ -301,19 +302,19 @@
                 
                 <!-- Quick Actions -->
                 <div id="quick-actions" class="flex flex-wrap gap-2 mt-2">
-                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" data-command="look">
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-tavern-400" data-command="look">
                         👀 Look Around
                     </button>
-                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" data-command="status">
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-tavern-400" data-command="status">
                         📊 Check Status
                     </button>
-                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" data-command="inventory">
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-tavern-400" data-command="inventory">
                         🎒 My Items
                     </button>
-                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" data-command="talk to barkeeper">
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-tavern-400" data-command="talk to barkeeper">
                         💬 Chat
                     </button>
-                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" data-command="help">
+                    <button class="quick-action bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-tavern-400" data-command="help">
                         ❓ Help
                     </button>
                 </div>
@@ -908,7 +909,9 @@
                     'degraded': 'Degraded'
                 };
                 
-                statusElement.title = statusText[status] || 'Unknown';
+                const text = statusText[status] || 'Unknown';
+                statusElement.title = text;
+                statusElement.setAttribute('aria-label', `Connection Status: ${text}`);
             }
             
             showLoading(show) {
