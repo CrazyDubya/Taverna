@@ -386,9 +386,9 @@
     </div>
 
     <!-- Enhanced Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <div class="bg-gradient-to-b from-gray-800 to-gray-900 p-6 rounded-xl shadow-2xl max-w-md w-full border border-gray-600">
-            <h2 class="text-xl font-bold text-tavern-400 mb-6 font-cinzel">⚙️ Game Settings</h2>
+            <h2 id="settings-title" class="text-xl font-bold text-tavern-400 mb-6 font-cinzel">⚙️ Game Settings</h2>
             
             <!-- LLM Configuration -->
             <div class="space-y-4">
@@ -561,17 +561,24 @@
                 
                 // Settings modal
                 document.getElementById('settings-btn').addEventListener('click', () => {
-                    document.getElementById('settings-modal').classList.remove('hidden');
+                    this.openSettings();
                 });
                 
                 document.getElementById('close-settings').addEventListener('click', () => {
-                    document.getElementById('settings-modal').classList.add('hidden');
+                    this.closeSettings();
                 });
                 
                 document.getElementById('save-settings').addEventListener('click', () => {
                     this.saveSettings();
                 });
                 
+                // Close settings on Escape
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && !document.getElementById('settings-modal').classList.contains('hidden')) {
+                        this.closeSettings();
+                    }
+                });
+
                 
                 // Mobile menu
                 document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
@@ -937,6 +944,28 @@
                 }
             }
             
+            openSettings() {
+                const modal = document.getElementById('settings-modal');
+                this.previousActiveElement = document.activeElement;
+                modal.classList.remove('hidden');
+
+                // Focus management
+                const firstInput = document.getElementById('ollama-url-input');
+                if (firstInput) {
+                    setTimeout(() => firstInput.focus(), 50);
+                }
+            }
+
+            closeSettings() {
+                const modal = document.getElementById('settings-modal');
+                modal.classList.add('hidden');
+
+                // Restore focus
+                if (this.previousActiveElement) {
+                    this.previousActiveElement.focus();
+                }
+            }
+
             saveSettings() {
                 const performanceEnabled = document.getElementById('performance-optimizations').checked;
                 localStorage.setItem('performanceOptimized', performanceEnabled);
@@ -945,8 +974,7 @@
                 // Apply settings
                 this.loadSettings();
                 
-                // Close modal
-                document.getElementById('settings-modal').classList.add('hidden');
+                this.closeSettings();
                 
                 // Show confirmation
                 this.addNarrative('⚙️ Settings saved successfully!');
