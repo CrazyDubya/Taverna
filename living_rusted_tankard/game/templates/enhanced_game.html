@@ -860,15 +860,18 @@
                 // Show last 10 commands
                 const recentHistory = this.commandHistory.slice(-10);
                 recentHistory.forEach((command, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'text-gray-300 hover:text-tavern-400 cursor-pointer p-1 rounded hover:bg-gray-600 transition-all';
-                    div.textContent = command;
-                    div.addEventListener('click', () => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'w-full text-left text-gray-300 hover:text-tavern-400 cursor-pointer p-1 rounded hover:bg-gray-600 transition-all focus:outline-none focus:ring-2 focus:ring-tavern-400/50';
+                    btn.textContent = command;
+                    btn.setAttribute('aria-label', `Reuse command: ${command}`);
+                    btn.addEventListener('click', () => {
                         this.elements.commandInput.value = command;
                         this.elements.submitBtn.disabled = false;
                         this.elements.historyPanel.classList.add('hidden');
+                        this.elements.commandInput.focus();
                     });
-                    historyList.appendChild(div);
+                    historyList.appendChild(btn);
                 });
             }
             
