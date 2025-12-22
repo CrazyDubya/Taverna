@@ -1,3 +1,3 @@
-## 2024-05-22 - Accessibility in Text Adventures
-**Learning:** Text-based interfaces (like games or CLIs) often neglect `aria-live` regions, making them unusable for screen readers as new content appears without announcement.
-**Action:** Always add `aria-live="polite"` and `role="log"` to dynamic text output containers.
+## 2024-05-23 - Focus Management in Text Adventures
+**Learning:** In text-heavy interfaces like RPGs, users expect immediate keyboard readiness. Failing to autofocus the main input creates friction on every page load.
+**Action:** Always verify `autofocus` on the primary input for command-driven interfaces.
