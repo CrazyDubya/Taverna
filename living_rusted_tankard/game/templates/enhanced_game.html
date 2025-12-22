@@ -214,7 +214,7 @@
                     <h1 class="text-2xl md:text-3xl font-bold text-tavern-400 font-medieval">
                         🍺 The Living Rusted Tankard
                     </h1>
-                    <div id="connection-status" role="status" aria-label="Connection Status: Online" class="w-3 h-3 rounded-full status-online" title="Connected"></div>
+                    <div id="connection-status" role="status" aria-live="polite" aria-label="Connection Status: Online" class="w-3 h-3 rounded-full status-online" title="Connected"></div>
                 </div>
                 
                 <div class="flex items-center space-x-2">
@@ -256,7 +256,7 @@
             <div class="mt-4 space-y-2">
                 <!-- Command History Toggle -->
                 <div class="flex justify-between items-center">
-                    <button id="history-toggle" class="text-sm text-gray-400 hover:text-tavern-400 transition-colors focus:outline-none focus:ring-2 focus:ring-tavern-400 rounded px-1">
+                    <button id="history-toggle" aria-expanded="false" aria-controls="command-history-panel" class="text-sm text-gray-400 hover:text-tavern-400 transition-colors focus:outline-none focus:ring-2 focus:ring-tavern-400 rounded px-1">
                         📜 Command History (0)
                     </button>
                     <button id="clear-history" class="text-sm text-gray-400 hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-tavern-400 rounded px-1">
@@ -387,9 +387,9 @@
     </div>
 
     <!-- Enhanced Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+    <div id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-gradient-to-b from-gray-800 to-gray-900 p-6 rounded-xl shadow-2xl max-w-md w-full border border-gray-600">
-            <h2 class="text-xl font-bold text-tavern-400 mb-6 font-cinzel">⚙️ Game Settings</h2>
+            <h2 id="settings-title" class="text-xl font-bold text-tavern-400 mb-6 font-cinzel">⚙️ Game Settings</h2>
             
             <!-- LLM Configuration -->
             <div class="space-y-4">
@@ -538,9 +538,10 @@
                     }
                 });
                 
-                // History panel toggle
+                // History panel toggle with aria-expanded
                 this.elements.historyToggle.addEventListener('click', () => {
-                    this.elements.historyPanel.classList.toggle('hidden');
+                    const isHidden = this.elements.historyPanel.classList.toggle('hidden');
+                    this.elements.historyToggle.setAttribute('aria-expanded', !isHidden);
                 });
                 
                 // Clear history
@@ -560,17 +561,50 @@
                     });
                 });
                 
-                // Settings modal
-                document.getElementById('settings-btn').addEventListener('click', () => {
-                    document.getElementById('settings-modal').classList.remove('hidden');
-                });
+                // Settings modal with focus management
+                const settingsModal = document.getElementById('settings-modal');
+                const settingsBtn = document.getElementById('settings-btn');
+                const closeSettingsBtn = document.getElementById('close-settings');
+                const ollamaUrlInput = document.getElementById('ollama-url-input');
+                let previouslyFocusedElement = null;
                 
-                document.getElementById('close-settings').addEventListener('click', () => {
-                    document.getElementById('settings-modal').classList.add('hidden');
+                // Open settings modal
+                const openSettings = () => {
+                    // Save currently focused element
+                    previouslyFocusedElement = document.activeElement;
+                    
+                    // Show modal
+                    settingsModal.classList.remove('hidden');
+                    
+                    // Move focus to first input field
+                    setTimeout(() => {
+                        ollamaUrlInput.focus();
+                    }, 100);
+                };
+                
+                // Close settings modal
+                const closeSettings = () => {
+                    settingsModal.classList.add('hidden');
+                    
+                    // Restore focus to previously focused element
+                    if (previouslyFocusedElement) {
+                        previouslyFocusedElement.focus();
+                    }
+                };
+                
+                settingsBtn.addEventListener('click', openSettings);
+                closeSettingsBtn.addEventListener('click', closeSettings);
+                
+                // Close modal on Escape key
+                settingsModal.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        closeSettings();
+                    }
                 });
                 
                 document.getElementById('save-settings').addEventListener('click', () => {
                     this.saveSettings();
+                    closeSettings();
                 });
                 
                 
@@ -861,15 +895,20 @@
                 // Show last 10 commands
                 const recentHistory = this.commandHistory.slice(-10);
                 recentHistory.forEach((command, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'text-gray-300 hover:text-tavern-400 cursor-pointer p-1 rounded hover:bg-gray-600 transition-all';
-                    div.textContent = command;
-                    div.addEventListener('click', () => {
+                    const button = document.createElement('button');
+                    button.className = 'text-gray-300 hover:text-tavern-400 cursor-pointer p-1 rounded hover:bg-gray-600 transition-all focus:outline-none focus:ring-2 focus:ring-tavern-400 text-left w-full';
+                    button.textContent = command;
+                    button.setAttribute('type', 'button');
+                    button.setAttribute('aria-label', `Use command: ${command}`);
+                    button.addEventListener('click', () => {
                         this.elements.commandInput.value = command;
                         this.elements.submitBtn.disabled = false;
                         this.elements.historyPanel.classList.add('hidden');
+                        this.elements.historyToggle.setAttribute('aria-expanded', 'false');
+                        // Return focus to command input
+                        this.elements.commandInput.focus();
                     });
-                    historyList.appendChild(div);
+                    historyList.appendChild(button);
                 });
             }
             

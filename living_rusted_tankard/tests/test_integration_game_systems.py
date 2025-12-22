@@ -60,7 +60,7 @@ class TestGameStateManagement:
             id="barkeeper_bob",
             name="Barkeeper Bob",
             description="A friendly barkeeper",
-            npc_type=NPCType.BARTENDER,
+            npc_type=NPCType.BARKEEP,
             current_room="tavern"
         )
         guard = NPC(
@@ -436,7 +436,7 @@ class TestFullGameSessionIntegration:
             id="barkeeper",
             name="Barkeeper",
             description="A friendly barkeeper",
-            npc_type=NPCType.BARTENDER,
+            npc_type=NPCType.BARKEEP,
             current_room="tavern"
         )
         game_state.add_npc(barkeeper)

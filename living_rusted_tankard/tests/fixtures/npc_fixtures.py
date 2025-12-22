@@ -25,7 +25,7 @@ def bartender_npc():
         id="gareth",
         name="Gareth",
         description="The friendly tavern keeper",
-        npc_type=NPCType.BARTENDER,
+        npc_type=NPCType.BARKEEP,
         disposition=NPCDisposition.FRIENDLY,
         current_room="main_hall"
     )
@@ -54,7 +54,7 @@ def guard_npc():
         name="Captain Marcus",
         description="The tavern's security",
         npc_type=NPCType.GUARD,
-        disposition=NPCDisposition.SUSPICIOUS,
+        disposition=NPCDisposition.UNFRIENDLY,
         current_room="main_hall"
     )
     return npc
@@ -68,7 +68,7 @@ def multiple_npcs():
             id="gareth",
             name="Gareth",
             description="The friendly tavern keeper",
-            npc_type=NPCType.BARTENDER,
+            npc_type=NPCType.BARKEEP,
             current_room="main_hall"
         ),
         NPC(
