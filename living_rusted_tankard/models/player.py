@@ -204,6 +204,14 @@ class PlayerState(BaseModel):
             # Force minimal energy to prevent any actions
             self.energy = min(self.energy, 0.1)
 
+    def _clear_exhaustion_if_recovered(self) -> None:
+        """Clear exhaustion flags if tiredness is back to normal levels."""
+        if self.tiredness < CONFIG.MAX_TIREDNESS:
+            self.flags.pop("exhausted", None)
+            self.flags.pop("exhaustion_severity", None)
+            self.flags.pop("severely_exhausted", None)
+            self.flags.pop("critically_exhausted", None)
+
     def rest(self, hours: float) -> None:
         """Rest for a number of hours, reducing tiredness."""
         if not self.has_room:
@@ -213,12 +221,10 @@ class PlayerState(BaseModel):
         self.tiredness = max(0, self.tiredness - hours * 2)
 
         # Clear exhaustion flags if tiredness is back to normal
+        self._clear_exhaustion_if_recovered()
+        
+        # Restore some energy when resting
         if self.tiredness < CONFIG.MAX_TIREDNESS:
-            self.flags.pop("exhausted", None)
-            self.flags.pop("exhaustion_severity", None)
-            self.flags.pop("severely_exhausted", None)
-            self.flags.pop("critically_exhausted", None)
-            # Restore some energy when resting
             self.energy = min(1.0, self.energy + hours * 0.1)
 
     def sleep(self, hours: float) -> float:
@@ -237,11 +243,7 @@ class PlayerState(BaseModel):
         self.tiredness = max(0, self.tiredness - hours)
 
         # Clear exhaustion flags if tiredness is back to normal
-        if self.tiredness < CONFIG.MAX_TIREDNESS:
-            self.flags.pop("exhausted", None)
-            self.flags.pop("exhaustion_severity", None)
-            self.flags.pop("severely_exhausted", None)
-            self.flags.pop("critically_exhausted", None)
+        self._clear_exhaustion_if_recovered()
 
         # Restore energy significantly when sleeping
         self.energy = min(1.0, self.energy + hours * 0.15)
