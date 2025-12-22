@@ -256,7 +256,7 @@
             <div class="mt-4 space-y-2">
                 <!-- Command History Toggle -->
                 <div class="flex justify-between items-center">
-                    <button id="history-toggle" class="text-sm text-gray-400 hover:text-tavern-400 transition-colors focus:outline-none focus:ring-2 focus:ring-tavern-400 rounded px-1">
+                    <button id="history-toggle" aria-expanded="false" aria-controls="command-history-panel" class="text-sm text-gray-400 hover:text-tavern-400 transition-colors focus:outline-none focus:ring-2 focus:ring-tavern-400 rounded px-1">
                         📜 Command History (0)
                     </button>
                     <button id="clear-history" class="text-sm text-gray-400 hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-tavern-400 rounded px-1">
@@ -540,7 +540,8 @@
                 
                 // History panel toggle
                 this.elements.historyToggle.addEventListener('click', () => {
-                    this.elements.historyPanel.classList.toggle('hidden');
+                    const isHidden = this.elements.historyPanel.classList.toggle('hidden');
+                    this.elements.historyToggle.setAttribute('aria-expanded', !isHidden);
                 });
                 
                 // Clear history
@@ -861,15 +862,18 @@
                 // Show last 10 commands
                 const recentHistory = this.commandHistory.slice(-10);
                 recentHistory.forEach((command, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'text-gray-300 hover:text-tavern-400 cursor-pointer p-1 rounded hover:bg-gray-600 transition-all';
-                    div.textContent = command;
-                    div.addEventListener('click', () => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'w-full text-left text-gray-300 hover:text-tavern-400 cursor-pointer p-1 rounded hover:bg-gray-600 transition-all focus:outline-none focus:bg-gray-600 focus:text-tavern-400 focus:ring-1 focus:ring-tavern-400';
+                    btn.textContent = command;
+                    btn.addEventListener('click', () => {
                         this.elements.commandInput.value = command;
                         this.elements.submitBtn.disabled = false;
                         this.elements.historyPanel.classList.add('hidden');
+                        this.elements.historyToggle.setAttribute('aria-expanded', 'false');
+                        this.elements.commandInput.focus();
                     });
-                    historyList.appendChild(div);
+                    historyList.appendChild(btn);
                 });
             }
             
