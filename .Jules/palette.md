@@ -29,3 +29,7 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2025-05-23 - Seamless Command Flow
+**Learning:** In text adventures with "quick action" buttons, users often want to follow up a click (e.g., "Look") with typing a command (e.g., "Go North"). Leaving focus on the button breaks this flow, forcing an extra click or tab.
+**Action:** Always return focus to the primary input field after activating a quick action or helper button in a command-line interface.

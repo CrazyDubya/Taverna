@@ -1,0 +1,58 @@
+INFO:     Will watch for changes in these directories: ['/app']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [2690] using StatReload
+Starting The Living Rusted Tankard Web Server...
+INFO:living_rusted_tankard.core.enhanced_llm_game_master:Enhanced LLM Game Master initialized - http://localhost:11434 with long-gemma:latest
+INFO:living_rusted_tankard.core.enhanced_llm_game_master:Enhanced LLM Game Master initialized - http://localhost:11434 with long-gemma:latest
+INFO:     Started server process [2810]
+INFO:     Waiting for application startup.
+INFO:living_rusted_tankard.core.api:Starting async LLM pipeline...
+INFO:living_rusted_tankard.core.async_llm_pipeline:Async LLM Pipeline started
+INFO:living_rusted_tankard.core.api:Async LLM pipeline started successfully
+INFO:living_rusted_tankard.core.api:Loading item definitions...
+INFO:living_rusted_tankard.core.api:Loaded 17 item definitions
+INFO:     Application startup complete.
+INFO:     127.0.0.1:53250 - "GET / HTTP/1.1" 200 OK
+INFO:living_rusted_tankard.core.api:Processing command: 'look' for session: session_1766468044950_nr5x0eieb
+INFO:living_rusted_tankard.core.game_state:Phase 2: World System initialized
+INFO:living_rusted_tankard.core.game_state:Phase 3: NPC Systems initialized
+INFO:living_rusted_tankard.core.game_state:Phase 4: Narrative Engine initialized
+INFO:living_rusted_tankard.core.game_state:LLM Parser initialized with long-gemma engine
+INFO:living_rusted_tankard.core.narrative.reputation_network:Created reputation tracker for Gene
+INFO:living_rusted_tankard.core.narrative.reputation_network:Created reputation tracker for Serena
+INFO:living_rusted_tankard.core.narrative.reputation_network:Created reputation tracker for Old Man Jenkins
+INFO:living_rusted_tankard.core.narrative.reputation_network:Created reputation tracker for Elara the Merchant
+INFO:living_rusted_tankard.core.game_state:Narrative Systems: Complete Phase 1 implementation initialized
+INFO:living_rusted_tankard.core.narrative.event_integration:NarrativeEventHandler initialized and subscribed to events
+INFO:living_rusted_tankard.core.api:Created new game session: 74ddd2b7-e078-4cec-9dea-67c028011a13
+INFO:living_rusted_tankard.core.api:New session created with 1 initial events
+WARNING:living_rusted_tankard.core.enhanced_llm_game_master:LLM health check failed (1 consecutive): HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError("HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [Errno 111] Connection refused"))
+WARNING:living_rusted_tankard.core.enhanced_llm_game_master:LLM service unavailable, using fallback response
+WARNING:living_rusted_tankard.core.error_recovery:Medium severity error in session 74ddd2b7-e078-4cec-9dea-67c028011a13: LLM service unavailable
+INFO:living_rusted_tankard.core.api:Using narrative response for input: 'look'
+Warning: Item ID 'bread' not found in ITEM_DEFINITIONS.
+Warning: Failed to add starting item 'bread'
+Warning: Item ID 'ale' not found in ITEM_DEFINITIONS.
+Warning: Failed to add starting item 'ale'
+INFO:     127.0.0.1:53250 - "POST /command HTTP/1.1" 200 OK
+INFO:living_rusted_tankard.core.api:Processing command: 'look around' for session: session_1766468044950_nr5x0eieb
+INFO:living_rusted_tankard.core.game_state:Phase 2: World System initialized
+INFO:living_rusted_tankard.core.game_state:Phase 3: NPC Systems initialized
+INFO:living_rusted_tankard.core.game_state:Phase 4: Narrative Engine initialized
+INFO:living_rusted_tankard.core.game_state:LLM Parser initialized with long-gemma engine
+INFO:living_rusted_tankard.core.narrative.reputation_network:Created reputation tracker for Gene
+INFO:living_rusted_tankard.core.narrative.reputation_network:Created reputation tracker for Serena
+INFO:living_rusted_tankard.core.narrative.reputation_network:Created reputation tracker for Old Man Jenkins
+INFO:living_rusted_tankard.core.narrative.reputation_network:Created reputation tracker for Elara the Merchant
+INFO:living_rusted_tankard.core.game_state:Narrative Systems: Complete Phase 1 implementation initialized
+INFO:living_rusted_tankard.core.narrative.event_integration:NarrativeEventHandler initialized and subscribed to events
+INFO:living_rusted_tankard.core.api:Created new game session: 70da3213-b653-47ca-ac61-5d0efcc57ce6
+INFO:living_rusted_tankard.core.api:New session created with 1 initial events
+WARNING:living_rusted_tankard.core.enhanced_llm_game_master:LLM service unavailable, using fallback response
+WARNING:living_rusted_tankard.core.error_recovery:Medium severity error in session 70da3213-b653-47ca-ac61-5d0efcc57ce6: LLM service unavailable
+INFO:living_rusted_tankard.core.api:Special handling for examining object: 'around' from input: 'look around'
+Warning: Item ID 'bread' not found in ITEM_DEFINITIONS.
+Warning: Failed to add starting item 'bread'
+Warning: Item ID 'ale' not found in ITEM_DEFINITIONS.
+Warning: Failed to add starting item 'ale'
+INFO:     127.0.0.1:53250 - "POST /command HTTP/1.1" 200 OK

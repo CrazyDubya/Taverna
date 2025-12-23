@@ -558,6 +558,7 @@
                         this.elements.commandInput.value = command;
                         this.elements.submitBtn.disabled = false;
                         this.submitCommand();
+                        this.elements.commandInput.focus();
                     });
                 });
                 
@@ -777,6 +778,7 @@
                         this.elements.commandInput.value = option;
                         this.elements.submitBtn.disabled = false;
                         this.submitCommand();
+                        this.elements.commandInput.focus();
                     });
                     
                     optionsList.appendChild(optionBtn);
