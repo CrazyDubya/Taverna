@@ -1,31 +1,7 @@
-## 2024-05-23 - Focus Management in Text Adventures
-**Learning:** In text-heavy interfaces like RPGs, users expect immediate keyboard readiness. Failing to autofocus the main input creates friction on every page load.
-**Action:** Always verify `autofocus` on the primary input for command-driven interfaces.
+## 2024-03-21 - Skip to Main Content Implementation
+**Learning:** When implementing "Skip to Main Content" links in a single-page app or dynamic interface, simply adding the anchor isn't enough. You must ensure the target element (e.g., `<main>`) has `tabindex="-1"` and `outline-none`. This allows the element to receive programmatic focus (so the next Tab press starts inside the content) without showing an ugly focus ring on the container itself.
+**Action:** Always pair Skip Links with `tabindex="-1"` on the target container and `outline-none` for visual polish.
 
-## 2024-12-22 - Modal Focus Management Patterns
-**Learning:** Proper modal dialogs require careful focus management to ensure keyboard users and screen reader users can navigate effectively. Key requirements include:
-- Save the previously focused element before opening the modal
-- Move focus to the first interactive element (usually first input field) when modal opens
-- Restore focus to the previously focused element when modal closes
-- Support Escape key to close modal
-- Add semantic ARIA attributes: `role="dialog"`, `aria-modal="true"`, `aria-labelledby`
-**Action:** Implement comprehensive focus management for all modal dialogs. Test with keyboard-only navigation and screen readers.
-
-## 2024-12-22 - Command History Keyboard Accessibility
-**Learning:** Interactive lists using clickable `<div>` elements are not keyboard accessible. Screen readers don't recognize them as interactive elements, and keyboard users cannot tab to or activate them.
-**Solution:** Convert interactive list items to semantic `<button>` elements with proper attributes:
-- Use `<button type="button">` for interactive list items
-- Add `aria-label` to provide context for screen readers
-- Include `focus:ring` styles for visual focus indicators
-- Return focus to the command input after selection for smooth workflow
-- Maintain `aria-expanded` state on toggle buttons
-**Action:** Always use semantic HTML elements (`<button>`, `<a>`, etc.) for interactive elements, never plain `<div>` with click handlers.
-
-## 2024-12-22 - Interactive List Item Best Practices
-**Learning:** For lists of selectable items (like command history), proper accessibility requires:
-1. Semantic HTML: Use `<button>` elements, not `<div>` with click handlers
-2. Focus management: Return focus to the primary interaction point after selection
-3. ARIA attributes: Use `aria-expanded` and `aria-controls` on toggles
-4. Visual feedback: Provide clear focus rings and hover states
-5. Keyboard navigation: Support both mouse and keyboard interaction patterns
-**Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+## 2024-03-21 - Semantic Landmarks
+**Learning:** Replacing generic wrapper `<div>`s with semantic landmarks like `<main>` and `<aside>` is a "free" accessibility win that doesn't require CSS changes if classes are preserved, but significantly improves screen reader navigation modes.
+**Action:** Default to using `<main>`, `<aside>`, `<nav>`, and `<header>` instead of `div` wrappers for major layout sections.

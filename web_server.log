@@ -1,0 +1,42 @@
+INFO:     Will watch for changes in these directories: ['/app']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [2528] using StatReload
+Starting The Living Rusted Tankard Web Server...
+INFO:living_rusted_tankard.core.enhanced_llm_game_master:Enhanced LLM Game Master initialized - http://localhost:11434 with long-gemma:latest
+INFO:living_rusted_tankard.core.enhanced_llm_game_master:Enhanced LLM Game Master initialized - http://localhost:11434 with long-gemma:latest
+INFO:     Started server process [2648]
+INFO:     Waiting for application startup.
+INFO:living_rusted_tankard.core.api:Starting async LLM pipeline...
+INFO:living_rusted_tankard.core.async_llm_pipeline:Async LLM Pipeline started
+INFO:living_rusted_tankard.core.api:Async LLM pipeline started successfully
+INFO:living_rusted_tankard.core.api:Loading item definitions...
+INFO:living_rusted_tankard.core.api:Loaded 17 item definitions
+INFO:     Application startup complete.
+INFO:     127.0.0.1:33870 - "GET / HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'verification/verify_skip_link.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:living_rusted_tankard.core.api:Shutting down async LLM pipeline...
+INFO:living_rusted_tankard.core.async_llm_pipeline:Async LLM Pipeline stopped
+INFO:living_rusted_tankard.core.api:Async LLM pipeline shut down successfully
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2648]
+INFO:living_rusted_tankard.core.enhanced_llm_game_master:Enhanced LLM Game Master initialized - http://localhost:11434 with long-gemma:latest
+INFO:living_rusted_tankard.core.enhanced_llm_game_master:Enhanced LLM Game Master initialized - http://localhost:11434 with long-gemma:latest
+INFO:     Started server process [3032]
+INFO:     Waiting for application startup.
+INFO:living_rusted_tankard.core.api:Starting async LLM pipeline...
+INFO:living_rusted_tankard.core.async_llm_pipeline:Async LLM Pipeline started
+INFO:living_rusted_tankard.core.api:Async LLM pipeline started successfully
+INFO:living_rusted_tankard.core.api:Loading item definitions...
+INFO:living_rusted_tankard.core.api:Loaded 17 item definitions
+INFO:     Application startup complete.
+INFO:     127.0.0.1:44454 - "GET / HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:living_rusted_tankard.core.api:Shutting down async LLM pipeline...
+INFO:living_rusted_tankard.core.async_llm_pipeline:Async LLM Pipeline stopped
+INFO:living_rusted_tankard.core.api:Async LLM pipeline shut down successfully
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3032]
+INFO:     Stopping reloader process [2528]
