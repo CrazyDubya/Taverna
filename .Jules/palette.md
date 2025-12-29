@@ -29,3 +29,9 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2025-01-16 - Invisible Accessibility: Skip Links and Focus Restoration
+**Learning:** Two "invisible" features profoundly impact power users and accessibility:
+1. **Skip Links:** An initially hidden "Skip to Content" link is critical for keyboard users to bypass navigation. It must be the first focusable element.
+2. **Focus Restoration:** In a command-driven interface (like a text game), clicking a helper button (e.g., "Look Around") without restoring focus to the main input breaks the flow, forcing the user to grab the mouse or tab repeatedly.
+**Action:** Always include a skip link on pages with navigation. Always return focus to the primary input after helper actions in text-heavy apps.
