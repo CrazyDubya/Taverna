@@ -205,9 +205,14 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200 min-h-screen">
+    <!-- Skip to content link for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:p-4 focus:bg-tavern-500 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-4 focus:ring-tavern-300 font-bold transition-all">
+        Skip to main content
+    </a>
+
     <div class="flex desktop-layout h-screen p-2 md:p-4 gap-2 md:gap-4">
         <!-- Main Content -->
-        <div class="flex-1 mobile-main flex flex-col">
+        <main id="main-content" tabindex="-1" class="flex-1 mobile-main flex flex-col focus:outline-none">
             <!-- Enhanced Header -->
             <header class="bg-gradient-to-r from-gray-800 to-gray-700 p-3 md:p-4 rounded-lg shadow-xl mb-4 flex justify-between items-center">
                 <div class="flex items-center space-x-3">
@@ -321,8 +326,10 @@
             </div>
         </div>
         
+        </main>
+
         <!-- Enhanced Sidebar -->
-        <div class="w-full mobile-sidebar md:w-80 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl p-4 sidebar overflow-y-auto custom-scrollbar border border-gray-700">
+        <aside class="w-full mobile-sidebar md:w-80 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl p-4 sidebar overflow-y-auto custom-scrollbar border border-gray-700">
             <!-- Performance Indicator -->
             <div class="mb-4 p-2 bg-gray-700 rounded-lg">
                 <div class="flex justify-between items-center text-xs text-gray-400">
@@ -383,7 +390,7 @@
                 <div class="text-sm text-gray-400">Story Memory</div>
                 <div class="text-tavern-400 font-bold">📚 Active</div>
             </div>
-        </div>
+        </aside>
     </div>
 
     <!-- Enhanced Settings Modal -->
