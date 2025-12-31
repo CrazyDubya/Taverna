@@ -205,9 +205,14 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200 min-h-screen">
+    <!-- Skip to content link for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:p-4 focus:bg-tavern-500 focus:text-white focus:rounded-lg focus:shadow-xl focus:font-bold focus:outline-none focus:ring-4 focus:ring-white">
+        Skip to main content
+    </a>
+
     <div class="flex desktop-layout h-screen p-2 md:p-4 gap-2 md:gap-4">
         <!-- Main Content -->
-        <div class="flex-1 mobile-main flex flex-col">
+        <div id="main-content" class="flex-1 mobile-main flex flex-col" tabindex="-1">
             <!-- Enhanced Header -->
             <header class="bg-gradient-to-r from-gray-800 to-gray-700 p-3 md:p-4 rounded-lg shadow-xl mb-4 flex justify-between items-center">
                 <div class="flex items-center space-x-3">
