@@ -29,3 +29,7 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2025-01-01 - Skip Links in Autofocus Interfaces
+**Learning:** When a page utilizes `autofocus` (e.g., on a command input), keyboard users are immediately placed deep into the content, making it difficult to access navigation or top-level elements without tabbing backward multiple times.
+**Action:** Always verify "Skip to Content" links are present and easily accessible via Shift+Tab or as the first Tab stop if autofocus is not used. Ensure the target element has `tabindex="-1"` and `focus:outline-none` to receive focus programmatically without visual clutter.
