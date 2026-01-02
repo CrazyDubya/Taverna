@@ -29,3 +29,7 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2025-01-16 - Semantic Landmarks and Skip Links
+**Learning:** Keyboard-only users need a way to bypass repetitive header content. A "Skip to main content" link is standard, but in Single Page Applications (or similar), simply linking to an ID isn't enough. The target container (e.g., `<main>`) must have `tabindex="-1"` to programmatically receive focus, ensuring the next Tab press starts *inside* the main content.
+**Action:** Always pair a skip link with a semantic `<main>` element that has `id="main-content"` and `tabindex="-1"`.
