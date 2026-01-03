@@ -292,11 +292,20 @@
                     <button 
                         id="submit-btn" 
                         aria-label="Send command"
-                        class="btn-primary text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-tavern-400"
+                        class="btn-primary text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-tavern-400 flex items-center justify-center gap-2"
                         disabled
                     >
-                        <span class="hidden md:inline">Send</span>
-                        <span class="md:hidden">→</span>
+                        <span id="btn-content" class="flex items-center justify-center">
+                            <span class="hidden md:inline">Send</span>
+                            <span class="md:hidden">→</span>
+                        </span>
+                        <span id="btn-loading" class="hidden flex items-center justify-center gap-2">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="hidden md:inline">Processing...</span>
+                        </span>
                     </button>
                 </div>
                 
@@ -957,6 +966,20 @@
                 this.isLoading = show;
                 this.elements.loadingIndicator.classList.toggle('hidden', !show);
                 this.elements.submitBtn.disabled = show || !this.elements.commandInput.value.trim();
+
+                // Update button state
+                const btnContent = this.elements.submitBtn.querySelector('#btn-content');
+                const btnLoading = this.elements.submitBtn.querySelector('#btn-loading');
+
+                if (show) {
+                    btnContent.classList.add('hidden');
+                    btnLoading.classList.remove('hidden');
+                    this.elements.submitBtn.setAttribute('aria-busy', 'true');
+                } else {
+                    btnContent.classList.remove('hidden');
+                    btnLoading.classList.add('hidden');
+                    this.elements.submitBtn.setAttribute('aria-busy', 'false');
+                }
             }
             
             scrollToBottom() {

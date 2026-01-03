@@ -29,3 +29,11 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2026-01-03 - Async Action Feedback
+**Learning:** For asynchronous actions like command submission, simply disabling the button is insufficient. Users need clear visual confirmation that their request is being processed.
+**Solution:**
+- Replace button text with a loading spinner and "Processing..." text during the async operation.
+- Use `aria-busy="true"` to communicate the state to screen readers.
+- Toggle visibility of content wrappers to prevent layout shifts if possible, or use absolute positioning for the spinner.
+**Action:** Always implement explicit loading states with both visual and semantic indicators for all async actions.
