@@ -205,9 +205,12 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200 min-h-screen">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-tavern-600 text-white px-4 py-2 rounded-lg shadow-lg border border-tavern-400 font-bold focus:outline-none focus:ring-2 focus:ring-white">
+        Skip to main content
+    </a>
     <div class="flex desktop-layout h-screen p-2 md:p-4 gap-2 md:gap-4">
         <!-- Main Content -->
-        <div class="flex-1 mobile-main flex flex-col">
+        <div id="main-content" tabindex="-1" class="flex-1 mobile-main flex flex-col focus:outline-none">
             <!-- Enhanced Header -->
             <header class="bg-gradient-to-r from-gray-800 to-gray-700 p-3 md:p-4 rounded-lg shadow-xl mb-4 flex justify-between items-center">
                 <div class="flex items-center space-x-3">
@@ -956,7 +959,22 @@
             showLoading(show) {
                 this.isLoading = show;
                 this.elements.loadingIndicator.classList.toggle('hidden', !show);
-                this.elements.submitBtn.disabled = show || !this.elements.commandInput.value.trim();
+
+                const btn = this.elements.submitBtn;
+                if (show) {
+                    // Save original content if not already saved
+                    if (!this._originalBtnContent) {
+                        this._originalBtnContent = btn.innerHTML;
+                    }
+                    // Set spinner
+                    btn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+                    btn.disabled = true;
+                } else {
+                    if (this._originalBtnContent) {
+                        btn.innerHTML = this._originalBtnContent;
+                    }
+                    btn.disabled = !this.elements.commandInput.value.trim();
+                }
             }
             
             scrollToBottom() {
