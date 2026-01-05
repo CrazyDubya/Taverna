@@ -29,3 +29,10 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2025-01-16 - Spinner and Skip Link Accessibility
+**Learning:** Visually hidden "Skip to Content" links using standard utility classes like `sr-only` often reset positioning properties. To ensure they appear correctly on focus, explicit positioning classes (e.g., `focus:absolute`, `focus:top-0`) must be combined with `focus:not-sr-only`.
+**Action:** When implementing skip links with Tailwind, always pair `sr-only` with `focus:not-sr-only` and explicit positioning coordinates.
+
+**Learning:** Asynchronous action buttons that only disable themselves provide poor feedback. Injecting a spinner directly into the button maintains the user's context better than a separate loading indicator.
+**Action:** Enhance async buttons to cache their original content, display a spinner during loading, and restore the original content upon completion.
