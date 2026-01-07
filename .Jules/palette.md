@@ -29,3 +29,7 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2025-01-20 - Skip Link and Autofocus Conflict
+**Learning:** "Skip to Content" links are essential, but `autofocus` on the main input (common in text games) bypasses them initially. Users must Shift+Tab to reach the skip link.
+**Action:** Ensure the skip link is the *very first* focusable element so backward navigation finds it immediately. Do not disable `autofocus` if it is a core UX feature, but verify accessibility via backward navigation.
