@@ -29,3 +29,9 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2024-12-23 - Skip Link Implementation Details
+**Learning:** "Skip to content" links need specific implementation details to work reliably across browsers:
+1. The target container (e.g. `<main>`) must have `tabindex="-1"` and `outline-none` to receive focus programmatically without a visual ring.
+2. The link itself needs `focus:absolute` and `focus:not-sr-only` because standard `sr-only` classes often reset positioning, making the link appear in the wrong place when focused.
+**Action:** Always ensure skip links point to a container with `tabindex="-1"` and use robust positioning classes for the focused state.
