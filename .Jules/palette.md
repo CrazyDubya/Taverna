@@ -29,3 +29,7 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2024-12-23 - Semantic Landmarks & Skip Links
+**Learning:** For keyboard and screen reader users, traversing repetitive navigation (like headers or sidebars) to get to the main content is tedious.
+**Action:** Always include a "Skip to Main Content" link as the first element in the body, and use semantic `<main>` and `<aside>` landmarks to define the page structure clearly. Ensure the target has `tabindex="-1"` if it's not natively focusable.
