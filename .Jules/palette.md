@@ -29,3 +29,7 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2025-01-20 - Button Loading States
+**Learning:** Disabling a button during async operations is insufficient feedback. Users may think the app has frozen. Replacing the button content with a spinner provides immediate confirmation of action.
+**Action:** Always cache original button content, replace with spinner + `aria-hidden` during loading, and restore after. Ensure the spinner is decorative.
