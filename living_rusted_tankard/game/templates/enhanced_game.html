@@ -205,6 +205,11 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200 min-h-screen">
+    <!-- Skip to Content Link for Accessibility -->
+    <a href="#narrative-content" class="fixed top-0 left-0 transform -translate-y-full focus:translate-y-0 z-50 bg-tavern-400 text-gray-900 px-4 py-2 font-bold transition-transform shadow-lg rounded-b-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+        Skip to content
+    </a>
+
     <div class="flex desktop-layout h-screen p-2 md:p-4 gap-2 md:gap-4">
         <!-- Main Content -->
         <div class="flex-1 mobile-main flex flex-col">
@@ -233,7 +238,7 @@
             
             <!-- Enhanced Narrative Feed -->
             <div class="flex-1 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg overflow-hidden border border-gray-700">
-                <div id="narrative-content" aria-live="polite" aria-atomic="false" role="log" class="narrative-feed overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
+                <div id="narrative-content" tabindex="-1" aria-live="polite" aria-atomic="false" role="log" class="narrative-feed overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar outline-none">
                     <!-- Initial loading message - real welcome comes from server -->
                     <div id="initial-loading" class="bg-gradient-to-r from-tavern-900 to-gray-800 border-l-4 border-tavern-400 p-4 rounded-r-lg animate-fade-in text-center">
                         <div class="font-cinzel text-lg text-tavern-300 mb-2">🍺 The Living Rusted Tankard</div>
@@ -956,7 +961,26 @@
             showLoading(show) {
                 this.isLoading = show;
                 this.elements.loadingIndicator.classList.toggle('hidden', !show);
-                this.elements.submitBtn.disabled = show || !this.elements.commandInput.value.trim();
+
+                // Toggle spinner in submit button
+                if (show) {
+                    if (!this._originalBtnContent) {
+                        this._originalBtnContent = this.elements.submitBtn.innerHTML;
+                    }
+                    this.elements.submitBtn.innerHTML = `
+                        <svg class="animate-spin h-5 w-5 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="sr-only">Loading...</span>
+                    `;
+                    this.elements.submitBtn.disabled = true;
+                } else {
+                    if (this._originalBtnContent) {
+                        this.elements.submitBtn.innerHTML = this._originalBtnContent;
+                    }
+                    this.elements.submitBtn.disabled = !this.elements.commandInput.value.trim();
+                }
             }
             
             scrollToBottom() {
