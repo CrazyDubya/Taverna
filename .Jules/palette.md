@@ -29,3 +29,12 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2025-02-12 - Semantic Landmarks and Skip Links
+**Learning:** Essential landmarks `<main>` and `<aside>` should be used instead of generic `<div>` wrappers to aid screen reader navigation. A "Skip to Main Content" link is critical for keyboard users to bypass global navigation/sidebars.
+**Pattern:**
+- Place `<a>Skip to content</a>` as the first body element.
+- Use `.sr-only focus:not-sr-only` to hide visually until focused.
+- Target `<main id="main-content" tabindex="-1">` to allow programmatic focus without outline.
+- Ensure `<header>`, `<main>`, and `<aside>` correctly delineate page regions.
+**Action:** Enforce semantic tags for top-level layout containers in all templates.
