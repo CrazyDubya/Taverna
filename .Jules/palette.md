@@ -29,3 +29,7 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2024-12-24 - Async Button State Management
+**Learning:** When adding loading states to buttons, always guard against other event listeners (like 'input' events) resetting the button's disabled state while the async operation is still in progress.
+**Action:** Use a central `isLoading` flag to coordinate state changes between async operations and UI event listeners.
