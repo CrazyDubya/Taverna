@@ -29,3 +29,7 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2024-12-22 - Async Button Loading States
+**Learning:** Disabling a button during async operations is insufficient feedback. Users may wonder if the click registered. A loading spinner inside the button provides immediate, positive confirmation of the action.
+**Action:** Replace button text with a spinner during async operations, while preserving the button's dimensions if possible. Ensure `aria-hidden` is used on the spinner and screen-reader-only text is provided.
