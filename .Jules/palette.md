@@ -29,3 +29,7 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2025-05-24 - Tailwind Skip Links
+**Learning:** Tailwind's `sr-only` utility hides elements completely. To make skip links visible on focus, `focus:not-sr-only` is required, but this resets positioning properties.
+**Action:** Always combine `focus:not-sr-only` with explicit positioning classes (e.g., `focus:absolute focus:top-4 focus:left-4 z-50`) to ensure the link appears correctly over content when focused.
