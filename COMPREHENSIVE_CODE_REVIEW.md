@@ -59,26 +59,26 @@ Other            ██                                         7 ( 1.5%)
 
 | Rank | File | Lines | Classes | Functions | Complexity |
 |------|------|-------|---------|-----------|------------|
-| 1 | `core/game_state.py` | 3,017 | • | • | 🔴 CRITICAL |
-| 2 | `test_200_complex_commands.py` | 1,094 | • | • | 🟡 HIGH |
-| 3 | `core/npc_systems/goals.py` | 956 | • | • | 🟡 HIGH |
-| 4 | `core/npc_modules/goals.py` | 956 | • | • | 🟡 HIGH |
-| 5 | `core/narrative/dynamic_quest_generator.py` | 909 | • | • | 🟡 HIGH |
-| 6 | `core/world/area_manager.py` | 888 | • | • | 🟡 HIGH |
-| 7 | `core/npc_systems/schedules.py` | 867 | • | • | 🟡 HIGH |
-| 8 | `core/npc_modules/schedules.py` | 867 | • | • | 🟡 HIGH |
-| 9 | `core/llm_game_master.py` | 769 | • | • | 🟡 HIGH |
-| 10 | `core/narrative/narrative_persistence.py` | 766 | • | • | 🟡 HIGH |
-| 11 | `core/agents/social_dynamics.py` | 749 | • | • | 🟡 HIGH |
-| 12 | `core/narrative/consequence_engine.py` | 742 | • | • | 🟡 HIGH |
-| 13 | `core/enhanced_llm_game_master.py` | 696 | • | • | 🟡 HIGH |
-| 14 | `core/narrative/conversation_continuity.py` | 677 | • | • | 🟡 HIGH |
-| 15 | `core/narrative/story_orchestrator.py` | 674 | • | • | 🟡 HIGH |
-| 16 | `core/npc_systems/interactions.py` | 669 | • | • | 🟡 HIGH |
-| 17 | `core/npc_modules/interactions.py` | 669 | • | • | 🟡 HIGH |
-| 18 | `core/async_llm_pipeline.py` | 667 | • | • | 🟡 HIGH |
-| 19 | `core/api.py` | 659 | • | • | 🟡 HIGH |
-| 20 | `core/clock.py` | 648 | • | • | 🟡 HIGH |
+| 1 | `core/game_state.py` | 3,017 | 3 | 88 | 🔴 CRITICAL |
+| 2 | `test_200_complex_commands.py` | 1,094 | 3 | 6 | 🟡 HIGH |
+| 3 | `core/npc_systems/goals.py` | 956 | 8 | 37 | 🟡 HIGH |
+| 4 | `core/npc_modules/goals.py` | 956 | 8 | 37 | 🟡 HIGH |
+| 5 | `core/narrative/dynamic_quest_generator.py` | 909 | 7 | 36 | 🟡 HIGH |
+| 6 | `core/world/area_manager.py` | 888 | 2 | 28 | 🟡 HIGH |
+| 7 | `core/npc_systems/schedules.py` | 867 | 5 | 17 | 🟡 HIGH |
+| 8 | `core/npc_modules/schedules.py` | 867 | 5 | 17 | 🟡 HIGH |
+| 9 | `core/llm_game_master.py` | 769 | 2 | 12 | 🟡 HIGH |
+| 10 | `core/narrative/narrative_persistence.py` | 766 | 2 | 42 | 🟡 HIGH |
+| 11 | `core/agents/social_dynamics.py` | 749 | 6 | 29 | 🟡 HIGH |
+| 12 | `core/narrative/consequence_engine.py` | 742 | 8 | 19 | 🟡 HIGH |
+| 13 | `core/enhanced_llm_game_master.py` | 696 | 5 | 21 | 🟡 HIGH |
+| 14 | `core/narrative/conversation_continuity.py` | 677 | 7 | 23 | 🟡 HIGH |
+| 15 | `core/narrative/story_orchestrator.py` | 674 | 6 | 19 | 🟡 HIGH |
+| 16 | `core/npc_systems/interactions.py` | 669 | 5 | 17 | 🟡 HIGH |
+| 17 | `core/npc_modules/interactions.py` | 669 | 5 | 17 | 🟡 HIGH |
+| 18 | `core/async_llm_pipeline.py` | 667 | 6 | 19 | 🟡 HIGH |
+| 19 | `core/api.py` | 659 | 3 | 2 | 🟡 HIGH |
+| 20 | `core/clock.py` | 648 | 5 | 51 | 🟡 HIGH |
 
 **Legend**: 🔴 > 2000 lines | 🟡 > 600 lines | 🟢 < 600 lines
 
