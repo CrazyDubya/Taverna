@@ -157,7 +157,7 @@ scripts                           2 ██
 ║                                                          ║
 ║ Testing Coverage           68/100     C+                ║
 ║   ↳ Test files             72 files   🟡 Moderate      ║
-║   ↳ Test to code ratio     0.26       🟡 Could improve ║
+║   ↳ Test to code ratio     0.29       🟡 Could improve ║
 ║                                                          ║
 ║ OVERALL SCORE              81/100     B+                ║
 ╚══════════════════════════════════════════════════════════╝
@@ -243,9 +243,9 @@ living_rusted_tankard/ (root)    32 files  ████████████�
 │ Validation Scripts   ██            ~4 files     │
 └──────────────────────────────────────────────────┘
 
-Test to Code Ratio: 0.26 (11,592 test lines / 44,794 core lines)
+Test to Code Ratio: 0.29 (18,597 test lines / 64,191 core lines)
 Target Ratio: 0.50+ for good coverage
-Gap: -24% 🟡 Improvement needed
+Gap: -21% 🟡 Improvement needed
 ```
 
 ---
@@ -288,7 +288,7 @@ Import Organization: ███████████████████�
 │ Dependency                  Version    Status       │
 ├─────────────────────────────────────────────────────┤
 │ python                      ^3.9       🟢 Current   │
-│ pydantic                    ^1.10.13   🟡 Upgrade?  │
+│ pydantic                    ^1.10.13   🟡 Consider  │
 │ fastapi                     ^0.115.12  🟢 Latest    │
 │ sqlmodel                    ^0.0.8     🟢 Current   │
 │ uvicorn                     ^0.34.2    🟢 Latest    │
@@ -299,7 +299,7 @@ Import Organization: ███████████████████�
 └─────────────────────────────────────────────────────┘
 
 Security Status: 🟢 No known vulnerabilities
-Update Status:   🟡 1 package could be updated (pydantic v2)
+Update Status:   🟡 Pydantic v2.x available (breaking changes - requires migration)
 ```
 
 ---
@@ -341,7 +341,7 @@ Update Status:   🟡 1 package could be updated (pydantic v2)
 2. ❌ **Module Duplication**: ~20% code duplication between npc_systems/npc_modules
 3. ❌ **Test Organization**: Tests scattered between root and tests/ directory
 4. ❌ **Large Files**: 20+ files exceed 600 lines (maintainability threshold)
-5. ❌ **Test Coverage Gap**: 26% test-to-code ratio (target: 50%+)
+5. ❌ **Test Coverage Gap**: 29% test-to-code ratio (target: 50%+)
 
 ### Opportunities
 1. 🎯 **Refactor game_state.py**: Split into 4-5 focused modules (saves 2,000+ lines complexity)
@@ -358,11 +358,11 @@ Update Status:   🟡 1 package could be updated (pydantic v2)
 Technical Debt Breakdown:
 
 Architecture Debt:    ████████████████     16,000 lines  (Duplication, monolithic)
-Testing Debt:         ████████████         12,000 lines  (Missing test coverage)
-Documentation Debt:   ████████              8,000 lines  (Undocumented code)
-Performance Debt:     ████                  4,000 lines  (Optimization potential)
+Testing Debt:         ████████████         13,500 lines  (Missing test coverage)
+Documentation Debt:   ████████              9,000 lines  (Undocumented code)
+Performance Debt:     ████                  5,000 lines  (Optimization potential)
 ────────────────────────────────────────────────────────
-TOTAL DEBT:           ████████████████████ 40,000 lines (48% of codebase)
+TOTAL DEBT:           ████████████████████ 43,500 lines (52% of codebase)
 
 Estimated Remediation Time: 4-6 developer-months
 Priority Order: Architecture → Testing → Documentation → Performance
