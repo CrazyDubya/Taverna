@@ -29,3 +29,7 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2024-05-24 - Async Button Feedback
+**Learning:** For async actions (like LLM generation) that can take variable time, simply disabling the button is insufficient feedback. Users need active confirmation that the system is processing.
+**Action:** Implement "spin-in-button" pattern: swap button content with a spinner during loading, while preserving original content (including responsive classes) to restore afterwards. Ensure `aria-busy` is toggled.
