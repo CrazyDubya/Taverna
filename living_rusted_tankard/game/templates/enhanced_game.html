@@ -205,8 +205,13 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200 min-h-screen">
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-tavern-500 text-white px-4 py-2 rounded-lg shadow-lg font-bold border-2 border-white focus:outline-none focus:ring-2 focus:ring-tavern-400 transition-all">
+        Skip to main content
+    </a>
+
     <div class="flex desktop-layout h-screen p-2 md:p-4 gap-2 md:gap-4">
-        <!-- Main Content -->
+        <!-- Main Content Wrapper -->
         <div class="flex-1 mobile-main flex flex-col">
             <!-- Enhanced Header -->
             <header class="bg-gradient-to-r from-gray-800 to-gray-700 p-3 md:p-4 rounded-lg shadow-xl mb-4 flex justify-between items-center">
@@ -232,7 +237,7 @@
             </header>
             
             <!-- Enhanced Narrative Feed -->
-            <div class="flex-1 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg overflow-hidden border border-gray-700">
+            <main id="main-content" tabindex="-1" class="flex-1 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg overflow-hidden border border-gray-700 outline-none">
                 <div id="narrative-content" aria-live="polite" aria-atomic="false" role="log" class="narrative-feed overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
                     <!-- Initial loading message - real welcome comes from server -->
                     <div id="initial-loading" class="bg-gradient-to-r from-tavern-900 to-gray-800 border-l-4 border-tavern-400 p-4 rounded-r-lg animate-fade-in text-center">
@@ -250,7 +255,7 @@
                 <div id="loading-indicator" class="hidden p-2 text-center text-tavern-400">
                     <span class="loading-dots">Weaving the tale</span>
                 </div>
-            </div>
+            </main>
             
             <!-- Enhanced Command Input -->
             <div class="mt-4 space-y-2">
@@ -322,7 +327,7 @@
         </div>
         
         <!-- Enhanced Sidebar -->
-        <div class="w-full mobile-sidebar md:w-80 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl p-4 sidebar overflow-y-auto custom-scrollbar border border-gray-700">
+        <aside class="w-full mobile-sidebar md:w-80 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl p-4 sidebar overflow-y-auto custom-scrollbar border border-gray-700">
             <!-- Performance Indicator -->
             <div class="mb-4 p-2 bg-gray-700 rounded-lg">
                 <div class="flex justify-between items-center text-xs text-gray-400">
@@ -383,7 +388,7 @@
                 <div class="text-sm text-gray-400">Story Memory</div>
                 <div class="text-tavern-400 font-bold">📚 Active</div>
             </div>
-        </div>
+        </aside>
     </div>
 
     <!-- Enhanced Settings Modal -->
@@ -956,7 +961,28 @@
             showLoading(show) {
                 this.isLoading = show;
                 this.elements.loadingIndicator.classList.toggle('hidden', !show);
+
+                // Update button state
                 this.elements.submitBtn.disabled = show || !this.elements.commandInput.value.trim();
+
+                if (show) {
+                    // Cache content if not already cached
+                    if (!this._originalBtnContent) {
+                        this._originalBtnContent = this.elements.submitBtn.innerHTML;
+                    }
+                    this.elements.submitBtn.innerHTML = `
+                        <svg class="animate-spin h-5 w-5 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="sr-only">Loading...</span>
+                    `;
+                } else {
+                    if (this._originalBtnContent) {
+                        this.elements.submitBtn.innerHTML = this._originalBtnContent;
+                        this._originalBtnContent = null;
+                    }
+                }
             }
             
             scrollToBottom() {
