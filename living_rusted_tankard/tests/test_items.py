@@ -7,9 +7,9 @@ import unittest
 
 from living_rusted_tankard.core.items import (
     Item,
+    ItemType,
     Inventory,
     ITEM_DEFINITIONS,
-    load_item_definitions,
 )
 
 
@@ -22,15 +22,14 @@ class TestItem(unittest.TestCase):
             id="test_item",
             name="Test Item",
             description="A test item",
-            category="misc",
-            price=10,
-            weight=1.0,
+            item_type=ItemType.MISC,
+            base_price=10,
         )
 
         self.assertEqual(item.id, "test_item")
         self.assertEqual(item.name, "Test Item")
-        self.assertEqual(item.price, 10)
-        self.assertEqual(item.weight, 1.0)
+        self.assertEqual(item.base_price, 10)
+        self.assertEqual(item.item_type, ItemType.MISC)
 
     def test_item_with_effects(self):
         """Test item with effects."""
@@ -38,28 +37,27 @@ class TestItem(unittest.TestCase):
             id="healing_potion",
             name="Healing Potion",
             description="Restores health",
-            category="consumable",
-            price=50,
-            weight=0.5,
-            effects={"health": 50, "duration": 0},
+            item_type=ItemType.DRINK,
+            base_price=50,
+            effects={"health": 50.0, "duration": 0.0},
         )
 
         self.assertIsNotNone(item.effects)
-        self.assertEqual(item.effects.get("health"), 50)
+        self.assertEqual(item.effects.get("health"), 50.0)
 
-    def test_item_categories(self):
-        """Test different item categories."""
-        categories = ["weapon", "armor", "consumable", "misc", "quest"]
+    def test_item_types(self):
+        """Test different item types."""
+        item_types = [ItemType.DRINK, ItemType.FOOD, ItemType.MISC]
 
-        for category in categories:
+        for item_type in item_types:
             item = Item(
-                id=f"{category}_item",
-                name=f"{category.title()} Item",
-                description=f"A {category} item",
-                category=category,
-                price=10,
+                id=f"{item_type.value}_item",
+                name=f"{item_type.value.title()} Item",
+                description=f"A {item_type.value} item",
+                item_type=item_type,
+                base_price=10,
             )
-            self.assertEqual(item.category, category)
+            self.assertEqual(item.item_type, item_type)
 
 
 class TestInventory(unittest.TestCase):
@@ -68,12 +66,14 @@ class TestInventory(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.inventory = Inventory()
-        self.test_item = Item(
+        self.test_item_id = "test_item"
+        # Add test item to global definitions
+        ITEM_DEFINITIONS[self.test_item_id] = Item(
             id="test_item",
             name="Test Item",
             description="Test",
-            category="misc",
-            price=10,
+            item_type=ItemType.MISC,
+            base_price=10,
         )
 
     def test_inventory_initialization(self):
@@ -82,22 +82,22 @@ class TestInventory(unittest.TestCase):
 
     def test_add_item(self):
         """Test adding an item to inventory."""
-        success = self.inventory.add_item(self.test_item, quantity=1)
+        success = self.inventory.add_item(self.test_item_id, quantity=1)
         self.assertTrue(success)
         self.assertEqual(self.inventory.get_total_items(), 1)
 
     def test_add_multiple_items(self):
         """Test adding multiple quantities of an item."""
-        self.inventory.add_item(self.test_item, quantity=5)
-        self.assertTrue(self.inventory.has_item(self.test_item.id, quantity=5))
+        self.inventory.add_item(self.test_item_id, quantity=5)
+        self.assertTrue(self.inventory.has_item(self.test_item_id, quantity=5))
 
     def test_remove_item(self):
         """Test removing an item from inventory."""
-        self.inventory.add_item(self.test_item, quantity=3)
-        success, msg = self.inventory.remove_item(self.test_item.id, quantity=1)
+        self.inventory.add_item(self.test_item_id, quantity=3)
+        success, msg = self.inventory.remove_item(self.test_item_id, quantity=1)
 
         self.assertTrue(success)
-        self.assertTrue(self.inventory.has_item(self.test_item.id, quantity=2))
+        self.assertTrue(self.inventory.has_item(self.test_item_id, quantity=2))
 
     def test_remove_nonexistent_item(self):
         """Test removing an item that doesn't exist."""
@@ -106,25 +106,30 @@ class TestInventory(unittest.TestCase):
 
     def test_has_item(self):
         """Test checking if item exists in inventory."""
-        self.inventory.add_item(self.test_item, quantity=3)
+        self.inventory.add_item(self.test_item_id, quantity=3)
 
-        self.assertTrue(self.inventory.has_item(self.test_item.id, quantity=3))
-        self.assertTrue(self.inventory.has_item(self.test_item.id, quantity=1))
-        self.assertFalse(self.inventory.has_item(self.test_item.id, quantity=5))
+        self.assertTrue(self.inventory.has_item(self.test_item_id, quantity=3))
+        self.assertTrue(self.inventory.has_item(self.test_item_id, quantity=1))
+        self.assertFalse(self.inventory.has_item(self.test_item_id, quantity=5))
 
     def test_get_item_quantity(self):
         """Test getting quantity of specific item."""
-        self.inventory.add_item(self.test_item, quantity=7)
-        quantity = self.inventory.get_item_quantity(self.test_item.id)
+        self.inventory.add_item(self.test_item_id, quantity=7)
+        quantity = self.inventory.get_item_quantity(self.test_item_id)
         self.assertEqual(quantity, 7)
 
     def test_list_items(self):
         """Test listing all items in inventory."""
-        item1 = Item(id="item1", name="Item 1", description="", category="misc", price=5)
-        item2 = Item(id="item2", name="Item 2", description="", category="misc", price=10)
+        # Add items to global definitions
+        ITEM_DEFINITIONS["item1"] = Item(
+            id="item1", name="Item 1", description="", item_type=ItemType.MISC, base_price=5
+        )
+        ITEM_DEFINITIONS["item2"] = Item(
+            id="item2", name="Item 2", description="", item_type=ItemType.MISC, base_price=10
+        )
 
-        self.inventory.add_item(item1, quantity=2)
-        self.inventory.add_item(item2, quantity=3)
+        self.inventory.add_item("item1", quantity=2)
+        self.inventory.add_item("item2", quantity=3)
 
         items = self.inventory.list_items_for_display()
         self.assertEqual(len(items), 2)
@@ -133,14 +138,15 @@ class TestInventory(unittest.TestCase):
         """Test inventory capacity limits if implemented."""
         # Add many items to test capacity
         for i in range(100):
-            item = Item(
-                id=f"item_{i}",
+            item_id = f"item_{i}"
+            ITEM_DEFINITIONS[item_id] = Item(
+                id=item_id,
                 name=f"Item {i}",
                 description="Test",
-                category="misc",
-                price=1,
+                item_type=ItemType.MISC,
+                base_price=1,
             )
-            self.inventory.add_item(item, quantity=1)
+            self.inventory.add_item(item_id, quantity=1)
 
         # Just verify it doesn't crash
         self.assertGreater(self.inventory.get_total_items(), 0)
@@ -153,40 +159,20 @@ class TestItemDefinitions(unittest.TestCase):
         """Test that ITEM_DEFINITIONS is accessible."""
         self.assertIsNotNone(ITEM_DEFINITIONS)
 
-    def test_load_item_definitions(self):
-        """Test loading item definitions from data directory."""
-        import tempfile
-        import json
-        from pathlib import Path
+    def test_item_definitions_format(self):
+        """Test item definitions have correct format."""
+        # Test that we can create items matching expected format
+        test_item = Item(
+            id="test_sword",
+            name="Test Sword",
+            description="A test sword",
+            item_type=ItemType.MISC,
+            base_price=100,
+        )
 
-        # Create temporary data directory with items
-        temp_dir = tempfile.mkdtemp()
-        items_file = Path(temp_dir) / "items.json"
-
-        test_items = {
-            "items": [
-                {
-                    "id": "test_sword",
-                    "name": "Test Sword",
-                    "description": "A test sword",
-                    "category": "weapon",
-                    "price": 100,
-                }
-            ]
-        }
-
-        with open(items_file, "w") as f:
-            json.dump(test_items, f)
-
-        # Load definitions
-        load_item_definitions(Path(temp_dir))
-
-        # Clean up
-        import shutil
-        shutil.rmtree(temp_dir)
-
-        # Just verify function doesn't crash
-        self.assertTrue(True)
+        self.assertEqual(test_item.id, "test_sword")
+        self.assertEqual(test_item.item_type, ItemType.MISC)
+        self.assertEqual(test_item.base_price, 100)
 
     def test_item_lookup(self):
         """Test looking up items by ID."""

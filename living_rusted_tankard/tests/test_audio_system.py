@@ -1,173 +1,169 @@
 """
 Test suite for the Audio System.
 
-Tests audio playback, sound effects, and music management.
+Tests audio asset management and configuration.
 """
 import unittest
 
-from living_rusted_tankard.core.audio_system import AudioSystem, SoundEffect, MusicTrack
+from living_rusted_tankard.core.audio_system import (
+    AudioManager,
+    AudioAsset,
+    AudioType,
+    AudioEvent,
+)
 
 
-class TestAudioSystem(unittest.TestCase):
-    """Test the AudioSystem class."""
+class TestAudioAsset(unittest.TestCase):
+    """Test the AudioAsset class."""
 
-    def setUp(self):
-        """Set up test fixtures."""
-        self.audio_system = AudioSystem()
-
-    def test_audio_system_initialization(self):
-        """Test that AudioSystem initializes correctly."""
-        self.assertIsNotNone(self.audio_system)
-
-    def test_play_sound_effect(self):
-        """Test playing a sound effect."""
-        # Test that method exists and doesn't crash
-        result = self.audio_system.play_sound("test_sound")
-        # Just verify it returns something (or None)
-        self.assertIsNotNone(result) or self.assertIsNone(result)
-
-    def test_play_music_track(self):
-        """Test playing a music track."""
-        result = self.audio_system.play_music("tavern_theme")
-        # Just verify method works
-        self.assertIsNotNone(result) or self.assertIsNone(result)
-
-    def test_stop_music(self):
-        """Test stopping music playback."""
-        self.audio_system.play_music("test_track")
-        self.audio_system.stop_music()
-        # Verify method doesn't crash
-        self.assertTrue(True)
-
-    def test_set_volume(self):
-        """Test setting audio volume."""
-        # Test valid volume
-        self.audio_system.set_volume(0.5)
-        self.assertEqual(self.audio_system.get_volume(), 0.5)
-
-        # Test boundary values
-        self.audio_system.set_volume(0.0)
-        self.assertEqual(self.audio_system.get_volume(), 0.0)
-
-        self.audio_system.set_volume(1.0)
-        self.assertEqual(self.audio_system.get_volume(), 1.0)
-
-    def test_mute_unmute(self):
-        """Test muting and unmuting audio."""
-        self.audio_system.mute()
-        self.assertTrue(self.audio_system.is_muted())
-
-        self.audio_system.unmute()
-        self.assertFalse(self.audio_system.is_muted())
-
-    def test_sound_effect_queue(self):
-        """Test queuing multiple sound effects."""
-        self.audio_system.play_sound("sound1")
-        self.audio_system.play_sound("sound2")
-        self.audio_system.play_sound("sound3")
-
-        # Just verify it doesn't crash
-        self.assertTrue(True)
-
-
-class TestSoundEffect(unittest.TestCase):
-    """Test the SoundEffect class."""
-
-    def test_sound_effect_creation(self):
-        """Test creating a sound effect."""
-        effect = SoundEffect(
-            id="test_effect",
-            name="Test Effect",
+    def test_audio_asset_creation(self):
+        """Test creating an audio asset."""
+        asset = AudioAsset(
+            id="test_sound",
+            name="Test Sound",
             file_path="sounds/test.wav",
+            audio_type=AudioType.EFFECT,
             volume=0.8,
         )
 
-        self.assertEqual(effect.id, "test_effect")
-        self.assertEqual(effect.name, "Test Effect")
-        self.assertEqual(effect.volume, 0.8)
+        self.assertEqual(asset.id, "test_sound")
+        self.assertEqual(asset.name, "Test Sound")
+        self.assertEqual(asset.volume, 0.8)
+        self.assertEqual(asset.audio_type, AudioType.EFFECT)
 
-    def test_sound_effect_categories(self):
-        """Test sound effect categories."""
-        categories = ["combat", "ambient", "ui", "dialogue", "music"]
-
-        for category in categories:
-            effect = SoundEffect(
-                id=f"{category}_sound",
-                name=f"{category.title()} Sound",
-                file_path=f"sounds/{category}.wav",
-                category=category,
-            )
-            self.assertEqual(effect.category, category)
-
-
-class TestMusicTrack(unittest.TestCase):
-    """Test the MusicTrack class."""
-
-    def test_music_track_creation(self):
-        """Test creating a music track."""
-        track = MusicTrack(
-            id="tavern_music",
-            name="Tavern Theme",
-            file_path="music/tavern.mp3",
+    def test_audio_asset_with_loop(self):
+        """Test audio asset with loop enabled."""
+        asset = AudioAsset(
+            id="ambient_sound",
+            name="Ambient",
+            file_path="ambient.mp3",
+            audio_type=AudioType.AMBIENT,
             loop=True,
         )
 
-        self.assertEqual(track.id, "tavern_music")
-        self.assertTrue(track.loop)
+        self.assertTrue(asset.loop)
 
-    def test_track_duration(self):
-        """Test track duration tracking."""
-        track = MusicTrack(
-            id="test_track",
-            name="Test Track",
-            file_path="music/test.mp3",
-            duration=180.0,  # 3 minutes
+    def test_audio_asset_tags(self):
+        """Test audio asset with tags."""
+        asset = AudioAsset(
+            id="tagged_sound",
+            name="Tagged Sound",
+            file_path="sound.mp3",
+            audio_type=AudioType.MUSIC,
+            tags=["combat", "intense"],
         )
 
-        self.assertEqual(track.duration, 180.0)
+        self.assertIn("combat", asset.tags)
+        self.assertIn("intense", asset.tags)
 
-    def test_track_metadata(self):
-        """Test track metadata."""
-        track = MusicTrack(
-            id="epic_music",
-            name="Epic Battle Theme",
-            file_path="music/battle.mp3",
-            artist="Composer Name",
-            genre="orchestral",
+
+class TestAudioTypes(unittest.TestCase):
+    """Test audio type enumeration."""
+
+    def test_audio_types_exist(self):
+        """Test that all audio types are defined."""
+        types = [AudioType.AMBIENT, AudioType.EFFECT, AudioType.MUSIC, AudioType.VOICE]
+        
+        for audio_type in types:
+            self.assertIsNotNone(audio_type)
+            self.assertIsInstance(audio_type, AudioType)
+
+
+class TestAudioEvent(unittest.TestCase):
+    """Test the AudioEvent class."""
+
+    def test_audio_event_creation(self):
+        """Test creating an audio event."""
+        event = AudioEvent(
+            event_type="player_action",
+            audio_id="sound_effect_1",
+            volume=0.7,
+            delay=0.5,
         )
 
-        self.assertEqual(track.artist, "Composer Name")
-        self.assertEqual(track.genre, "orchestral")
+        self.assertEqual(event.event_type, "player_action")
+        self.assertEqual(event.audio_id, "sound_effect_1")
+        self.assertEqual(event.volume, 0.7)
+        self.assertEqual(event.delay, 0.5)
+
+    def test_audio_event_with_fade(self):
+        """Test audio event with fade effects."""
+        event = AudioEvent(
+            event_type="music_transition",
+            audio_id="new_track",
+            fade_in=2.0,
+            fade_out=1.5,
+        )
+
+        self.assertEqual(event.fade_in, 2.0)
+        self.assertEqual(event.fade_out, 1.5)
 
 
-class TestAudioPlayback(unittest.TestCase):
-    """Test audio playback functionality."""
+class TestAudioManager(unittest.TestCase):
+    """Test the AudioManager class."""
 
     def setUp(self):
         """Set up test fixtures."""
-        self.audio = AudioSystem()
+        self.audio_manager = AudioManager()
 
-    def test_playback_state(self):
-        """Test tracking playback state."""
-        self.audio.play_music("test_track")
-        # Verify we can check if something is playing
-        state = self.audio.is_playing()
-        self.assertIsNotNone(state) or self.assertIsNone(state)
+    def test_audio_manager_initialization(self):
+        """Test that AudioManager initializes correctly."""
+        self.assertIsNotNone(self.audio_manager)
+        self.assertIsInstance(self.audio_manager.assets, dict)
 
-    def test_pause_resume(self):
-        """Test pausing and resuming audio."""
-        self.audio.play_music("test_track")
-        self.audio.pause()
-        self.audio.resume()
-        # Just verify methods don't crash
-        self.assertTrue(True)
+    def test_default_volume_settings(self):
+        """Test default volume settings."""
+        self.assertIn(AudioType.AMBIENT, self.audio_manager.volume_settings)
+        self.assertIn(AudioType.EFFECT, self.audio_manager.volume_settings)
+        self.assertIn(AudioType.MUSIC, self.audio_manager.volume_settings)
 
-    def test_fade_in_fade_out(self):
-        """Test audio fading effects."""
-        self.audio.fade_in("test_track", duration=2.0)
-        self.audio.fade_out(duration=2.0)
-        # Verify methods exist and work
-        self.assertTrue(True)
+    def test_master_volume(self):
+        """Test master volume configuration."""
+        self.assertGreaterEqual(self.audio_manager.master_volume, 0.0)
+        self.assertLessEqual(self.audio_manager.master_volume, 1.0)
+
+    def test_audio_enabled_flag(self):
+        """Test audio enabled flag."""
+        self.assertTrue(self.audio_manager.enabled)
+        self.audio_manager.enabled = False
+        self.assertFalse(self.audio_manager.enabled)
+
+    def test_default_assets_loaded(self):
+        """Test that default assets are loaded."""
+        # Check if any default assets exist
+        self.assertGreater(len(self.audio_manager.assets), 0)
+
+    def test_register_asset(self):
+        """Test registering a new audio asset."""
+        new_asset = AudioAsset(
+            id="custom_sound",
+            name="Custom Sound",
+            file_path="custom.mp3",
+            audio_type=AudioType.EFFECT,
+        )
+
+        self.audio_manager.register_asset(new_asset)
+        self.assertIn("custom_sound", self.audio_manager.assets)
+
+    def test_get_asset(self):
+        """Test retrieving an audio asset."""
+        # Register an asset first
+        test_asset = AudioAsset(
+            id="retrievable",
+            name="Retrievable",
+            file_path="test.mp3",
+            audio_type=AudioType.EFFECT,
+        )
+        self.audio_manager.register_asset(test_asset)
+
+        # Retrieve it
+        retrieved = self.audio_manager.get_asset("retrievable")
+        self.assertIsNotNone(retrieved)
+        self.assertEqual(retrieved.id, "retrievable")
+
+    def test_event_mappings(self):
+        """Test event mappings structure."""
+        self.assertIsInstance(self.audio_manager.event_mappings, dict)
 
 
 if __name__ == "__main__":
