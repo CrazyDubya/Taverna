@@ -1,14 +1,15 @@
 """
 Test suite for the NewsManager system.
 
-Tests news article generation, retrieval, and management.
+Tests news item loading, filtering, and retrieval.
 """
 import unittest
 import tempfile
 import shutil
+import json
 from pathlib import Path
 
-from living_rusted_tankard.core.news_manager import NewsManager
+from living_rusted_tankard.core.news_manager import NewsManager, NewsItem
 
 
 class TestNewsManager(unittest.TestCase):
@@ -17,154 +18,138 @@ class TestNewsManager(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.test_dir = tempfile.mkdtemp()
+        self.create_test_news_file()
         self.news_manager = NewsManager(data_dir=self.test_dir)
 
     def tearDown(self):
         """Clean up test fixtures."""
         shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def create_test_news_file(self):
+        """Create a test news.json file."""
+        news_data = {
+            "news_items": [
+                {
+                    "id": "tavern_news_001",
+                    "text": "The tavern is bustling with activity tonight.",
+                    "source_types": ["bartender", "patron"],
+                },
+                {
+                    "id": "quest_news_001",
+                    "text": "There's a bounty posted for wolf pelts.",
+                    "source_types": ["guard", "merchant"],
+                    "conditions": {"min_day": 5},
+                },
+            ]
+        }
+
+        news_file = Path(self.test_dir) / "news.json"
+        with open(news_file, "w") as f:
+            json.dump(news_data, f)
 
     def test_news_manager_initialization(self):
         """Test that NewsManager initializes correctly."""
         self.assertIsNotNone(self.news_manager)
-        self.assertTrue(hasattr(self.news_manager, "data_dir"))
+        self.assertIsInstance(self.news_manager.news_items, list)
 
-    def test_add_news_article(self):
-        """Test adding a news article."""
-        article = {
-            "id": "test_news_001",
-            "title": "Test News",
-            "content": "This is a test news article",
-            "category": "tavern",
-            "timestamp": 12.5,
-        }
+    def test_news_items_loaded(self):
+        """Test that news items are loaded from file."""
+        self.assertGreater(len(self.news_manager.news_items), 0)
+        self.assertEqual(len(self.news_manager.news_items), 2)
 
-        result = self.news_manager.add_article(
-            article_id=article["id"],
-            title=article["title"],
-            content=article["content"],
-            category=article["category"],
-            timestamp=article["timestamp"],
+    def test_get_relevant_news(self):
+        """Test getting relevant news for an NPC type."""
+        # Get news for bartender
+        relevant = self.news_manager.get_relevant_news(
+            npc_type_str="bartender", current_day=1
+        )
+        
+        self.assertGreater(len(relevant), 0)
+        self.assertTrue(any(item.id == "tavern_news_001" for item in relevant))
+
+    def test_news_filtering_by_npc_type(self):
+        """Test that news is filtered by NPC type."""
+        # Bartender should see tavern news
+        bartender_news = self.news_manager.get_relevant_news(
+            npc_type_str="bartender", current_day=1
+        )
+        self.assertTrue(any("tavern" in item.text.lower() for item in bartender_news))
+
+        # Guard should see quest news
+        guard_news = self.news_manager.get_relevant_news(
+            npc_type_str="guard", current_day=10
+        )
+        self.assertTrue(any("bounty" in item.text.lower() for item in guard_news))
+
+    def test_news_day_condition(self):
+        """Test that news respects day conditions."""
+        # Day 1 - should not see quest news (requires min_day: 5)
+        early_news = self.news_manager.get_relevant_news(
+            npc_type_str="guard", current_day=1
+        )
+        quest_news = [item for item in early_news if "bounty" in item.text.lower()]
+        self.assertEqual(len(quest_news), 0)
+
+        # Day 10 - should see quest news
+        later_news = self.news_manager.get_relevant_news(
+            npc_type_str="guard", current_day=10
+        )
+        quest_news = [item for item in later_news if "bounty" in item.text.lower()]
+        self.assertGreater(len(quest_news), 0)
+
+    def test_get_random_news_snippet(self):
+        """Test getting a random news snippet."""
+        snippet = self.news_manager.get_random_news_snippet(
+            npc_type_str="bartender", current_day=1
+        )
+        
+        self.assertIsNotNone(snippet)
+        self.assertIsInstance(snippet, NewsItem)
+
+    def test_random_news_excludes_recently_shared(self):
+        """Test that random news excludes recently shared IDs."""
+        recently_shared = ["tavern_news_001"]
+        
+        snippet = self.news_manager.get_random_news_snippet(
+            npc_type_str="bartender",
+            current_day=1,
+            recently_shared_ids=recently_shared,
+        )
+        
+        if snippet:  # May be None if all news was recently shared
+            self.assertNotIn(snippet.id, recently_shared)
+
+
+class TestNewsItem(unittest.TestCase):
+    """Test the NewsItem class."""
+
+    def test_news_item_creation(self):
+        """Test creating a news item."""
+        item = NewsItem(
+            id="test_news",
+            text="Test news content",
+            source_types=["bartender"],
         )
 
-        self.assertTrue(result)
+        self.assertEqual(item.id, "test_news")
+        self.assertEqual(item.text, "Test news content")
+        self.assertIn("bartender", item.source_types)
 
-    def test_get_recent_news(self):
-        """Test retrieving recent news articles."""
-        # Add multiple articles
-        for i in range(5):
-            self.news_manager.add_article(
-                article_id=f"news_{i:03d}",
-                title=f"News Article {i}",
-                content=f"Content for article {i}",
-                category="general",
-                timestamp=float(i),
-            )
+    def test_news_item_with_conditions(self):
+        """Test news item with conditions."""
+        from living_rusted_tankard.core.news_manager import NewsItemCondition
 
-        recent = self.news_manager.get_recent_news(count=3)
-        self.assertLessEqual(len(recent), 3)
-
-    def test_get_news_by_category(self):
-        """Test filtering news by category."""
-        # Add articles in different categories
-        self.news_manager.add_article(
-            article_id="tavern_news",
-            title="Tavern News",
-            content="Something at the tavern",
-            category="tavern",
-            timestamp=10.0,
+        conditions = NewsItemCondition(min_day=10, requires_event="festival")
+        item = NewsItem(
+            id="event_news",
+            text="Festival news",
+            source_types=["patron"],
+            conditions=conditions,
         )
 
-        self.news_manager.add_article(
-            article_id="quest_news",
-            title="Quest News",
-            content="A new quest available",
-            category="quest",
-            timestamp=11.0,
-        )
-
-        tavern_news = self.news_manager.get_news_by_category("tavern")
-        self.assertGreaterEqual(len(tavern_news), 1)
-        self.assertTrue(any(n.get("category") == "tavern" for n in tavern_news))
-
-    def test_news_ordering(self):
-        """Test that news articles are returned in correct order."""
-        # Add articles with different timestamps
-        articles = [
-            ("old_news", "Old News", 1.0),
-            ("new_news", "New News", 10.0),
-            ("newest_news", "Newest News", 15.0),
-        ]
-
-        for article_id, title, timestamp in articles:
-            self.news_manager.add_article(
-                article_id=article_id,
-                title=title,
-                content=f"Content for {title}",
-                category="general",
-                timestamp=timestamp,
-            )
-
-        recent = self.news_manager.get_recent_news(count=3)
-        # Most recent should be first
-        if len(recent) > 0:
-            timestamps = [n.get("timestamp", 0) for n in recent]
-            # Verify descending order
-            self.assertEqual(timestamps, sorted(timestamps, reverse=True))
-
-    def test_news_persistence(self):
-        """Test that news persists to disk."""
-        self.news_manager.add_article(
-            article_id="persist_test",
-            title="Persistence Test",
-            content="Testing persistence",
-            category="test",
-            timestamp=5.0,
-        )
-
-        # Create new manager instance with same data_dir
-        new_manager = NewsManager(data_dir=self.test_dir)
-        news = new_manager.get_recent_news(count=10)
-
-        # Check if the article is found (if persistence is implemented)
-        found = any(n.get("id") == "persist_test" for n in news)
-        # This may be False if persistence isn't implemented yet
-        # Just check that get_recent_news works
-        self.assertIsInstance(news, list)
-
-
-class TestNewsCategories(unittest.TestCase):
-    """Test news categorization features."""
-
-    def setUp(self):
-        """Set up test fixtures."""
-        self.test_dir = tempfile.mkdtemp()
-        self.news_manager = NewsManager(data_dir=self.test_dir)
-
-    def tearDown(self):
-        """Clean up test fixtures."""
-        shutil.rmtree(self.test_dir, ignore_errors=True)
-
-    def test_multiple_categories(self):
-        """Test managing news across multiple categories."""
-        categories = ["tavern", "quest", "npc", "economy", "event"]
-
-        for i, category in enumerate(categories):
-            self.news_manager.add_article(
-                article_id=f"{category}_news",
-                title=f"{category.title()} News",
-                content=f"News about {category}",
-                category=category,
-                timestamp=float(i),
-            )
-
-        # Test each category
-        for category in categories:
-            news = self.news_manager.get_news_by_category(category)
-            if len(news) > 0:
-                self.assertTrue(
-                    all(n.get("category") == category for n in news),
-                    f"Category mismatch for {category}",
-                )
+        self.assertIsNotNone(item.conditions)
+        self.assertEqual(item.conditions.min_day, 10)
+        self.assertEqual(item.conditions.requires_event, "festival")
 
 
 if __name__ == "__main__":
