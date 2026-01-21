@@ -8,8 +8,8 @@ import os
 import threading
 import time
 
-# Add the project to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'living_rusted_tankard'))
+# Add the project to path (go up two levels from tests/root_tests/)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 def validate_thread_safety_code():
     """Validate that thread safety code is implemented correctly."""

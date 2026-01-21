@@ -6,8 +6,8 @@ Simple test to verify the global state issue is fixed.
 import sys
 import os
 
-# Add the project to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'living_rusted_tankard'))
+# Add the project to path (go up two levels from tests/root_tests/)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 def test_no_global_state():
     """Test that AI players don't use global state."""
