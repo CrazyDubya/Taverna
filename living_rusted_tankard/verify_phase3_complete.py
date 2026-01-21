@@ -53,7 +53,7 @@ def check_enhanced_secrets():
     print("\n🔐 CHECKING ENHANCED SECRETS SYSTEM:")
 
     checks = [
-        ("core/npc_modules/secrets.py", "Enhanced Secrets"),
+        ("core/npc_systems/secrets.py", "Enhanced Secrets"),
     ]
 
     success = all(check_file_exists(path, desc) for path, desc in checks)
@@ -70,7 +70,7 @@ def check_enhanced_secrets():
             "investigate",
             "revelation_progress",
         ]
-        success = check_module_imports("core/npc_modules/secrets.py", required)
+        success = check_module_imports("core/npc_systems/secrets.py", required)
 
     # Check tests
     test_exists = check_file_exists("tests/test_npc_secrets.py", "Secrets Tests")
@@ -83,7 +83,7 @@ def check_dialogue_system():
     print("\n💬 CHECKING DIALOGUE SYSTEM:")
 
     checks = [
-        ("core/npc_modules/dialogue.py", "Dialogue System"),
+        ("core/npc_systems/dialogue.py", "Dialogue System"),
     ]
 
     success = all(check_file_exists(path, desc) for path, desc in checks)
@@ -98,7 +98,7 @@ def check_dialogue_system():
             "DialogueTone",
             "generate_dialogue_options",
         ]
-        success = check_module_imports("core/npc_modules/dialogue.py", required)
+        success = check_module_imports("core/npc_systems/dialogue.py", required)
 
     # Check tests
     test_exists = check_file_exists("tests/test_npc_dialogue.py", "Dialogue Tests")
@@ -111,7 +111,7 @@ def check_gossip_system():
     print("\n🗣️ CHECKING GOSSIP SYSTEM:")
 
     checks = [
-        ("core/npc_modules/gossip.py", "Gossip System"),
+        ("core/npc_systems/gossip.py", "Gossip System"),
     ]
 
     success = all(check_file_exists(path, desc) for path, desc in checks)
@@ -126,7 +126,7 @@ def check_gossip_system():
             "create_rumor_from_secret",
             "gossip_tendencies",
         ]
-        success = check_module_imports("core/npc_modules/gossip.py", required)
+        success = check_module_imports("core/npc_systems/gossip.py", required)
 
     return success
 
@@ -136,7 +136,7 @@ def check_goals_agency():
     print("\n🎯 CHECKING GOALS & AGENCY SYSTEM:")
 
     checks = [
-        ("core/npc_modules/goals.py", "Goals System"),
+        ("core/npc_systems/goals.py", "Goals System"),
     ]
 
     success = all(check_file_exists(path, desc) for path, desc in checks)
@@ -152,7 +152,7 @@ def check_goals_agency():
             "GoalCategory",
             "select_action",
         ]
-        success = check_module_imports("core/npc_modules/goals.py", required)
+        success = check_module_imports("core/npc_systems/goals.py", required)
 
     return success
 
@@ -162,7 +162,7 @@ def check_interactions():
     print("\n🤝 CHECKING INTERACTIONS SYSTEM:")
 
     checks = [
-        ("core/npc_modules/interactions.py", "Interactions System"),
+        ("core/npc_systems/interactions.py", "Interactions System"),
     ]
 
     success = all(check_file_exists(path, desc) for path, desc in checks)
@@ -176,7 +176,7 @@ def check_interactions():
             "initiate_interaction",
             "simulate_autonomous_interactions",
         ]
-        success = check_module_imports("core/npc_modules/interactions.py", required)
+        success = check_module_imports("core/npc_systems/interactions.py", required)
 
     return success
 
@@ -186,10 +186,10 @@ def check_phase2_compatibility():
     print("\n🔄 CHECKING PHASE 2 COMPATIBILITY:")
 
     phase2_files = [
-        ("core/npc_modules/psychology.py", "Psychology (Phase 2)"),
-        ("core/npc_modules/behavioral_rules.py", "Behavioral Rules (Phase 2)"),
-        ("core/npc_modules/schedules.py", "Schedules (Phase 2)"),
-        ("core/npc_modules/relationships.py", "Relationships (Phase 2)"),
+        ("core/npc_systems/psychology.py", "Psychology (Phase 2)"),
+        ("core/npc_systems/behavioral_rules.py", "Behavioral Rules (Phase 2)"),
+        ("core/npc_systems/schedules.py", "Schedules (Phase 2)"),
+        ("core/npc_systems/relationships.py", "Relationships (Phase 2)"),
     ]
 
     return all(check_file_exists(path, desc) for path, desc in phase2_files)
@@ -208,33 +208,33 @@ def check_feature_integration():
     }
 
     # Check secrets-gossip integration
-    if os.path.exists("core/npc_modules/gossip.py"):
-        with open("core/npc_modules/gossip.py", "r") as f:
+    if os.path.exists("core/npc_systems/gossip.py"):
+        with open("core/npc_systems/gossip.py", "r") as f:
             if "create_rumor_from_secret" in f.read():
                 integration_points["Secrets ↔ Gossip"] = True
 
     # Check goals-behavior integration
-    if os.path.exists("core/npc_modules/goals.py"):
-        with open("core/npc_modules/goals.py", "r") as f:
+    if os.path.exists("core/npc_systems/goals.py"):
+        with open("core/npc_systems/goals.py", "r") as f:
             content = f.read()
             if "BehaviorRule" in content or "Action" in content:
                 integration_points["Goals ↔ Behavior"] = True
 
     # Check dialogue-context integration
-    if os.path.exists("core/npc_modules/dialogue.py"):
-        with open("core/npc_modules/dialogue.py", "r") as f:
+    if os.path.exists("core/npc_systems/dialogue.py"):
+        with open("core/npc_systems/dialogue.py", "r") as f:
             if "psychology" in f.read().lower():
                 integration_points["Dialogue ↔ Context"] = True
 
     # Check interactions-relationships integration
-    if os.path.exists("core/npc_modules/interactions.py"):
-        with open("core/npc_modules/interactions.py", "r") as f:
+    if os.path.exists("core/npc_systems/interactions.py"):
+        with open("core/npc_systems/interactions.py", "r") as f:
             if "relationship_web" in f.read():
                 integration_points["Interactions ↔ Relationships"] = True
 
     # Check evidence-investigation integration
-    if os.path.exists("core/npc_modules/secrets.py"):
-        with open("core/npc_modules/secrets.py", "r") as f:
+    if os.path.exists("core/npc_systems/secrets.py"):
+        with open("core/npc_systems/secrets.py", "r") as f:
             content = f.read()
             if "def investigate" in content and "class Evidence" in content:
                 integration_points["Evidence ↔ Investigation"] = True
@@ -293,7 +293,7 @@ def check_code_quality():
     print("\n📊 CHECKING CODE QUALITY:")
 
     # Count files
-    npc_files = count_files_in_directory("core/npc_modules")
+    npc_files = count_files_in_directory("core/npc_systems")
     test_files = count_files_in_directory("tests")
 
     print(f"  📁 NPC System Files: {npc_files}")
@@ -301,7 +301,7 @@ def check_code_quality():
 
     # Check for docstrings
     doc_count = 0
-    for root, dirs, files in os.walk("core/npc_modules"):
+    for root, dirs, files in os.walk("core/npc_systems"):
         for file in files:
             if file.endswith(".py") and file in [
                 "secrets.py",
@@ -319,7 +319,7 @@ def check_code_quality():
 
     # Check for type hints
     type_hints = 0
-    for root, dirs, files in os.walk("core/npc_modules"):
+    for root, dirs, files in os.walk("core/npc_systems"):
         for file in files:
             if file.endswith(".py") and file in [
                 "secrets.py",
@@ -343,7 +343,7 @@ def check_code_quality():
     total_classes = 0
     total_methods = 0
 
-    for root, dirs, files in os.walk("core/npc_modules"):
+    for root, dirs, files in os.walk("core/npc_systems"):
         for file in files:
             if file.endswith(".py"):
                 filepath = os.path.join(root, file)
