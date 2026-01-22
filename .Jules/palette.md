@@ -29,3 +29,11 @@
 4. Visual feedback: Provide clear focus rings and hover states
 5. Keyboard navigation: Support both mouse and keyboard interaction patterns
 **Action:** Audit all interactive lists and dropdowns to ensure they follow these patterns. Test with keyboard-only navigation.
+
+## 2024-05-24 - Async Button Loading Patterns
+**Learning:** Using `disabled` state alone for async actions provides insufficient feedback. Users need visual confirmation that their action is being processed.
+**Action:** Implement a dual-state button pattern:
+1. Save original content on loading start
+2. Inject accessible spinner (SVG + `aria-hidden`)
+3. Add `aria-busy="true"`
+4. Restore content on completion
