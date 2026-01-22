@@ -69,11 +69,11 @@ def check_npc_psychology():
     print("\n🧠 CHECKING NPC PSYCHOLOGY SYSTEM:")
 
     checks = [
-        ("core/npc_modules/__init__.py", "NPC Package Init"),
-        ("core/npc_modules/psychology.py", "Psychology System"),
-        ("core/npc_modules/behavioral_rules.py", "Behavioral Rules"),
-        ("core/npc_modules/schedules.py", "NPC Schedules"),
-        ("core/npc_modules/relationships.py", "Relationship System"),
+        ("core/npc_systems/__init__.py", "NPC Package Init"),
+        ("core/npc_systems/psychology.py", "Psychology System"),
+        ("core/npc_systems/behavioral_rules.py", "Behavioral Rules"),
+        ("core/npc_systems/schedules.py", "NPC Schedules"),
+        ("core/npc_systems/relationships.py", "Relationship System"),
     ]
 
     success = all(check_file_exists(path, desc) for path, desc in checks)
@@ -112,13 +112,13 @@ def check_feature_coverage():
             "core/world/area.py",
             ["TavernArea", "Feature", "Connection", "hidden", "discovered"],
         ),
-        ("core/npc_modules/schedules.py", ["NPCSchedule", "ScheduleBlock", "DayType"]),
+        ("core/npc_systems/schedules.py", ["NPCSchedule", "ScheduleBlock", "DayType"]),
         (
-            "core/npc_modules/behavioral_rules.py",
+            "core/npc_systems/behavioral_rules.py",
             ["BehaviorEngine", "BehaviorRule", "Condition"],
         ),
         (
-            "core/npc_modules/relationships.py",
+            "core/npc_systems/relationships.py",
             ["RelationshipWeb", "Conflict", "Alliance"],
         ),
         (
@@ -190,7 +190,7 @@ def check_code_quality():
 
     # Check file counts
     world_files = count_files_in_directory("core/world")
-    npc_files = count_files_in_directory("core/npc_modules")
+    npc_files = count_files_in_directory("core/npc_systems")
     test_files = count_files_in_directory("tests")
 
     print(f"  📁 World System Files: {world_files}")

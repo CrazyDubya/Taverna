@@ -6,8 +6,8 @@ Validate that the global state fix is implemented correctly.
 import sys
 import os
 
-# Add the project to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'living_rusted_tankard'))
+# Add the project to path (go up two levels from tests/root_tests/)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 def validate_code_changes():
     """Validate that code changes are correct."""
