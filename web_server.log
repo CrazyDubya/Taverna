@@ -1,0 +1,15 @@
+INFO:     Will watch for changes in these directories: ['/app']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [9844] using StatReload
+Starting The Living Rusted Tankard Web Server...
+INFO:living_rusted_tankard.core.enhanced_llm_game_master:Enhanced LLM Game Master initialized - http://localhost:11434 with long-gemma:latest
+INFO:living_rusted_tankard.core.enhanced_llm_game_master:Enhanced LLM Game Master initialized - http://localhost:11434 with long-gemma:latest
+INFO:     Started server process [9961]
+INFO:     Waiting for application startup.
+INFO:living_rusted_tankard.core.api:Starting async LLM pipeline...
+INFO:living_rusted_tankard.core.async_llm_pipeline:Async LLM Pipeline started
+INFO:living_rusted_tankard.core.api:Async LLM pipeline started successfully
+INFO:living_rusted_tankard.core.api:Loading item definitions...
+INFO:living_rusted_tankard.core.api:Loaded 17 item definitions
+INFO:     Application startup complete.
+INFO:     127.0.0.1:49698 - "GET / HTTP/1.1" 200 OK
