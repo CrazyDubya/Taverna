@@ -37,3 +37,11 @@
 2. Inject accessible spinner (SVG + `aria-hidden`)
 3. Add `aria-busy="true"`
 4. Restore content on completion
+
+## 2024-05-25 - Responsive Content Duplication
+**Learning:** When creating mobile-specific views by duplicating content (like a sidebar), simply cloning HTML nodes creates duplicate IDs, breaking JavaScript logic that relies on `getElementById`.
+**Action:** When creating responsive duplicates, ensure unique IDs for the mobile versions (e.g., prefixing with `mobile-`) and update state management logic to target both the desktop and mobile elements.
+
+## 2024-05-25 - Skip Links in Application Shells
+**Learning:** In application-like interfaces with persistent headers/sidebars, a "Skip to Main Content" link is critical because the "main content" (e.g., the narrative feed) isn't just the first heading, but often buried inside a layout.
+**Action:** Always include a Skip Link that targets the dynamic content container, ensuring it is the very first focusable element for keyboard users.
