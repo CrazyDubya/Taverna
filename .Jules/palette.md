@@ -45,3 +45,7 @@
 ## 2024-05-25 - Skip Links in Application Shells
 **Learning:** In application-like interfaces with persistent headers/sidebars, a "Skip to Main Content" link is critical because the "main content" (e.g., the narrative feed) isn't just the first heading, but often buried inside a layout.
 **Action:** Always include a Skip Link that targets the dynamic content container, ensuring it is the very first focusable element for keyboard users.
+
+## 2024-05-25 - Autocomplete Accessibility Patterns
+**Learning:** Autocomplete suggestions should be interactive elements (buttons/options) not static divs, to support keyboard navigation and screen readers. When implementing a simple dropdown, ensure items are focusable.
+**Action:** Use `<button>` elements for simple suggestion lists, or `role="option"` inside `role="listbox"` for complex ones.

@@ -454,6 +454,11 @@
                     status_effects: []
                 };
                 
+                this.commonCommands = [
+                    'look', 'look around', 'inventory', 'status', 'help',
+                    'talk to barkeeper', 'buy ale', 'quests', 'sleep', 'map'
+                ];
+
                 this.sessionId = localStorage.getItem('gameSessionId');
                 this.commandHistory = JSON.parse(localStorage.getItem('commandHistory') || '[]');
                 this.historyIndex = -1;
@@ -486,8 +491,16 @@
                 };
                 
                 // Enable submit button when there's input
-                this.elements.commandInput.addEventListener('input', () => {
+                this.elements.commandInput.addEventListener('input', (e) => {
                     this.elements.submitBtn.disabled = !this.elements.commandInput.value.trim();
+                    this.showSuggestions(e.target.value);
+                });
+
+                // Close suggestions when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!this.elements.inputSuggestions.contains(e.target) && e.target !== this.elements.commandInput) {
+                        this.elements.inputSuggestions.classList.add('hidden');
+                    }
                 });
                 
                 // Initialize with session if available
@@ -954,6 +967,43 @@
                 statusElement.setAttribute('aria-label', `Connection Status: ${text}`);
             }
             
+            showSuggestions(input) {
+                const value = input.toLowerCase().trim();
+                this.elements.inputSuggestions.innerHTML = '';
+
+                if (!value) {
+                    this.elements.inputSuggestions.classList.add('hidden');
+                    return;
+                }
+
+                const matches = this.commonCommands.filter(cmd =>
+                    cmd.toLowerCase().includes(value) && cmd.toLowerCase() !== value
+                );
+
+                if (matches.length === 0) {
+                    this.elements.inputSuggestions.classList.add('hidden');
+                    return;
+                }
+
+                matches.forEach(match => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'w-full text-left p-2 hover:bg-gray-600 cursor-pointer text-gray-300 hover:text-white transition-colors border-b border-gray-600 last:border-0 focus:outline-none focus:bg-gray-600';
+                    const regex = new RegExp(`(${value})`, 'gi');
+                    btn.innerHTML = match.replace(regex, '<span class="text-tavern-400 font-bold">$1</span>');
+
+                    btn.addEventListener('click', () => {
+                        this.elements.commandInput.value = match;
+                        this.elements.submitBtn.disabled = false;
+                        this.elements.inputSuggestions.classList.add('hidden');
+                        this.elements.commandInput.focus();
+                    });
+                    this.elements.inputSuggestions.appendChild(btn);
+                });
+
+                this.elements.inputSuggestions.classList.remove('hidden');
+            }
+
             showLoading(show) {
                 this.isLoading = show;
                 this.elements.loadingIndicator.classList.toggle('hidden', !show);
