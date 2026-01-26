@@ -49,3 +49,7 @@
 ## 2024-05-25 - Autocomplete Accessibility Patterns
 **Learning:** Autocomplete suggestions should be interactive elements (buttons/options) not static divs, to support keyboard navigation and screen readers. When implementing a simple dropdown, ensure items are focusable.
 **Action:** Use `<button>` elements for simple suggestion lists, or `role="option"` inside `role="listbox"` for complex ones.
+
+## 2024-05-26 - Mobile Layout Simplification
+**Learning:** Complex mobile overlays often require content duplication (leading to ID conflicts) or complex state management. For vertically stacked responsive layouts, a simple "Scroll to" interaction is often more robust and maintainable than a modal overlay.
+**Action:** Prioritize native scrolling and anchor links for mobile navigation of single-page interfaces before implementing complex overlay drawers.
