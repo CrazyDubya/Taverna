@@ -206,7 +206,7 @@
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200 min-h-screen">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-tavern-500 text-white px-4 py-2 rounded shadow-lg ring-2 ring-white font-bold transition-all">Skip to main content</a>
-    <div class="flex desktop-layout h-screen p-2 md:p-4 gap-2 md:gap-4">
+    <div class="flex flex-col md:flex-row desktop-layout md:h-screen min-h-screen p-2 md:p-4 gap-2 md:gap-4">
         <!-- Main Content -->
         <div class="flex-1 mobile-main flex flex-col">
             <!-- Enhanced Header -->
@@ -221,8 +221,8 @@
                 <div class="flex items-center space-x-2">
                     
                     <!-- Mobile Menu Toggle -->
-                    <button id="mobile-menu-toggle" aria-label="Toggle main menu" class="md:hidden bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-tavern-400">
-                        ☰
+                    <button id="mobile-menu-toggle" aria-label="View game stats" class="md:hidden bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-tavern-400">
+                        📊
                     </button>
                     
                     <!-- Settings Button -->
@@ -323,7 +323,7 @@
         </div>
         
         <!-- Enhanced Sidebar -->
-        <div class="w-full mobile-sidebar md:w-80 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl p-4 sidebar overflow-y-auto custom-scrollbar border border-gray-700">
+        <div id="sidebar" class="w-full mobile-sidebar md:w-80 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl p-4 sidebar overflow-y-auto custom-scrollbar border border-gray-700">
             <!-- Performance Indicator -->
             <div class="mb-4 p-2 bg-gray-700 rounded-lg">
                 <div class="flex justify-between items-center text-xs text-gray-400">
@@ -433,14 +433,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Mobile Sidebar Overlay -->
-    <div id="mobile-sidebar-overlay" class="md:hidden fixed inset-0 bg-black bg-opacity-50 hidden z-40">
-        <div class="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-gray-800 to-gray-900 shadow-xl p-4 overflow-y-auto">
-            <!-- Mobile sidebar content (same as main sidebar) -->
-        </div>
-    </div>
-    
 
     <script>
         // Enhanced game state management with UX improvements
@@ -624,7 +616,10 @@
                 
                 // Mobile menu
                 document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
-                    document.getElementById('mobile-sidebar-overlay').classList.toggle('hidden');
+                    const sidebar = document.getElementById('sidebar');
+                    if (sidebar) {
+                        sidebar.scrollIntoView({ behavior: 'smooth' });
+                    }
                 });
             }
             
