@@ -543,12 +543,24 @@
                 
                 // Command history navigation
                 this.elements.commandInput.addEventListener('keydown', (e) => {
+                    const suggestionsVisible = !this.elements.inputSuggestions.classList.contains('hidden');
+
                     if (e.key === 'ArrowUp') {
                         e.preventDefault();
                         this.navigateHistory('up');
                     } else if (e.key === 'ArrowDown') {
+                        // Prioritize suggestions navigation if visible
+                        if (suggestionsVisible && this.elements.inputSuggestions.children.length > 0) {
+                            e.preventDefault();
+                            this.elements.inputSuggestions.firstElementChild.focus();
+                            return;
+                        }
+
                         e.preventDefault();
                         this.navigateHistory('down');
+                    } else if (e.key === 'Escape' && suggestionsVisible) {
+                        e.preventDefault();
+                        this.elements.inputSuggestions.classList.add('hidden');
                     }
                 });
                 
@@ -991,6 +1003,26 @@
                     btn.className = 'w-full text-left p-2 hover:bg-gray-600 cursor-pointer text-gray-300 hover:text-white transition-colors border-b border-gray-600 last:border-0 focus:outline-none focus:bg-gray-600';
                     const regex = new RegExp(`(${value})`, 'gi');
                     btn.innerHTML = match.replace(regex, '<span class="text-tavern-400 font-bold">$1</span>');
+
+                    // Accessible keyboard navigation
+                    btn.tabIndex = -1; // Remove from tab order to prevent blocking "Send" button
+                    btn.addEventListener('keydown', (e) => {
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            if (btn.nextElementSibling) btn.nextElementSibling.focus();
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            if (btn.previousElementSibling) {
+                                btn.previousElementSibling.focus();
+                            } else {
+                                this.elements.commandInput.focus();
+                            }
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            this.elements.inputSuggestions.classList.add('hidden');
+                            this.elements.commandInput.focus();
+                        }
+                    });
 
                     btn.addEventListener('click', () => {
                         this.elements.commandInput.value = match;
