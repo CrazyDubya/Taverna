@@ -49,3 +49,7 @@
 ## 2024-05-25 - Autocomplete Accessibility Patterns
 **Learning:** Autocomplete suggestions should be interactive elements (buttons/options) not static divs, to support keyboard navigation and screen readers. When implementing a simple dropdown, ensure items are focusable.
 **Action:** Use `<button>` elements for simple suggestion lists, or `role="option"` inside `role="listbox"` for complex ones.
+
+## 2024-05-26 - Keyboard-Accessible Autocomplete
+**Learning:** Custom autocomplete widgets are often inaccessible to keyboard users unless arrow key navigation is explicitly managed. Relying on `Tab` to navigate suggestions is poor UX as it blocks access to subsequent elements.
+**Action:** Always implement `ArrowDown`, `ArrowUp`, and `Escape` handlers for custom dropdowns, and set `tabindex="-1"` on items to preserve natural tab flow while allowing arrow key navigation.
