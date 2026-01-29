@@ -221,7 +221,7 @@
                 <div class="flex items-center space-x-2">
                     
                     <!-- Mobile Menu Toggle -->
-                    <button id="mobile-menu-toggle" aria-label="Toggle main menu" class="md:hidden bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-tavern-400">
+                    <button id="mobile-menu-toggle" aria-label="View status and inventory" class="md:hidden bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-tavern-400">
                         ☰
                     </button>
                     
@@ -323,7 +323,7 @@
         </div>
         
         <!-- Enhanced Sidebar -->
-        <div class="w-full mobile-sidebar md:w-80 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl p-4 sidebar overflow-y-auto custom-scrollbar border border-gray-700">
+        <div id="sidebar" class="w-full mobile-sidebar md:w-80 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl p-4 sidebar overflow-y-auto custom-scrollbar border border-gray-700">
             <!-- Performance Indicator -->
             <div class="mb-4 p-2 bg-gray-700 rounded-lg">
                 <div class="flex justify-between items-center text-xs text-gray-400">
@@ -434,13 +434,6 @@
         </div>
     </div>
 
-    <!-- Mobile Sidebar Overlay -->
-    <div id="mobile-sidebar-overlay" class="md:hidden fixed inset-0 bg-black bg-opacity-50 hidden z-40">
-        <div class="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-gray-800 to-gray-900 shadow-xl p-4 overflow-y-auto">
-            <!-- Mobile sidebar content (same as main sidebar) -->
-        </div>
-    </div>
-    
 
     <script>
         // Enhanced game state management with UX improvements
@@ -639,7 +632,7 @@
                 
                 // Mobile menu
                 document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
-                    document.getElementById('mobile-sidebar-overlay').classList.toggle('hidden');
+                    document.getElementById('sidebar').scrollIntoView({ behavior: 'smooth' });
                 });
             }
             
