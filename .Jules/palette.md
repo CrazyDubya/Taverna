@@ -53,3 +53,7 @@
 ## 2026-01-28 - Autocomplete Keyboard Navigation Patterns
 **Learning:** Autocomplete components often break keyboard flow if they don't explicitly handle focus transfer. Users expect `ArrowDown` to move from the input to the suggestions list, and `Escape` to dismiss it without losing focus.
 **Action:** When implementing custom autocomplete, explicitly handle `ArrowDown` (input -> first item), `ArrowUp` (first item -> input), and `Escape` (close + focus input).
+
+## 2026-01-28 - Simplified Responsive Navigation
+**Learning:** For stacked mobile layouts, attempting to duplicate sidebar content into an overlay often leads to state synchronization bugs or duplicate IDs.
+**Action:** Use `scrollIntoView()` to target existing content sections on mobile instead of creating complex overlay duplicates, preserving a single source of truth for the DOM.
