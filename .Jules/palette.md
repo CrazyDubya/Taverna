@@ -53,3 +53,7 @@
 ## 2026-01-28 - Autocomplete Keyboard Navigation Patterns
 **Learning:** Autocomplete components often break keyboard flow if they don't explicitly handle focus transfer. Users expect `ArrowDown` to move from the input to the suggestions list, and `Escape` to dismiss it without losing focus.
 **Action:** When implementing custom autocomplete, explicitly handle `ArrowDown` (input -> first item), `ArrowUp` (first item -> input), and `Escape` (close + focus input).
+
+## 2024-05-27 - Smart Scroll Preservation
+**Learning:** In chat-like interfaces, auto-scrolling on new messages disrupts users who are reading history. A better pattern is to suppress auto-scroll when the user has manually scrolled up, and provide a clear "New Messages" or "Scroll to Bottom" indicator to jump back to the latest content.
+**Action:** Implement smart scroll detection: only auto-scroll if the user is already at the bottom (or explicitly triggers an action).
