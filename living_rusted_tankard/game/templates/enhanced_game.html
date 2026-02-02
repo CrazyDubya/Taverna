@@ -452,6 +452,15 @@
                     'talk to barkeeper', 'buy ale', 'quests', 'sleep', 'map'
                 ];
 
+                this.commandHints = [
+                    "What would you like to do?",
+                    "Try 'look around' to see your surroundings",
+                    "Try 'inventory' to check your gear",
+                    "Try 'status' to check your health",
+                    "Try 'talk to barkeeper' to chat",
+                    "Try 'help' to see all commands"
+                ];
+
                 this.sessionId = localStorage.getItem('gameSessionId');
                 this.commandHistory = JSON.parse(localStorage.getItem('commandHistory') || '[]');
                 this.historyIndex = -1;
@@ -510,7 +519,18 @@
                     }
                     // Get initial game state instead of sending a command
                     this.initializeGameSession();
+                    this.startHintCycle();
                 }, 1000);
+            }
+
+            startHintCycle() {
+                let index = 0;
+                setInterval(() => {
+                    if (!this.elements.commandInput.value) {
+                        index = (index + 1) % this.commandHints.length;
+                        this.elements.commandInput.placeholder = this.commandHints[index];
+                    }
+                }, 3000);
             }
             
             async initializeGameSession() {
@@ -1060,6 +1080,12 @@
                         this.elements.submitBtn.innerHTML = this.elements.submitBtn.dataset.originalContent;
                     }
                     this.elements.submitBtn.removeAttribute('aria-busy');
+
+                    // Refocus input on desktop to allow rapid command entry
+                    // Avoid on mobile to prevent virtual keyboard from obscuring content
+                    if (window.innerWidth >= 768) {
+                        this.elements.commandInput.focus();
+                    }
                 }
             }
             
