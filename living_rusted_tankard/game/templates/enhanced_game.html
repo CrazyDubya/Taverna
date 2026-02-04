@@ -233,7 +233,12 @@
             </header>
             
             <!-- Enhanced Narrative Feed -->
-            <div id="main-content" tabindex="-1" class="flex-1 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg overflow-hidden border border-gray-700 outline-none">
+            <div id="main-content" tabindex="-1" class="relative flex-1 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg overflow-hidden border border-gray-700 outline-none">
+                <button id="scroll-to-bottom" class="hidden absolute bottom-4 right-4 bg-tavern-500 hover:bg-tavern-400 text-white p-2 rounded-full shadow-lg transition-all animate-bounce-subtle z-10 focus:outline-none focus:ring-2 focus:ring-white" aria-label="Scroll to bottom">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                </button>
                 <div id="narrative-content" aria-live="polite" aria-atomic="false" role="log" class="narrative-feed overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
                     <!-- Initial loading message - real welcome comes from server -->
                     <div id="initial-loading" class="bg-gradient-to-r from-tavern-900 to-gray-800 border-l-4 border-tavern-400 p-4 rounded-r-lg animate-fade-in text-center">
@@ -489,7 +494,8 @@
                     historyToggle: document.getElementById('history-toggle'),
                     historyPanel: document.getElementById('command-history-panel'),
                     historyList: document.getElementById('command-history-list'),
-                    inputSuggestions: document.getElementById('input-suggestions')
+                    inputSuggestions: document.getElementById('input-suggestions'),
+                    scrollToBottomBtn: document.getElementById('scroll-to-bottom')
                 };
                 
                 // Enable submit button when there's input
@@ -672,6 +678,12 @@
                 document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
                     document.getElementById('sidebar').scrollIntoView({ behavior: 'smooth' });
                 });
+
+                // Smart Scroll
+                this.elements.narrativeContent.addEventListener('scroll', () => this.handleScroll());
+                this.elements.scrollToBottomBtn.addEventListener('click', () => {
+                    this.scrollToBottom(true);
+                });
             }
             
             async submitCommand() {
@@ -692,7 +704,7 @@
                 this.historyIndex = -1;
                 
                 // Show user command
-                this.addNarrative(`> ${command}`, true);
+                this.addNarrative(`> ${command}`, true, null, true);
                 
                 // Clear input and show loading
                 this.elements.commandInput.value = '';
@@ -753,7 +765,7 @@
                 this.addNarrative(`🔧 Something went wrong: ${error.message}. The tavern's magic seems disrupted.`);
             }
             
-            addNarrative(text, isPlayer = false, messageType = null) {
+            addNarrative(text, isPlayer = false, messageType = null, forceScroll = false) {
                 const message = document.createElement('div');
                 
                 let className = 'animate-fade-in ';
@@ -802,7 +814,7 @@
                 }
                 
                 // Auto-scroll to bottom
-                this.scrollToBottom();
+                this.scrollToBottom(forceScroll || isPlayer);
             }
             
             formatNarrativeText(text) {
@@ -1107,10 +1119,26 @@
                 }
             }
             
-            scrollToBottom() {
+            scrollToBottom(force = false) {
                 setTimeout(() => {
-                    this.elements.narrativeContent.scrollTop = this.elements.narrativeContent.scrollHeight;
+                    const { scrollTop, scrollHeight, clientHeight } = this.elements.narrativeContent;
+                    const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+
+                    if (force || isNearBottom) {
+                        this.elements.narrativeContent.scrollTop = this.elements.narrativeContent.scrollHeight;
+                    }
                 }, 100);
+            }
+
+            handleScroll() {
+                const { scrollTop, scrollHeight, clientHeight } = this.elements.narrativeContent;
+                const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+
+                if (isNearBottom) {
+                    this.elements.scrollToBottomBtn.classList.add('hidden');
+                } else {
+                    this.elements.scrollToBottomBtn.classList.remove('hidden');
+                }
             }
             
             
