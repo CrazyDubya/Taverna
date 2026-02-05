@@ -233,7 +233,7 @@
             </header>
             
             <!-- Enhanced Narrative Feed -->
-            <div id="main-content" tabindex="-1" class="flex-1 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg overflow-hidden border border-gray-700 outline-none">
+            <div id="main-content" tabindex="-1" class="relative flex-1 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg overflow-hidden border border-gray-700 outline-none">
                 <div id="narrative-content" aria-live="polite" aria-atomic="false" role="log" class="narrative-feed overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
                     <!-- Initial loading message - real welcome comes from server -->
                     <div id="initial-loading" class="bg-gradient-to-r from-tavern-900 to-gray-800 border-l-4 border-tavern-400 p-4 rounded-r-lg animate-fade-in text-center">
@@ -251,6 +251,13 @@
                 <div id="loading-indicator" class="hidden p-2 text-center text-tavern-400">
                     <span class="loading-dots">Weaving the tale</span>
                 </div>
+
+                <!-- Scroll to Bottom Button -->
+                <button id="scroll-bottom-btn" aria-label="Scroll to bottom" class="hidden absolute bottom-4 right-4 bg-gray-700 hover:bg-tavern-500 text-white p-3 rounded-full shadow-lg transition-all border border-gray-600 focus:outline-none focus:ring-2 focus:ring-tavern-400 z-10 animate-fade-in" title="Scroll to bottom">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                </button>
             </div>
             
             <!-- Enhanced Command Input -->
@@ -489,7 +496,8 @@
                     historyToggle: document.getElementById('history-toggle'),
                     historyPanel: document.getElementById('command-history-panel'),
                     historyList: document.getElementById('command-history-list'),
-                    inputSuggestions: document.getElementById('input-suggestions')
+                    inputSuggestions: document.getElementById('input-suggestions'),
+                    scrollBottomBtn: document.getElementById('scroll-bottom-btn')
                 };
                 
                 // Enable submit button when there's input
@@ -672,8 +680,35 @@
                 document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
                     document.getElementById('sidebar').scrollIntoView({ behavior: 'smooth' });
                 });
+
+                // Scroll to bottom button
+                this.elements.scrollBottomBtn.addEventListener('click', () => {
+                    this.scrollToBottom();
+                });
+
+                // Scroll listener for narrative content
+                let scrollTimeout;
+                this.elements.narrativeContent.addEventListener('scroll', () => {
+                    if (scrollTimeout) return;
+                    scrollTimeout = setTimeout(() => {
+                        this.updateScrollButtonVisibility();
+                        scrollTimeout = null;
+                    }, 100);
+                });
             }
             
+            updateScrollButtonVisibility() {
+                const el = this.elements.narrativeContent;
+                // Show button if we are scrolled up more than 150px from the bottom
+                const isScrolledUp = el.scrollHeight - el.scrollTop - el.clientHeight > 150;
+
+                if (isScrolledUp) {
+                    this.elements.scrollBottomBtn.classList.remove('hidden');
+                } else {
+                    this.elements.scrollBottomBtn.classList.add('hidden');
+                }
+            }
+
             async submitCommand() {
                 const command = this.elements.commandInput.value.trim();
                 if (!command) return;
